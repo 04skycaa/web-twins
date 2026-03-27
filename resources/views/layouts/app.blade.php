@@ -13,7 +13,8 @@
 
     <aside class="sidebar">
         <div class="logo-section">
-            <img src="{{ asset('images/logo.jpeg') }}" alt="Logo" class="logo-img">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-img">
+            <span class="logo-text">TWINS</span>
         </div>
 
         <nav class="menu-nav">
@@ -58,24 +59,48 @@
     <div class="page-container">
         <header class="topbar">
             <div class="topbar-left">
-                <i id="topbar-icon" data-lucide="layout-grid"></i>
-                <h2 id="topbar-title">Dashboard</h2>
+                @if(request()->routeIs('dashboard'))
+                    <i id="topbar-icon" data-lucide="layout-grid"></i>
+                    <h2 id="topbar-title">Dashboard</h2>
+                @elseif(request()->is('products*'))
+                    <i id="topbar-icon" data-lucide="package"></i>
+                    <h2 id="topbar-title">Manajemen Produk</h2>
+                @elseif(request()->is('promo*'))
+                    <i id="topbar-icon" data-lucide="ticket-percent"></i>
+                    <h2 id="topbar-title">Promo & Marketing</h2>
+                @elseif(request()->is('transaksi*'))
+                    <i id="topbar-icon" data-lucide="receipt"></i>
+                    <h2 id="topbar-title">Manajemen Transaksi</h2>
+                @elseif(request()->is('keuangan*'))
+                    <i id="topbar-icon" data-lucide="trending-up"></i>
+                    <h2 id="topbar-title">Keuangan</h2>
+                @elseif(request()->is('outlet*'))
+                    <i id="topbar-icon" data-lucide="store"></i>
+                    <h2 id="topbar-title">Operasional & Outlet</h2>
+                @else
+                    <i id="topbar-icon" data-lucide="layers"></i>
+                    <h2 id="topbar-title">Halaman</h2>
+                @endif
             </div>
 
             <div class="topbar-right">
                 <div class="topbar-center">
                     <div class="greeting" id="greeting-text">Selamat Pagi</div>
                     <div class="datetime">
-                        <span id="date-text">Selasa, 10 Maret 2026</span><br>
-                        <span class="time-bold" id="time-text">06:00:15</span>
+                        <span id="date-text"></span><br>
+                        <span class="time-bold" id="time-text"></span>
                     </div>
-
                 </div>
                 <div class="user-profile">
                     <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
-                    <span>agatca</span>
+                    <span>{{ Auth::user()->name ?? 'Guest' }}</span>
                 </div>
-                <button class="btn-logout">
+
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                    @csrf
+                </form>
+
+                <button class="btn-logout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <iconify-icon icon="solar:logout-3-bold-duotone"></iconify-icon>
                     <span>Logout</span>
                 </button>
@@ -89,34 +114,46 @@
 
     <script>
         lucide.createIcons();
+
         function updateDateTime() {
             const now = new Date();
             const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const dateStr = now.toLocaleDateString('id-ID', optionsDate);
             const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-            document.getElementById('date-text').innerText = dateStr;
-            document.getElementById('time-text').innerText = timeStr;
+            
+            const dateEl = document.getElementById('date-text');
+            const timeEl = document.getElementById('time-text');
+            const greetEl = document.getElementById('greeting-text');
+
+            if(dateEl) dateEl.innerText = dateStr;
+            if(timeEl) timeEl.innerText = timeStr;
+            
             const hour = now.getHours();
             let greeting = "Selamat Malam";
             if (hour < 11) greeting = "Selamat Pagi";
             else if (hour < 15) greeting = "Selamat Siang";
             else if (hour < 19) greeting = "Selamat Sore";
-            document.getElementById('greeting-text').innerText = greeting;
+            if(greetEl) greetEl.innerText = greeting;
         }
 
         setInterval(updateDateTime, 1000);
         updateDateTime();
+
         function setActive(element, title, iconName) {
             document.querySelectorAll('.menu-item').forEach(item => {
                 item.classList.remove('active');
             });
             element.classList.add('active');
-            document.getElementById('page-title').innerText = title;
-            document.getElementById('topbar-title').innerText = title;
+            
+            const titleEl = document.getElementById('topbar-title');
             const topIcon = document.getElementById('topbar-icon');
-            topIcon.setAttribute('data-lucide', iconName);
-            lucide.createIcons();
+            
+            if(titleEl) titleEl.innerText = title;
+            if(topIcon) {
+                topIcon.setAttribute('data-lucide', iconName);
+                lucide.createIcons();
+            }
         }
     </script>
 </body>
-</html> 
+</html>
