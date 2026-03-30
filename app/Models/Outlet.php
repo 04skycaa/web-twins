@@ -12,4 +12,6 @@ class Outlet extends Model
     {
         return $this->hasMany(User::class);
     }
+    protected $table = 'outlet';
+    protected $primaryKey = 'outlet_id';
 }
