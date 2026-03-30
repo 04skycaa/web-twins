@@ -45,6 +45,18 @@
                                 Register
                             </a>
                         @endif
+
+                        @if(session('error_role'))
+                            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                            <script>
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Akses Ditolak',
+                                    text: "{{ session('error_role') }}",
+                                    confirmButtonColor: '#d33',
+                                });
+                            </script>
+                        @endif
                     @endauth
                 </nav>
             @endif

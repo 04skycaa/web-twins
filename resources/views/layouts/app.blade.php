@@ -30,29 +30,31 @@
                 <span>Manajemen Produk</span>
             </a>
 
-            <a href="#" class="menu-item {{ request()->is('promo*') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:tag-price-bold-duotone"></iconify-icon>
-                <span>Promo & Marketing</span>
-            </a>
-
-            <a href="#" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
+            <a href="{{ url('/transaksi') }}" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
                 <div class="curve-helper"></div>
                 <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
-                <span>Manajemen Transaksi</span>
+                <span>Transaksi & Diskon</span>
             </a>
 
-            <a href="#" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
+            <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
                 <div class="curve-helper"></div>
                 <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
                 <span>Keuangan</span>
             </a>
 
-            <a href="#" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
+            <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
                 <div class="curve-helper"></div>
-                <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
-                <span>Operasional & Outlet</span>
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+                <span>Manajemen User</span>
             </a>
+
+            @if(Auth::user()->role == 'owner')
+                <a href="{{ url('/outlet') }}" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
+                    <span>Operasional Outlet</span>
+                </a>
+            @endif
         </nav>
     </aside>
 
