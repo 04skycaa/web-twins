@@ -42,6 +42,6 @@ class User extends Authenticatable
 
     public function outlet()
     {
-        return $this->belongsTo(Outlet::class);
+        return $this->belongsTo(Outlet::class, 'outlet_id', 'idoutlet');
     }
 }

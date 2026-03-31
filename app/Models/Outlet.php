@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Outlet extends Model
 {
-    protected $fillable = ['name', 'address'];
+    protected $table = 'outlet';
+    protected $primaryKey = 'idoutlet';
+    const UPDATED_AT = null;
+
+    protected $fillable = ['kode_outlet', 'nama_outlet', 'alamat', 'telepon', 'is_active'];
+
     public function users(): HasMany
     {
-        return $this->hasMany(User::class);
+        return $this->hasMany(User::class, 'outlet_id', 'idoutlet');
     }
-    protected $table = 'outlet';
-    protected $primaryKey = 'outlet_id';
 }

@@ -37,9 +37,9 @@ body {
     z-index: 100;
     border-top-right-radius: 60px;
     border-bottom-right-radius: 60px;
-    overflow: hidden; 
+    overflow: hidden;
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.05),
-                inset 0 0 40px rgba(255, 255, 255, 0.05);
+        inset 0 0 40px rgba(255, 255, 255, 0.05);
 }
 
 .sidebar:hover {
@@ -47,11 +47,11 @@ body {
 }
 
 .logo-img {
-    width: 50px;          
-    height: 50px;         
-    border-radius: 50%;    
-    object-fit: cover;     
-    border: 2px solid #ccc; 
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ccc;
     flex-shrink: 0;
 }
 
@@ -72,12 +72,13 @@ body {
     justify-content: center;
     align-items: center;
     padding: 10px;
-    padding-top: 30px;    
+    padding-top: 30px;
     padding-bottom: 30px;
     text-align: center;
 }
 
-.logo-text, .nav-text {
+.logo-text,
+.nav-text {
     opacity: 0;
     visibility: hidden;
     white-space: nowrap;

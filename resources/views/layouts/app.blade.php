@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -72,7 +73,7 @@
                     <h2 id="topbar-title">Promo & Marketing</h2>
                 @elseif(request()->is('transaksi*'))
                     <i id="topbar-icon" data-lucide="receipt"></i>
-                    <h2 id="topbar-title">Manajemen Transaksi</h2>
+                    <h2 id="topbar-title">Manajemen Transaksi & Diskon</h2>
                 @elseif(request()->is('keuangan*'))
                     <i id="topbar-icon" data-lucide="trending-up"></i>
                     <h2 id="topbar-title">Keuangan</h2>
@@ -81,7 +82,7 @@
                     <h2 id="topbar-title">Operasional & Outlet</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
-                    <h2 id="topbar-title">Halaman</h2>
+                    <h2 id="topbar-title">Manajemen User</h2>
                 @endif
             </div>
 
@@ -102,7 +103,8 @@
                     @csrf
                 </form>
 
-                <button class="btn-logout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                <button class="btn-logout"
+                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <iconify-icon icon="solar:logout-3-bold-duotone"></iconify-icon>
                     <span>Logout</span>
                 </button>
@@ -122,20 +124,20 @@
             const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             const dateStr = now.toLocaleDateString('id-ID', optionsDate);
             const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-            
+
             const dateEl = document.getElementById('date-text');
             const timeEl = document.getElementById('time-text');
             const greetEl = document.getElementById('greeting-text');
 
-            if(dateEl) dateEl.innerText = dateStr;
-            if(timeEl) timeEl.innerText = timeStr;
-            
+            if (dateEl) dateEl.innerText = dateStr;
+            if (timeEl) timeEl.innerText = timeStr;
+
             const hour = now.getHours();
             let greeting = "Selamat Malam";
             if (hour < 11) greeting = "Selamat Pagi";
             else if (hour < 15) greeting = "Selamat Siang";
             else if (hour < 19) greeting = "Selamat Sore";
-            if(greetEl) greetEl.innerText = greeting;
+            if (greetEl) greetEl.innerText = greeting;
         }
 
         setInterval(updateDateTime, 1000);
@@ -146,16 +148,17 @@
                 item.classList.remove('active');
             });
             element.classList.add('active');
-            
+
             const titleEl = document.getElementById('topbar-title');
             const topIcon = document.getElementById('topbar-icon');
-            
-            if(titleEl) titleEl.innerText = title;
-            if(topIcon) {
+
+            if (titleEl) titleEl.innerText = title;
+            if (topIcon) {
                 topIcon.setAttribute('data-lucide', iconName);
                 lucide.createIcons();
             }
         }
     </script>
 </body>
+
 </html>
