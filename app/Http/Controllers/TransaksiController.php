@@ -3,21 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Transaction; 
 
 class TransaksiController extends Controller
 {
     public function index()
     {
-        return view('transaksi.index');
-    }
+        $user = Auth::user();
 
-    public function riwayat()
-    {
-        return view('transaksi.riwayat');
-    }
+        if ($user->role === 'kepala_toko') {
+            $data = Transaction::where('idoutlet', $user->outlet_id)->get();
+        } else {
+            $data = Transaction::all();
+        }
 
-    public function diskon()
-    {
-        return view('transaksi.diskon');
+        return view('dashboard', compact('data'));
     }
 }

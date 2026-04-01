@@ -11,7 +11,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
+    ->middleware(['auth', 'role:owner,kepala_toko'])
     ->name('dashboard');
 
 

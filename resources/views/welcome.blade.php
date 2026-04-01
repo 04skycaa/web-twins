@@ -6,6 +6,8 @@
     <title>TWINS - ahlinya belanja sembako</title>
     
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -357,6 +359,25 @@
 
         window.addEventListener('resize', updateLayout);
         updateLayout();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.get('verified') === '1') {
+                Swal.fire({
+                    title: 'Verifikasi Berhasil!',
+                    text: 'Selamat bergabung di TWINS! Akun Anda sudah aktif.',
+                    icon: 'success',
+                    confirmButtonColor: '#0477bf',
+                    showClass: {
+                        popup: 'animate__animated animate__zoomIn'
+                    }
+                });
+
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        });
     </script>
 </body>
 </html>

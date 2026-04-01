@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -32,23 +33,28 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'no_hp' => ['required', 'string', 'max:15', 'unique:'.User::class], 
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'user', 
-            'outlet_id' => null, 
-        ]);
+        return DB::transaction(function () use ($request) {
+            
+            $user = User::create([
+                'name' => $request->name,
+                'no_hp' => $request->no_hp,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'user', 
+                'outlet_id' => null, 
+            ]);
 
-        event(new Registered($user));
+            event(new Registered($user));
 
-        Auth::login($user);
+            Auth::login($user);
 
-        // Setelah register, user biasa langsung diarahkan ke landing page (/)
-        return redirect('/');
+            return redirect()->route('verification.notice')
+                ->with('success', 'Registrasi berhasil! Silakan cek email Anda di Mailpit untuk verifikasi.');
+        });
     }
 }

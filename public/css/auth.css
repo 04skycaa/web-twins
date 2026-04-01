@@ -1,0 +1,520 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --warna-utama: #0477bf;
+    --warna-gelap: #012340;
+    --warna-teks: #2d3436;
+    --warna-abu: #94a3b8;
+    --warna-sukses: #22c55e;
+    --warna-error: #ef4444;
+    --gradasi-linear: linear-gradient(180deg, #0477bf 0%, #0477bf 75%, #012340 100%);
+    --font-family: 'Outfit', sans-serif;
+    --transition-smooth: all 0.9s cubic-bezier(0.7, 0, 0.3, 1);
+}
+
+body {
+    font-family: var(--font-family);
+    background: var(--gradasi-linear);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.kontainer-utama {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Status Overlay Styles */
+.overlay-status {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(1, 35, 64, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+}
+
+.kartu-status {
+    background: white;
+    padding: 40px;
+    border-radius: 30px;
+    max-width: 450px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.panel-visual {
+    flex: 1.2;
+    padding: 60px;
+    color: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.nama-brand {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.teks-hero {
+    margin-top: 10px;
+}
+
+.teks-hero h1 {
+    font-size: 56px;
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 20px;
+}
+
+.teks-hero p {
+    font-size: 16px;
+    opacity: 0.9;
+    max-width: 500px;
+    line-height: 1.6;
+}
+
+.panel-form {
+    flex: 1;
+    background-color: white;
+    border-radius: 80px 0 0 80px;
+    padding: 40px 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 20;
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+}
+
+.bungkus-form {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.judul-form {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--warna-teks);
+    margin-bottom: 8px;
+}
+
+.subjudul-form {
+    color: var(--warna-abu);
+    margin-bottom: 30px;
+    font-size: 14px;
+}
+
+.grup-input {
+    margin-bottom: 18px;
+    position: relative;
+}
+
+.label-input {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 6px;
+    padding-left: 4px;
+}
+
+.field-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1.5px solid #f0f0f0;
+    border-radius: 14px;
+    background-color: #fafafa;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: var(--warna-utama);
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(4, 119, 191, 0.1);
+}
+
+.wrapper-password {
+    position: relative;
+}
+
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+.field-input {
+    width: 100%;
+    padding-right: 45px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--warna-abu);
+    display: flex;
+    align-items: center;
+}
+
+.tombol-masuk {
+    background-color: var(--warna-utama);
+    color: white;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-top: 20px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(4, 119, 191, 0.3);
+}
+
+.tombol-masuk:hover {
+    background-color: var(--warna-gelap);
+    transform: translateY(-2px);
+}
+
+.container-visual-bawah {
+    position: absolute;
+    bottom: 0px;
+    left: 60px;
+    right: 0;
+    height: 250px;
+    pointer-events: none;
+}
+
+.gambar-satu-password {
+    position: absolute;
+    left: 40%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    max-width: 420px;
+    height: auto;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.gambar-satu-verif {
+    position: absolute;
+    left: 40%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    max-width: 420px;
+    height: auto;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.gambar-satu {
+    position: absolute;
+    left: 0;
+    bottom: 25px;
+    max-width: 350px;
+    height: auto;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.wrapper-gambar-dua {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 200px;
+    z-index: 2;
+    transition: var(--transition-smooth);
+}
+
+.gambar-dua {
+    width: 100%;
+    height: auto;
+}
+
+.wrapper-gambar-dua-register {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 260px;
+    z-index: 2;
+    transition: var(--transition-smooth);
+}
+
+.gambar-dua-register {
+    width: 100%;
+    height: auto;
+}
+
+.image-slide-out-right {
+    transform: translateX(150vw) !important;
+    opacity: 0;
+}
+
+.overlay-sukses .ring {
+    border-color: var(--warna-sukses);
+}
+
+.overlay-sukses .pusat-ikon {
+    background: #f0fdf4;
+}
+
+.overlay-sukses .ikon-svg {
+    color: var(--warna-sukses);
+}
+
+.overlay-sukses .judul-status {
+    color: var(--warna-sukses);
+}
+
+.overlay-gagal .ring {
+    border-color: var(--warna-error);
+}
+
+.overlay-gagal .pusat-ikon {
+    background: #fef2f2;
+}
+
+.overlay-gagal .ikon-svg {
+    color: var(--warna-error);
+}
+
+.overlay-gagal .judul-status {
+    color: var(--warna-error);
+}
+
+.tombol-ulang {
+    margin-top: 25px;
+    width: 100%;
+    padding: 14px 28px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tombol-ulang:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+}
+
+.tombol-ulang:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 10px rgba(231, 76, 60, 0.2);
+}
+
+.overlay-gagal .tombol-ulang {
+    animation: fadeInUp 0.5s ease backwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container-ikon {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 30px;
+}
+
+.ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid;
+    opacity: 0;
+}
+
+.ring-1 {
+    animation: pulseRing 2s infinite;
+}
+
+.ring-2 {
+    animation: pulseRing 2s 0.5s infinite;
+}
+
+.pusat-ikon {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.ikon-svg {
+    width: 40px;
+    height: 40px;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawCheck 0.8s 0.5s ease-out forwards;
+}
+
+.loader-bar {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-top: 20px;
+}
+
+.loader-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--warna-utama), #38bdf8);
+    width: 0%;
+    transition: width 3.5s linear;
+}
+
+@keyframes pulseRing {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+@keyframes drawCheck {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@media (max-width: 768px) {
+
+    body {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .kontainer-utama {
+        position: relative;
+        min-height: 100vh;
+        display: block;
+    }
+
+    .panel-visual {
+        height: 30vh;
+        padding: 20px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .teks-hero h1 {
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    .nama-brand,
+    .teks-hero p {
+        display: none;
+    }
+
+    .panel-form {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 75vh;
+
+        background: white;
+        border-radius: 30px 30px 0 0;
+        padding: 25px 18px;
+
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.08);
+
+        overflow-y: auto;
+    }
+
+    .bungkus-form {
+        max-width: 100%;
+    }
+
+    .judul-form {
+        font-size: 22px;
+    }
+
+    .subjudul-form {
+        font-size: 13px;
+        margin-bottom: 18px;
+    }
+
+    .field-input {
+        padding: 12px 14px;
+        font-size: 13px;
+        border-radius: 12px;
+    }
+
+    .tombol-masuk {
+        padding: 14px;
+        font-size: 14px;
+        border-radius: 12px;
+    }
+
+    .container-visual-bawah,
+    .gambar-satu,
+    .gambar-dua,
+    .gambar-satu-password,
+    .gambar-satu-verif {
+        display: none;
+    }
+}
