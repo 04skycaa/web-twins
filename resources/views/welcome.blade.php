@@ -27,9 +27,22 @@
         </nav>
 
         <div class="nav-btns">
+            <div class="mobile-user-drop">
+                <button class="user-icon-btn" onclick="toggleUserMenu()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </button>
+                <div class="user-dropdown-menu" id="userMenu">
+                    <button onclick="location.href='/login'">Login</button>
+                    <button onclick="location.href='/register'">Register</button>
+                </div>
+            </div>
+
             <button class="theme-toggle" id="themeBtn">
-                <svg id="sunIcon" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <svg id="sunIcon" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             </button>
 
             @if (Route::has('login'))
@@ -48,10 +61,6 @@
                     @endif
                 @endauth
             @endif
-
-            <button class="menu-toggle" id="menuToggle">
-                <span></span><span></span><span></span>
-            </button>
         </div>
     </header>
 
@@ -179,7 +188,9 @@
                         <p>🕒 Buka: 08.00 - 21.00</p>
                         <p>⭐ Rating: 4.8</p>
                     </div>
-                    <button class="btn-action">Pilih Outlet</button>
+                    <a href="{{ route('user.index') }}" class="btn-action" style="text-decoration: none; text-align: center; display: block;">
+                        Pilih Outlet
+                    </a>
                 </div>
             </div>
 
@@ -305,7 +316,6 @@
         </h2>
 
         <div class="grid-container">
-            <!-- Sisi Kiri -->
             <div class="feature-list left-side">
                 <article class="feature-item">
                     <div class="feature-icon">
@@ -366,6 +376,28 @@
         &copy; {{ date('Y') }} TWINS - Kelompok 4. All Rights Reserved.
     </footer>
 
+    <nav class="mobile-nav">
+        <div class="mob-nav-item active" onclick="switchPage('beranda')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Beranda</span>
+        </div>
+
+        <div class="mob-nav-item" onclick="scrollToCategory('outlet')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l18 0l-1 10l-16 0z"></path><path d="M3 11l18 0"></path><path d="M2 3l20 0l-1 6l-18 0z"></path></svg>
+            <span>Outlet</span>
+        </div>
+
+        <div class="mob-nav-item" onclick="switchPage('cabang')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span>Cabang</span>
+        </div>
+
+        <div class="mob-nav-item" onclick="switchPage('keunggulan')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            <span>Keunggulan</span>
+        </div>
+    </nav>
+
     <script>
         const themeBtn = document.getElementById('themeBtn');
         const sunIcon = document.getElementById('sunIcon');
@@ -376,6 +408,19 @@
         const mainNav = document.getElementById('mainNav');
 
         let activeIndex = Math.floor(cards.length / 2);
+
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('show');
+        }
+
+        window.addEventListener('click', function(e) {
+            const menu = document.getElementById('userMenu');
+            const btn = document.querySelector('.user-icon-btn');
+            if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
 
         function updateLayout() {
             const isMobile = window.innerWidth <= 768;
@@ -413,6 +458,34 @@
             });
         }
 
+        function switchPage(pageId) {
+            const element = document.getElementById(pageId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            document.querySelectorAll('.mob-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        function scrollToCategory(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
         cards.forEach((card, index) => {
             card.addEventListener('click', () => {
                 activeIndex = index;
@@ -431,13 +504,6 @@
                 sunIcon.style.display = 'block';
                 moonIcon.style.display = 'none';
             }
-        });
-
-        menuToggle.addEventListener('click', () => {
-            mainNav.classList.toggle('active');
-
-            // Opsional: Animasi tombol jadi silang (X)
-            menuToggle.classList.toggle('is-active');
         });
 
         document.querySelectorAll('.nav-link').forEach(link => {

@@ -14,7 +14,6 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'role:owner,kepala_toko'])
     ->name('dashboard');
 
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -54,5 +53,9 @@ use App\Http\Controllers\KeuanganController;
 Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->middleware(['auth', 'role:owner,kepala_toko'])
     ->name('keuangan.index');
+
+Route::get('/user-produk', function () {
+    return view('user');
+})->name('user.index');
 
 require __DIR__ . '/auth.php';
