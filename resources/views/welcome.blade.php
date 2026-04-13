@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWINS - ahlinya belanja sembako</title>
-    
+
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -25,7 +25,7 @@
             <a href="#cabang" class="nav-link">Cabang</a>
             <a href="#keunggulan" class="nav-link">Keunggulan</a>
         </nav>
-        
+
         <div class="nav-btns">
             <button class="theme-toggle" id="themeBtn">
                 <svg id="sunIcon" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -42,7 +42,7 @@
                     </a>
                 @else
                     <a href="{{ route('login') }}" class="btn-outline" style="text-decoration: none;">Login</a>
-                    
+
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}" class="btn-fill" style="text-decoration: none;">Register</a>
                     @endif
@@ -71,9 +71,95 @@
         </main>
     </section>
 
+    <section id="promo-outlet" class="promo-section">
+        <div class="promo-header">
+            <h2>PROMO <span>PRODUK</span></h2>
+        </div>
+
+        <div class="promo-grid">
+            <div class="promo-card animate__animated animate__fadeInUp">
+                <div class="discount-label">15% OFF</div>
+                <div class="promo-img">
+                    <img src="{{ asset('images/butter.jpg') }}" alt="Mentega">
+                </div>
+                <div class="promo-content">
+                    <div class="outlet-info">
+                        <p class="outlet-name">TWINS - Mastrip</p>
+                        <p class="outlet-address">Jl. Mastrip No. 12, Jember</p>
+                    </div>
+
+                    <span class="category-tag">Bahan Kue</span>
+                    <h4>Wijsman Butter 200g</h4>
+
+                    <div class="promo-footer">
+                        <div class="price-box">
+                            <span class="price-now"><small>Rp</small>85.000</span>
+                            <span class="price-old">Rp100.000</span>
+                        </div>
+                        <button class="btn-add-item" title="Tambah ke Keranjang">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="promo-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+                <div class="discount-label">20% OFF</div>
+                <div class="promo-img">
+                    <img src="{{ asset('images/cokelat.jpg') }}" alt="Cokelat">
+                </div>
+                <div class="promo-content">
+                    <div class="outlet-info">
+                        <p class="outlet-name">TWINS - Situbondo</p>
+                        <p class="outlet-address">Jl. Basuki Rahmat No. 12</p>
+                    </div>
+
+                    <span class="category-tag">Bahan Kue</span>
+                    <h4>Colatta Dark Compound 1kg</h4>
+
+                    <div class="promo-footer">
+                        <div class="price-box">
+                            <span class="price-now"><small>Rp</small>65.000</span>
+                            <span class="price-old">Rp81.000</span>
+                        </div>
+                        <button class="btn-add-item" title="Tambah ke Keranjang">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="promo-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+                <div class="discount-label">10% OFF</div>
+                <div class="promo-img">
+                    <img src="{{ asset('images/tepung.jpg') }}" alt="Tepung">
+                </div>
+                <div class="promo-content">
+                    <div class="outlet-info">
+                        <p class="outlet-name">TWINS - Banyuwangi</p>
+                        <p class="outlet-address">Jl. Musi No. 12, Banyuwangi</p>
+                    </div>
+
+                    <span class="category-tag">Bahan Kue</span>
+                    <h4>Tepung Cakra Kembar 1kg</h4>
+
+                    <div class="promo-footer">
+                        <div class="price-box">
+                            <span class="price-now"><small>Rp</small>14.500</span>
+                            <span class="price-old">Rp16.000</span>
+                        </div>
+                        <button class="btn-add-item" title="Tambah ke Keranjang">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="outlet" class="explore-section">
         <h2>Pilih Cabang<span>Terdekatmu</span></h2>
-        
+
         <div class="nft-grid">
             <div class="nft-item">
                 <div class="owner-info">
@@ -288,21 +374,21 @@
         const cards = Array.from(document.querySelectorAll('.nft-card'));
         const menuToggle = document.getElementById('menuToggle');
         const mainNav = document.getElementById('mainNav');
-        
+
         let activeIndex = Math.floor(cards.length / 2);
 
         function updateLayout() {
             const isMobile = window.innerWidth <= 768;
-            const horizontalGap = isMobile ? 85 : 110; 
-            const radiusY = isMobile ? 25 : 40;  
-            const rotationAngle = isMobile ? 12 : 15; 
+            const horizontalGap = isMobile ? 85 : 110;
+            const radiusY = isMobile ? 25 : 40;
+            const rotationAngle = isMobile ? 12 : 15;
 
             cards.forEach((card, i) => {
                 const diff = i - activeIndex;
                 const absDiff = Math.abs(diff);
-                
+
                 card.classList.remove('active');
-                
+
                 if (diff === 0) {
                     card.classList.add('active');
                     card.style.left = '50%';
@@ -311,9 +397,9 @@
                     card.style.zIndex = '500';
                     card.style.opacity = '1';
                 } else {
-                    const x = 50 + (diff * (horizontalGap / 10)); 
-                    const yOffset = absDiff * absDiff * (radiusY / 10); 
-                    
+                    const x = 50 + (diff * (horizontalGap / 10));
+                    const yOffset = absDiff * absDiff * (radiusY / 10);
+
                     const scale = 1 - (absDiff * 0.1);
                     const rotate = diff * rotationAngle;
                     const opacity = 1 - (absDiff * 0.2);
@@ -349,7 +435,7 @@
 
         menuToggle.addEventListener('click', () => {
             mainNav.classList.toggle('active');
-            
+
             // Opsional: Animasi tombol jadi silang (X)
             menuToggle.classList.toggle('is-active');
         });
@@ -365,7 +451,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const params = new URLSearchParams(window.location.search);
-            
+
             if (params.get('verified') === '1') {
                 Swal.fire({
                     title: 'Verifikasi Berhasil!',
