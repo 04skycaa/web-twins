@@ -111,6 +111,48 @@ header {
     background: rgba(139, 92, 246, 0.1);
 }
 
+.user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.1); /* Background tipis agar terlihat modern */
+    padding: 5px 15px 5px 5px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.user-profile-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.user-initial {
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #0477bf, #012340); 
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-name {
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+[data-theme="light"] .user-name {
+    color: #333;
+}
+[data-theme="light"] .user-profile-link {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 .btn-fill {
     background: linear-gradient(45deg, #0ea5e9, #6366f1);
     border: none;
@@ -774,7 +816,7 @@ header {
         display: flex;
     }
 
-    .btn-fill {
+    .user-profile-link {
         display: none;
     }
 

@@ -34,7 +34,12 @@
 
             @if (Route::has('login'))
                 @auth
-                    <a href="{{ url('/dashboard') }}" class="btn-fill" style="text-decoration: none;">Dashboard</a>
+                    <a href="{{ url('/dashboard') }}" class="user-profile-link">
+                        <div class="user-initial">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        </div>
+                        <span class="user-name">{{ Auth::user()->name }}</span>
+                    </a>
                 @else
                     <a href="{{ route('login') }}" class="btn-outline" style="text-decoration: none;">Login</a>
                     
@@ -208,7 +213,6 @@
         </div>
     </section>
 
-    <!-- SECTION FEATURED PRODUCT (Air Humidifiers) -->
     <section id="keunggulan" class="product-features-section">
         <h2 class="heading">
             Air humidifiers create a<br>balanced indoor environment
@@ -248,7 +252,6 @@
                 </div>
             </div>
 
-            <!-- Sisi Kanan -->
             <div class="feature-list right-side">
                 <article class="feature-item">
                     <div class="feature-icon">

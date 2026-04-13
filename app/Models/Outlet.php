@@ -8,13 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Outlet extends Model
 {
     protected $table = 'outlet';
-    protected $primaryKey = 'idoutlet';
+    protected $primaryKey = 'id';
     const UPDATED_AT = null;
 
-    protected $fillable = ['kode_outlet', 'nama_outlet', 'alamat', 'telepon', 'is_active'];
+    protected $fillable = ['name', 'address', 'created_at'];
 
     public function users(): HasMany
     {
-        return $this->hasMany(User::class, 'outlet_id', 'idoutlet');
+        return $this->hasMany(User::class, 'outlet_id', 'id');
     }
 }

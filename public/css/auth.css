@@ -31,7 +31,6 @@ body {
     overflow: hidden;
 }
 
-/* Status Overlay Styles */
 .overlay-status {
     position: fixed;
     top: 0;
