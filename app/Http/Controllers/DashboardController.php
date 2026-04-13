@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Outlet;
-use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -13,11 +12,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
+        // Dummy data untuk transaksi
+        $dummyTransaksi = collect([
+            (object)['id' => 1, 'outlet_id' => 1, 'total_price' => 150000, 'status' => 'selesai'],
+            (object)['id' => 2, 'outlet_id' => 1, 'total_price' => 50000, 'status' => 'selesai'],
+        ]);
+
         if ($user->role === 'owner') {
             $data = [
                 'total_outlet' => Outlet::count(),
-                'total_transaksi' => Transaction::count(),
-                'transaksi_terbaru' => Transaction::with('outlet')->latest()->take(10)->get(),
+                'total_transaksi' => 50, // dummy
+                'transaksi_terbaru' => collect(), // dummy empty for now or use dummy array
                 'title' => 'Dashboard Owner (Semua Toko)'
             ];
         } 
@@ -29,9 +34,17 @@ class DashboardController extends Controller
 
             $data = [
                 'outlet' => Outlet::find($user->outlet_id),
-                'total_transaksi' => Transaction::where('outlet_id', $user->outlet_id)->count(),
-                'transaksi_terbaru' => Transaction::where('outlet_id', $user->outlet_id)->latest()->take(10)->get(),
-                'title' => 'Dashboard Outlet: ' . $user->outlet->name
+                'total_transaksi' => 25, // dummy
+                'transaksi_terbaru' => collect(), // dummy
+                'title' => 'Dashboard Outlet: ' . ($user->outlet ? $user->outlet->name : 'Unknown')
+            ];
+        } else {
+            // Default untuk selain owner & kepala toko
+            $data = [
+                'total_outlet' => 0,
+                'total_transaksi' => 0,
+                'transaksi_terbaru' => collect(),
+                'title' => 'Dashboard Kasir'
             ];
         }
 

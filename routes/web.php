@@ -20,9 +20,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/products', [ProductController::class, 'index'])
-    ->middleware(['auth', 'role:owner,kepala_toko']);
+Route::middleware(['auth', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 
+    // Opname Routes
+    Route::post('/products/opname', [ProductController::class, 'storeOpname'])->name('products.opname.store');
+    Route::put('/products/opname/{id}', [ProductController::class, 'updateOpname'])->name('products.opname.update');
+    Route::delete('/products/opname/{id}', [ProductController::class, 'destroyOpname'])->name('products.opname.destroy');
+
+    // Request Routes
+    Route::post('/products/request/{id}/approve', [ProductController::class, 'approveRequest'])->name('products.request.approve');
+    Route::post('/products/request/{id}/reject', [ProductController::class, 'rejectRequest'])->name('products.request.reject');
+});
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OutletController;
 

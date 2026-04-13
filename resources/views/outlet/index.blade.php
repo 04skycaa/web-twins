@@ -47,12 +47,12 @@
                 <tbody>
                     @forelse($outlets as $out)
                     <tr>
-                        <td class="text-bold">{{ $out->kode_outlet }}</td>
-                        <td class="text-bold text-success">{{ $out->nama_outlet }}</td>
-                        <td>{{ $out->alamat ?: '-' }}</td>
+                        <td class="text-bold">{{ $out['kode_outlet'] }}</td>
+                        <td class="text-bold text-success">{{ $out['nama_outlet'] }}</td>
+                        <td>{{ $out['alamat'] ?: '-' }}</td>
                         <td>
                             @php
-                                $count = \App\Models\User::where('outlet_id', $out->idoutlet)->count();
+                                $count = \App\Models\User::where('outlet_id', $out['idoutlet'])->count();
                             @endphp
                             <span class="badge" style="background: #e0f2fe; color: #0284c7;">{{ $count }} User</span>
                         </td>
@@ -61,7 +61,7 @@
                                 <button class="btn-icon" onclick="openEditModal({{ json_encode($out) }})">
                                     <iconify-icon icon="solar:pen-2-bold-duotone"></iconify-icon>
                                 </button>
-                                <button class="btn-icon text-danger" onclick="openDeleteModal({{ $out->idoutlet }})">
+                                <button class="btn-icon text-danger" onclick="openDeleteModal({{ $out['idoutlet'] }})">
                                     <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                 </button>
                             </div>

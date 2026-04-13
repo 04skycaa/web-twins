@@ -4,7 +4,7 @@
 <div class="transaksi-wrapper">
     @include('transaksi.partials.tabs')
 
-    <div class="content-card">
+    <div class="content-card mt-3">
         <div class="card-header">
             <h4>Riwayat Transaksi</h4>
             <div class="header-actions">
@@ -31,64 +31,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Dummy Data 1 -->
+                    @forelse($data as $trx)
                     <tr>
-                        <td class="text-bold">#TW-00123</td>
-                        <td>24 Okt 2023 14:30</td>
-                        <td>Budi (Admin)</td>
-                        <td>Umum / Non-Member</td>
-                        <td>3 pcs</td>
-                        <td class="text-bold">Rp 60.000</td>
-                        <td><span class="badge success">Selesai</span></td>
+                        <td class="text-bold">{{ $trx['id'] }}</td>
+                        <td>{{ $trx['tanggal'] }}</td>
+                        <td>{{ $trx['kasir'] }}</td>
+                        <td>{{ $trx['pelanggan'] }}</td>
+                        <td>{{ $trx['qty'] }} pcs</td>
+                        <td class="text-bold">{{ $trx['total'] }}</td>
+                        <td><span class="badge {{ strtolower($trx['status']) == 'selesai' ? 'success' : 'warning' }}">{{ $trx['status'] }}</span></td>
                         <td>
                             <button class="btn-icon">
                                 <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                             </button>
                         </td>
                     </tr>
-                    <!-- Dummy Data 2 -->
+                    @empty
                     <tr>
-                        <td class="text-bold">#TW-00124</td>
-                        <td>24 Okt 2023 15:10</td>
-                        <td>Siti (Kasir)</td>
-                        <td>Member (Andi)</td>
-                        <td>5 pcs</td>
-                        <td class="text-bold">Rp 120.000</td>
-                        <td><span class="badge success">Selesai</span></td>
-                        <td>
-                            <button class="btn-icon">
-                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                            </button>
-                        </td>
+                        <td colspan="8" class="text-center text-muted py-4">Belum ada riwayat transaksi.</td>
                     </tr>
-                    <!-- Dummy Data 3 -->
-                    <tr>
-                        <td class="text-bold">#TW-00125</td>
-                        <td>24 Okt 2023 16:05</td>
-                        <td>Budi (Admin)</td>
-                        <td>GrabFood</td>
-                        <td>2 pcs</td>
-                        <td class="text-bold">Rp 45.000</td>
-                        <td><span class="badge warning">Proses</span></td>
-                        <td>
-                            <button class="btn-icon">
-                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                            </button>
-                        </td>
-                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
         
         <div class="pagination-wrapper">
-            <!-- Dummy Pagination -->
-            <span class="text-muted">Menampilkan 1-3 dari 50 transaksi</span>
+            <span class="text-muted">Menampilkan {{ count($data) }} dari {{ count($data) }} transaksi</span>
             <div class="pagination-buttons">
                 <button disabled>&laquo; Prev</button>
                 <button class="active">1</button>
-                <button>2</button>
-                <button>3</button>
-                <button>Next &raquo;</button>
+                <button disabled>Next &raquo;</button>
             </div>
         </div>
     </div>
@@ -100,6 +72,8 @@
         display: flex;
         flex-direction: column;
     }
+
+    .mt-3 { margin-top: 1rem; }
 
     .content-card {
         background: #fff;
@@ -179,6 +153,8 @@
     }
 
     .text-bold { font-weight: 600; }
+    .text-center { text-align: center; }
+    .py-4 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 
     .badge {
         padding: 4px 10px;

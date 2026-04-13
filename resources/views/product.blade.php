@@ -34,23 +34,38 @@
 
     .tab-nav {
         display: flex;
-        gap: 0.5rem;
-        border-bottom: 2px solid var(--border-color);
-        margin-bottom: 1.5rem;
+        gap: 10px;
+        background: #fff;
+        padding: 10px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        margin-bottom: 25px;
+        overflow-x: auto;
     }
     .tab-btn {
-        padding: 0.75rem 1.5rem;
-        cursor: pointer;
-        font-weight: 600;
-        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #64748b;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s ease;
         border: none;
         background: none;
-        border-bottom: 3px solid transparent;
-        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .tab-btn:hover {
+        background: #f8fafc;
+        color: #334155;
     }
     .tab-btn.active {
-        color: var(--primary);
-        border-bottom-color: var(--primary);
+        background: #e0f2fe;
+        color: #0ea5e9;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(14, 165, 233, 0.1);
     }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
@@ -88,24 +103,48 @@
     }
     .search-icon { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
 
-    .card-table {
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: 0.75rem;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    .content-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
-    .data-table { width: 100%; border-collapse: collapse; }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .card-header h4 { margin: 0; font-size: 16px; color: #1e293b; }
+    .header-actions { display: flex; gap: 10px; }
+    .btn-primary-small {
+        display: flex; align-items: center; gap: 6px; 
+        background: #0ea5e9; color: white; padding: 8px 16px;
+        border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 600;
+    }
+    .btn-primary-small:hover { opacity: 0.9; }
+    .table-responsive { overflow-x: auto; }
+
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     .data-table th {
-        background: var(--bg-light);
-        color: var(--secondary);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        padding: 1rem 1.5rem;
         text-align: left;
-        border-bottom: 1px solid var(--border-color);
+        padding: 12px 15px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
+        border-bottom: 1px solid #e2e8f0;
     }
-    .data-table td { padding: 1rem 1.5rem; font-size: 0.875rem; border-bottom: 1px solid #f3f4f6; }
+    .data-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
+    
+    .action-buttons-table { display: flex; gap: 8px; }
+    .btn-icon-table { 
+        background: #f1f5f9; width: 32px; height: 32px; color: #64748b; 
+        display: inline-flex; align-items: center; justify-content: center; 
+        border-radius: 6px; border: none; cursor: pointer; transition: 0.2s;
+    }
+    .btn-icon-table:hover { background: #e0f2fe; color: #0ea5e9; }
+    .btn-icon-table.text-danger:hover { background: #fee2e2; color: #ef4444; }
 
     .modal {
         display: none;
@@ -146,25 +185,44 @@
 </style>
 
 <div class="app-container">
-    <div class="page-header">
-        <div class="page-title">
-            <h2 id="current-title">Inventaris Produk</h2>
+    @if(session('success'))
+        <div id="successAlert" style="background: #dcfce7; color: #166534; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid #bbf7d0; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.5s;">
+            <div>
+                <iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right: 5px; vertical-align: -3px; font-size: 1.1rem;"></iconify-icon>
+                {{ session('success') }}
+            </div>
+            <button onclick="closeAlert()" style="background:none; border:none; cursor:pointer; color: #166534; font-size: 1.25rem;">&times;</button>
         </div>
-        <div style="display: flex; gap: 0.5rem;">
-            <button onclick="exportToExcel()" class="btn-custom btn-success">
-                <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> Export Excel
-            </button>
-            <button onclick="openModal('addModal')" class="btn-custom btn-primary">
-                Tambah Data
-            </button>
-        </div>
-    </div>
+        <script>
+            setTimeout(() => {
+                let alert = document.getElementById('successAlert');
+                if(alert) {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.style.display = 'none', 500);
+                }
+            }, 4000);
+            function closeAlert() {
+                let alert = document.getElementById('successAlert');
+                if(alert) alert.style.display = 'none';
+            }
+        </script>
+    @endif
+
 
     <div class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('products', 'Inventaris Produk')">Produk</button>
-    <button class="tab-btn" onclick="switchTab('opname', 'Produk Opname')">Produk Opname</button>
-    <button class="tab-btn" onclick="switchTab('request', 'Request Produk')">Request Produk</button>
-</div>
+        <button class="tab-btn active" onclick="switchTab(this, 'products')">
+            <iconify-icon icon="solar:box-minimalistic-bold-duotone" style="font-size: 20px;"></iconify-icon>
+            Produk
+        </button>
+        <button class="tab-btn" onclick="switchTab(this, 'opname')">
+            <iconify-icon icon="solar:clipboard-list-bold-duotone" style="font-size: 20px;"></iconify-icon>
+            Produk Opname
+        </button>
+        <button class="tab-btn" onclick="switchTab(this, 'request')">
+            <iconify-icon icon="solar:document-add-bold-duotone" style="font-size: 20px;"></iconify-icon>
+            Request Produk
+        </button>
+    </div>
 
 <div class="search-container">
     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
@@ -173,8 +231,20 @@
 
 <!-- tabel produk -->
 <div id="tab-products" class="tab-content active">
-    <div class="card-table">
-        <table class="data-table" id="productTable">
+    <div class="content-card">
+        <div class="card-header">
+            <h4>Inventaris Produk</h4>
+            <div class="header-actions">
+                <button class="btn-primary-small" onclick="exportToExcel()">
+                    <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon> Export Excel
+                </button>
+                <button class="btn-primary-small" onclick="openModal('addModal')">
+                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Produk
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="productTable">
             <thead>
                 <tr>
                     <th>Produk</th>
@@ -188,36 +258,34 @@
                 @foreach($products as $product)
                 <tr>
                     <td>
-                        <div class="search-field" style="font-weight: 700;">{{ $product->nama_produk }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted)">{{ $product->sku }}</div>
+                        <div class="search-field" style="font-weight: 700;">{{ $product['nama_produk'] }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted)">{{ $product['sku'] }}</div>
                     </td>
-                    <td>{{ $product->kategori }}</td>
+                    <td>{{ $product['kategori'] }}</td>
                     <td>
                         @php
-                            $isLowStock = $product->stok <= $product->minimal_stok;
+                            $isLowStock = $product['stok'] <= $product['minimal_stok'];
                             $stockColor = $isLowStock ? 'var(--danger)' : 'inherit';
                         @endphp
                         <strong style="color: var(--dynamic-color); --dynamic-color: {{ $stockColor }}">
-                            {{ $product->stok }} {{ $product->satuan }}
+                            {{ $product['stok'] }} {{ $product['satuan'] }}
                         </strong>
                     </td>
-                    <td>{{ $product->lokasi_rak ?? '-' }}</td>
+                    <td>{{ $product['lokasi_rak'] ?? '-' }}</td>
                     <td>
-                        <div style="display: flex; gap: 0.4rem;">
-                            <button class="btn-custom btn-outline" 
+                        <div class="action-buttons-table">
+                            <button class="btn-icon-table" 
                                     data-product="{{ json_encode($product) }}"
                                     onclick="handleView(this)">
                                 <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                             </button>
-                            <button class="btn-custom btn-outline" 
-                                    style="color:var(--primary)" 
+                            <button class="btn-icon-table text-primary" style="color: #0ea5e9;"
                                     data-product="{{ json_encode($product) }}"
                                     onclick="handleEdit(this)">
                                 <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
                             </button>
-                            <button class="btn-custom btn-outline" 
-                                    style="color:var(--danger)" 
-                                    onclick="confirmDelete('{{ $product->id }}', '{{ addslashes($product->nama_produk) }}')">
+                            <button class="btn-icon-table text-danger" style="color: #ef4444;"
+                                    onclick="confirmDelete('{{ $product['id'] }}', '{{ addslashes($product['nama_produk']) }}')">
                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                             </button>
                         </div>
@@ -227,77 +295,127 @@
             </tbody>
         </table>
     </div>
+    </div>
 </div>
 
 <!-- tabel produk opname-->
 <div id="tab-opname" class="tab-content">
-    <div class="card-table">
-        <table class="data-table" id="opnameTable">
-            <thead>
-                <tr>
-                    <th>Tanggal</th>
-                    <th>Petugas</th>
-                    <th>Sistem</th>
-                    <th>Fisik</th>
-                    <th>Selisih</th>
-                    <th>Keterangan</th>
+    <div class="content-card">
+        <div class="card-header">
+            <h4>Riwayat Produk Opname</h4>
+            <div class="header-actions">
+                <button class="btn-primary-small" onclick="openModal('addModalOpname')">
+                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Opname
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="opnameTable">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Petugas</th>
+                        <th>Sistem</th>
+                        <th>Fisik</th>
+                        <th>Selisih</th>
+                        <th>Keterangan</th>
+                        <th>Aksi</th>
                 </tr>
             </thead>
             <tbody class="table-body">
                 @foreach($opnames as $opname)
                 <tr>
-                    <td>{{ $opname->tanggal_cek }}</td>
-                    <td class="search-field">{{ $opname->petugas }}</td>
-                    <td>{{ $opname->stok_sistem }}</td>
-                    <td>{{ $opname->stok_fisik }}</td>
+                    <td>{{ $opname['tanggal_cek'] }}</td>
+                    <td class="search-field">{{ $opname['petugas'] }}</td>
+                    <td>{{ $opname['stok_sistem'] }}</td>
+                    <td>{{ $opname['stok_fisik'] }}</td>
                     <td>
-                        @php $diffColor = $opname->selisih < 0 ? 'var(--danger)' : 'var(--success)'; @endphp
+                        @php $diffColor = $opname['selisih'] < 0 ? 'var(--danger)' : 'var(--success)'; @endphp
                         <span style="font-weight:bold; color: var(--diff-color); --diff-color: {{ $diffColor }}">
-                            {{ $opname->selisih }}
+                            {{ $opname['selisih'] }}
                         </span>
                     </td>
-                    <td>{{ $opname->keterangan }}</td>
+                    <td>{{ $opname['keterangan'] }}</td>
+                    <td>
+                        <div class="action-buttons-table">
+                            <button class="btn-icon-table text-primary" style="color: #0ea5e9;"
+                                    onclick="openEditOpname({{ json_encode($opname) }})">
+                                <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                            </button>
+                            <button class="btn-icon-table text-danger" style="color: #ef4444;"
+                                    onclick="confirmDeleteOpname('{{ $opname['id'] }}')">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 
 <!-- tabel request produk -->
 <div id="tab-request" class="tab-content">
-    <div class="card-table">
-        <table class="data-table" id="requestTable">
-            <thead>
-                <tr>
-                    <th>Pemohon</th>
-                    <th>Jumlah</th>
-                    <th>Prioritas</th>
-                    <th>Status</th>
-                    <th>Alasan</th>
+    <div class="content-card">
+        <div class="card-header">
+            <h4>Request Produk dari Cabang</h4>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="requestTable">
+                <thead>
+                    <tr>
+                        <th>Pemohon</th>
+                        <th>Jumlah</th>
+                        <th>Prioritas</th>
+                        <th>Status</th>
+                        <th>Alasan</th>
+                        <th>Aksi</th>
                 </tr>
             </thead>
             <tbody class="table-body">
                 @foreach($requests as $req)
                 <tr>
-                    <td class="search-field"><strong>{{ $req->pemohon }}</strong></td>
-                    <td>{{ $req->jumlah_minta }}</td>
+                    <td class="search-field"><strong>{{ $req['pemohon'] }}</strong></td>
+                    <td>{{ $req['jumlah_minta'] }}</td>
                     <td>
                         @php
-                            $isHigh = $req->prioritas == 'Tinggi';
+                            $isHigh = $req['prioritas'] == 'Tinggi';
                             $prioBg = $isHigh ? '#fee2e2' : '#fef3c7';
                             $prioText = $isHigh ? '#991b1b' : '#92400e';
                         @endphp
                         <span class="status-badge" style="--bg-color: {{ $prioBg }}; --text-color: {{ $prioText }}">
-                            {{ $req->prioritas }}
+                            {{ $req['prioritas'] }}
                         </span>
                     </td>
-                    <td><strong>{{ $req->status }}</strong></td>
-                    <td>{{ $req->alasan_permintaan }}</td>
+                    <td><strong>{{ $req['status'] }}</strong></td>
+                    <td>{{ $req['alasan_permintaan'] }}</td>
+                    <td>
+                        @if ($req['status'] == 'Pending')
+                        <div class="action-buttons-table">
+                            <form action="/products/request/{{ $req['id'] }}/approve" method="POST" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="btn-icon-table text-success" title="Setujui" style="color: #166534; background: #dcfce7;">
+                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                                </button>
+                            </form>
+                            <form action="/products/request/{{ $req['id'] }}/reject" method="POST" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="btn-icon-table text-danger" title="Tolak" style="color: #991b1b; background: #fee2e2;">
+                                    <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+                                </button>
+                            </form>
+                        </div>
+                        @else
+                            <span style="color:#64748b; font-size:12px;">{{ $req['status'] == 'Disetujui' ? 'Berhasil' : 'Ditolak' }}</span>
+                        @endif
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 
@@ -346,6 +464,20 @@
                     <input type="number" name="harga_jual" class="form-input">
                 </div>
             </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Stok Awal</label>
+                    <input type="number" name="stok" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Satuan</label>
+                    <input type="text" name="satuan" class="form-input" placeholder="Pcs/Kg">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lokasi Rak</label>
+                    <input type="text" name="lokasi_rak" class="form-input" placeholder="A1/B2">
+                </div>
+            </div>
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <button type="button" onclick="closeModal('addModal')" class="btn-custom btn-outline" style="flex:1; justify-content:center">Batal</button>
                 <button type="submit" class="btn-custom btn-primary" style="flex:1; justify-content:center">Simpan Produk</button>
@@ -368,9 +500,39 @@
                 <label class="form-label">Nama Produk</label>
                 <input type="text" name="nama_produk" id="edit_nama" class="form-input" required>
             </div>
-            <div class="form-group">
-                <label class="form-label">Stok</label>
-                <input type="number" name="stok" id="edit_stok" class="form-input" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">SKU</label>
+                    <input type="text" name="sku" id="edit_sku" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Kategori</label>
+                    <input type="text" name="kategori" id="edit_kategori" class="form-input">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Harga Beli</label>
+                    <input type="number" name="harga_beli" id="edit_hargabeli" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Harga Jual</label>
+                    <input type="number" name="harga_jual" id="edit_hargajual" class="form-input">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Stok</label>
+                    <input type="number" name="stok" id="edit_stok" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Satuan</label>
+                    <input type="text" name="satuan" id="edit_satuan" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lokasi Rak</label>
+                    <input type="text" name="lokasi_rak" id="edit_lokasi" class="form-input">
+                </div>
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button type="button" onclick="closeModal('editModal')" class="btn-custom btn-outline" style="flex:1; justify-content:center">Batal</button>
@@ -399,6 +561,90 @@
     </div>
 </div>
 
+<!-- Modal Tambah Opname -->
+<div id="addModalOpname" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3>Tambah Opname Baru</h3>
+            <button onclick="closeModal('addModalOpname')" style="border:none; background:none; cursor:pointer; font-size:1.5rem">&times;</button>
+        </div>
+        <form action="/products/opname" method="POST">
+            @csrf
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Stok Sistem</label>
+                    <input type="number" name="stok_sistem" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stok Fisik</label>
+                    <input type="number" name="stok_fisik" class="form-input" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Keterangan</label>
+                <input type="text" name="keterangan" class="form-input" placeholder="Opsional">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="button" onclick="closeModal('addModalOpname')" class="btn-custom btn-outline" style="flex:1; justify-content:center">Batal</button>
+                <button type="submit" class="btn-custom btn-primary" style="flex:1; justify-content:center">Simpan Opname</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Opname -->
+<div id="editModalOpname" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3>Edit Opname</h3>
+            <button onclick="closeModal('editModalOpname')" style="border:none; background:none; cursor:pointer; font-size:1.5rem">&times;</button>
+        </div>
+        <form id="editOpnameForm" method="POST">
+            @csrf
+            @method('PUT')
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Stok Sistem</label>
+                    <input type="number" name="stok_sistem" id="edit_opname_sistem" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stok Fisik</label>
+                    <input type="number" name="stok_fisik" id="edit_opname_fisik" class="form-input" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Keterangan</label>
+                <input type="text" name="keterangan" id="edit_opname_keterangan" class="form-input">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="button" onclick="closeModal('editModalOpname')" class="btn-custom btn-outline" style="flex:1; justify-content:center">Batal</button>
+                <button type="submit" class="btn-custom btn-primary" style="flex:1; justify-content:center">Update Data</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Opname -->
+<div id="deleteModalOpname" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div style="color: var(--danger); font-size: 3rem; margin-bottom: 1rem;">
+            <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
+        </div>
+        <h3>Hapus Opname?</h3>
+        <p style="color: var(--text-muted); margin: 1rem 0; font-size: 0.875rem;">Data opname ini akan dihapus permanen.</p>
+        <form id="deleteOpnameForm" method="POST">
+            @csrf
+            @method('DELETE')
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+                <button type="button" onclick="closeModal('deleteModalOpname')" class="btn-custom btn-outline" style="flex:1; justify-content: center;">Batal</button>
+                <button type="submit" class="btn-custom btn-danger" style="flex:1; justify-content: center;">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
+
 <!-- script -->
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
@@ -414,11 +660,10 @@
         if(modal) modal.style.display = 'none'; 
     }
 
-    function switchTab(tabId, title) {
-        document.getElementById('current-title').innerText = title;
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        if (window.event && window.event.currentTarget) {
-            window.event.currentTarget.classList.add('active');
+    function switchTab(btn, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        if (btn) {
+            btn.classList.add('active');
         }
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         const targetTab = document.getElementById('tab-' + tabId);
@@ -463,7 +708,13 @@
 
     function openEdit(product) {
         document.getElementById('edit_nama').value = product.nama_produk;
+        document.getElementById('edit_sku').value = product.sku;
+        document.getElementById('edit_kategori').value = product.kategori;
         document.getElementById('edit_stok').value = product.stok;
+        document.getElementById('edit_satuan').value = product.satuan;
+        document.getElementById('edit_lokasi').value = product.lokasi_rak;
+        document.getElementById('edit_hargabeli').value = product.harga_beli;
+        document.getElementById('edit_hargajual').value = product.harga_jual;
         document.getElementById('editForm').action = `/products/${product.id}`;
         openModal('editModal');
     }
@@ -474,11 +725,24 @@
         openModal('deleteModal');
     }
 
+    function openEditOpname(op) {
+        document.getElementById('edit_opname_sistem').value = op.stok_sistem;
+        document.getElementById('edit_opname_fisik').value = op.stok_fisik;
+        document.getElementById('edit_opname_keterangan').value = op.keterangan;
+        document.getElementById('editOpnameForm').action = `/products/opname/${op.id}`;
+        openModal('editModalOpname');
+    }
+
+    function confirmDeleteOpname(id) {
+        document.getElementById('deleteOpnameForm').action = `/products/opname/${id}`;
+        openModal('deleteModalOpname');
+    }
+
     function exportToExcel() {
         const activeTab = document.querySelector('.tab-content.active');
         if(!activeTab) return;
         const table = activeTab.querySelector('table');
-        const title = document.getElementById('current-title').innerText;
+        const title = activeTab.querySelector('h4') ? activeTab.querySelector('h4').innerText : 'Data Export';
         if (typeof XLSX === 'undefined') return;
         const wb = XLSX.utils.table_to_book(table, {sheet: title});
         XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}.xlsx`);
