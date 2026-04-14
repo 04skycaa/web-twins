@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
 </head>
 <body>
 
@@ -21,8 +22,8 @@
 
         <nav class="main-nav" id="mainNav">
             <a href="#Beranda" class="nav-link">Beranda</a>
+            <a href="#promo-outlet" class="nav-link">Promo</a>
             <a href="#outlet" class="nav-link">Outlet</a>
-            <a href="#cabang" class="nav-link">Cabang</a>
             <a href="#keunggulan" class="nav-link">Keunggulan</a>
         </nav>
 
@@ -85,85 +86,122 @@
             <h2>PROMO <span>PRODUK</span></h2>
         </div>
 
-        <div class="promo-grid">
-            <div class="promo-card animate__animated animate__fadeInUp">
+        <div class="promo-slider-container" id="promoSlider">
+            <div class="promo-card" data-index="0">
                 <div class="discount-label">15% OFF</div>
                 <div class="promo-img">
-                    <img src="{{ asset('images/butter.jpg') }}" alt="Mentega">
+                    <img src="{{ asset('images/blueband.jpg') }}" alt="Mentega">
                 </div>
                 <div class="promo-content">
                     <div class="outlet-info">
                         <p class="outlet-name">TWINS - Mastrip</p>
-                        <p class="outlet-address">Jl. Mastrip No. 12, Jember</p>
+                        <p class="outlet-address">Jl. Mastrip No. 12</p>
                     </div>
-
                     <span class="category-tag">Bahan Kue</span>
-                    <h4>Wijsman Butter 200g</h4>
-
+                    <h4>Blue Band</h4>
                     <div class="promo-footer">
                         <div class="price-box">
-                            <span class="price-now"><small>Rp</small>85.000</span>
-                            <span class="price-old">Rp100.000</span>
+                            <span class="price-now"><small>Rp</small>13.000</span>
                         </div>
-                        <button class="btn-add-item" title="Tambah ke Keranjang">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <button class="btn-add-item-user">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="promo-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+            <div class="promo-card" data-index="1">
                 <div class="discount-label">20% OFF</div>
                 <div class="promo-img">
-                    <img src="{{ asset('images/cokelat.jpg') }}" alt="Cokelat">
+                    <img src="{{ asset('images/fernipan.jpeg') }}" alt="Cokelat">
                 </div>
                 <div class="promo-content">
                     <div class="outlet-info">
                         <p class="outlet-name">TWINS - Situbondo</p>
-                        <p class="outlet-address">Jl. Basuki Rahmat No. 12</p>
+                        <p class="outlet-address">Jl. Basuki Rahmat</p>
                     </div>
-
                     <span class="category-tag">Bahan Kue</span>
-                    <h4>Colatta Dark Compound 1kg</h4>
-
+                    <h4>Fernipan</h4>
                     <div class="promo-footer">
                         <div class="price-box">
-                            <span class="price-now"><small>Rp</small>65.000</span>
-                            <span class="price-old">Rp81.000</span>
+                            <span class="price-now"><small>Rp</small>5.000</span>
                         </div>
-                        <button class="btn-add-item" title="Tambah ke Keranjang">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <button class="btn-add-item-user">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="promo-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+            <div class="promo-card" data-index="2">
                 <div class="discount-label">10% OFF</div>
                 <div class="promo-img">
-                    <img src="{{ asset('images/tepung.jpg') }}" alt="Tepung">
+                    <img src="{{ asset('images/terigu.jpg') }}" alt="Tepung">
                 </div>
                 <div class="promo-content">
                     <div class="outlet-info">
                         <p class="outlet-name">TWINS - Banyuwangi</p>
-                        <p class="outlet-address">Jl. Musi No. 12, Banyuwangi</p>
+                        <p class="outlet-address">Jl. Musi No. 12</p>
                     </div>
-
                     <span class="category-tag">Bahan Kue</span>
-                    <h4>Tepung Cakra Kembar 1kg</h4>
-
+                    <h4>Tepung Terigu Segi Tiga</h4>
                     <div class="promo-footer">
                         <div class="price-box">
                             <span class="price-now"><small>Rp</small>14.500</span>
-                            <span class="price-old">Rp16.000</span>
                         </div>
-                        <button class="btn-add-item" title="Tambah ke Keranjang">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <button class="btn-add-item-user">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="promo-card" data-index="4">
+                <div class="discount-label">20% OFF</div>
+                <div class="promo-img">
+                    <img src="{{ asset('images/filma.jpg') }}" alt="Cokelat">
+                </div>
+                <div class="promo-content">
+                    <div class="outlet-info">
+                        <p class="outlet-name">TWINS - Situbondo</p>
+                        <p class="outlet-address">Jl. Basuki Rahmat</p>
+                    </div>
+                    <span class="category-tag">Bahan Kue</span>
+                    <h4>Filma</h4>
+                    <div class="promo-footer">
+                        <div class="price-box">
+                            <span class="price-now"><small>Rp</small>5.000</span>
+                        </div>
+                        <button class="btn-add-item-user">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="promo-card" data-index="5">
+                <div class="discount-label">10% OFF</div>
+                <div class="promo-img">
+                    <img src="{{ asset('images/gulaku.jpg') }}" alt="Tepung">
+                </div>
+                <div class="promo-content">
+                    <div class="outlet-info">
+                        <p class="outlet-name">TWINS - Banyuwangi</p>
+                        <p class="outlet-address">Jl. Musi No. 12</p>
+                    </div>
+                    <span class="category-tag">Bahan Kue</span>
+                    <h4>Gulaku</h4>
+                    <div class="promo-footer">
+                        <div class="price-box">
+                            <span class="price-now"><small>Rp</small>14.500</span>
+                        </div>
+                        <button class="btn-add-item-user">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="promo-dots" id="promoDots"></div>
     </section>
 
     <section id="outlet" class="explore-section">
@@ -240,7 +278,7 @@
         </div>
     </section>
 
-    <section id="cabang" class="stories-section">
+    <!--<section id="cabang" class="stories-section">
         <div class="stories-header">
             <h2>Latest Stories</h2>
             <button class="btn-outline">Read more articles</button>
@@ -249,22 +287,17 @@
         <div class="stories-grid">
             <div class="main-story">
                 <div class="story-img">
-                    <img src="https://picsum.photos/seed/story1/800/450" alt="LA Guide">
+                    <img src="{{ asset('images/toko-luar.png') }}" alt="LA Guide">
                 </div>
-                <span class="category-tag">Food and Drink</span>
-                <h3>Los Angeles food & drink guide: 10 things to try in Los Angeles, California</h3>
-                <div class="story-meta">
-                    <span>Aug 14, 2024</span>
-                    <span>•</span>
-                    <span>5 min read</span>
-                </div>
-                <p>It seems that in California almost any problem can be solved with a combination of avocados, yoga, and dogs. After all, food health and mental wellness are top priorities...</p>
+                <span class="category-tag">Mulai Baking Tanpa Ribet</span>
+                <h3>Temukan Semua Bahan Kue Favoritmu di Twins</h3>
+                <p>Mau bikin kue tapi bahan ribet? Tenang, semua ada di Twins. Tinggal pilih, checkout, langsung baking!</p>
             </div>
 
             <div class="side-stories">
                 <div class="side-story">
                     <div class="side-img">
-                        <img src="https://picsum.photos/seed/story2/200/200" alt="London">
+                        <img src="{{ asset('images/toko1.jpg') }}" alt="London">
                     </div>
                     <div class="side-content">
                         <span class="category-tag">Shopping</span>
@@ -308,64 +341,74 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section>-->
 
     <section id="keunggulan" class="product-features-section">
         <h2 class="heading">
-            Air humidifiers create a<br>balanced indoor environment
+            Kenapa Belanja di Twins<br>Lebih Mudah & Menyenangkan?
         </h2>
 
         <div class="grid-container">
             <div class="feature-list left-side">
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3h18v18H3z"></path>
+                            <path d="M7 12h10"></path>
+                        </svg>
                     </div>
-                    <h3 class="feature-title">Control Panel</h3>
+                    <h3 class="feature-title">Produk Lengkap</h3>
                     <p class="feature-description">
-                        Tombol daya pada perangkat Anda berfungsi sebagai gerbang kenyamanan untuk mengaktifkan fungsi.
+                        Semua kebutuhan baking kamu tersedia di satu tempat, dari bahan dasar sampai dekorasi kue.
                     </p>
                 </article>
 
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v6a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3z"/><path d="M9 3v12"/><path d="M3 9h12"/><path d="M11.5 11.5 19 19"/><path d="M19 11.5 11.5 19"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20"></path>
+                            <path d="M5 12h14"></path>
+                        </svg>
                     </div>
-                    <h3 class="feature-title">Optional UV-C Light</h3>
+                    <h3 class="feature-title">Harga Terjangkau</h3>
                     <p class="feature-description">
-                        Desain kisi-kisi atau ventilasi untuk mencegah partikel besar atau benda asing masuk ke dalam sistem.
+                        Belanja bahan kue tanpa khawatir mahal, dengan harga bersahabat untuk semua kalangan.
                     </p>
                 </article>
             </div>
 
-            <!-- Bagian Gambar -->
             <div class="product-image-container">
                 <div class="product-placeholder">
                     <svg class="placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/>
                     </svg>
-                    <span class="placeholder-label">PRODUK UTAMA</span>
+                    <span class="placeholder-label">PRODUK UNGGULAN</span>
                 </div>
             </div>
 
             <div class="feature-list right-side">
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M20 12h.01"/><path d="M12 16h.01"/><path d="M16 16h.01"/><path d="M20 16h.01"/><path d="M12 20h.01"/><path d="M16 20h.01"/><path d="M20 20h.01"/><path d="M12 8h.01"/><path d="M16 8h.01"/><path d="M20 8h.01"/><path d="M12 4h.01"/><path d="M16 4h.01"/><path d="M20 4h.01"/><path d="M8 12H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"/><path d="M8 20H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h4"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
                     </div>
-                    <h3 class="feature-title">Air Output</h3>
+                    <h3 class="feature-title">Pengiriman Cepat</h3>
                     <p class="feature-description">
-                        Menawarkan pengaturan keluaran kabut yang dapat disesuaikan dengan tingkat kelembapan pilihan Anda.
+                        Pesanan kamu diproses dengan cepat agar bisa langsung dipakai untuk baking tanpa nunggu lama.
                     </p>
                 </article>
 
                 <article class="feature-item">
                     <div class="feature-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M9 2v20"/><path d="M15 2v20"/><path d="M5 12h14"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1l3 5h6l-4.5 4 2 6-6-3.5L6.5 16l2-6L4 6h6z"></path>
+                        </svg>
                     </div>
-                    <h3 class="feature-title">Filtration System</h3>
+                    <h3 class="feature-title">Kualitas Terjamin</h3>
                     <p class="feature-description">
-                        Karbon aktif secara efektif menghilangkan bau, bahan kimia, dan senyawa organik yang mudah menguap.
+                        Produk berkualitas tinggi yang aman dan terpercaya untuk hasil baking yang maksimal.
                     </p>
                 </article>
             </div>
@@ -373,7 +416,7 @@
     </section>
 
     <footer style="padding: 60px 8%; border-top: 1px solid var(--card-border); text-align: center; color: var(--sub-text); font-size: 14px;">
-        &copy; {{ date('Y') }} TWINS - Kelompok 4. All Rights Reserved.
+        &copy; {{ date('Y') }} TWINS - Kelompok 4.
     </footer>
 
     <nav class="mobile-nav">
@@ -382,14 +425,14 @@
             <span>Beranda</span>
         </div>
 
+        <div class="mob-nav-item" onclick="switchPage('promo-outlet')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
+            <span>Promo</span>
+        </div>
+
         <div class="mob-nav-item" onclick="scrollToCategory('outlet')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l18 0l-1 10l-16 0z"></path><path d="M3 11l18 0"></path><path d="M2 3l20 0l-1 6l-18 0z"></path></svg>
             <span>Outlet</span>
-        </div>
-
-        <div class="mob-nav-item" onclick="switchPage('cabang')">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            <span>Cabang</span>
         </div>
 
         <div class="mob-nav-item" onclick="switchPage('keunggulan')">
@@ -406,6 +449,54 @@
         const cards = Array.from(document.querySelectorAll('.nft-card'));
         const menuToggle = document.getElementById('menuToggle');
         const mainNav = document.getElementById('mainNav');
+        const promoCards = Array.from(document.querySelectorAll('#promoSlider .promo-card'));
+        const promoDotsContainer = document.getElementById('promoDots');
+        let currentPromoIndex = 1; 
+
+        promoCards.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if(i === currentPromoIndex) dot.classList.add('active');
+            dot.addEventListener('click', () => {
+                currentPromoIndex = i;
+                updatePromoSlider();
+            });
+            promoDotsContainer.appendChild(dot);
+        });
+
+        function updatePromoSlider() {
+            const total = promoCards.length;
+            
+            promoCards.forEach((card, i) => {
+                card.classList.remove('active', 'prev', 'next', 'prev2', 'next2');
+                
+                if (i === currentPromoIndex) {
+                    card.classList.add('active');
+                } else if (i === (currentPromoIndex - 1 + total) % total) {
+                    card.classList.add('prev');
+                } else if (i === (currentPromoIndex + 1) % total) {
+                    card.classList.add('next');
+                } else if (i === (currentPromoIndex - 2 + total) % total) {
+                    card.classList.add('prev2');
+                } else if (i === (currentPromoIndex + 2) % total) {
+                    card.classList.add('next2');
+                }
+            });
+
+            document.querySelectorAll('.dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentPromoIndex);
+            });
+        }
+
+        // Klik pada kartu untuk pindah
+        promoCards.forEach((card, i) => {
+            card.addEventListener('click', () => {
+                currentPromoIndex = i;
+                updatePromoSlider();
+            });
+        });
+
+        window.onload = updatePromoSlider;
 
         let activeIndex = Math.floor(cards.length / 2);
 

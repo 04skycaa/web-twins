@@ -60,8 +60,8 @@
         <main class="main-content" id="homePage">
             <div class="promo-banner">
                 <span style="color: var(--orange-brand); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Special Promo</span>
-                <h1>DELICIOUS BURGER</h1>
-                <p style="font-size: 1.1rem; opacity: 0.9;">Nikmati sensasi daging ganda terbaik di kota hari ini.</p>
+                <h1>TWINS - AHLINYA BAHAN KUE</h1>
+                <p style="font-size: 1.1rem; opacity: 0.9;">Belanja lebih mudah dari mana saja</p>
                 <button class="btn-fill" style="width: fit-content; margin-top: 20px; padding: 15px 30px;">Order Now</button>
             </div>
 
@@ -79,9 +79,9 @@
                 
                 <div class="filter-container" id="filterContainer">
                     <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">Semua</div>
-                    <div class="filter-chip" data-category="makanan" onclick="filterProducts('olahan', this)">Tepung & Olahan</div>
-                    <div class="filter-chip" data-category="minuman" onclick="filterProducts('pengembang', this)">Pengembang</div>
-                    <div class="filter-chip" data-category="snack" onclick="filterProducts('perasa', this)">Perasa & Pewarna</div>
+                    <div class="filter-chip" data-category="olahan" onclick="filterProducts('olahan', this)">Tepung & Olahan</div>
+                    <div class="filter-chip" data-category="pengembang" onclick="filterProducts('pengembang', this)">Pengembang</div>
+                    <div class="filter-chip" data-category="perasa" onclick="filterProducts('perasa', this)">Perasa & Pewarna</div>
                 </div>
 
                 <div class="food-grid" id="productGrid"></div>
@@ -116,13 +116,9 @@
                     <div id="cartItems"></div>
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                            <span style="color: var(--sub-text);">Service</span>
-                            <span>+$1.00</span>
-                        </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600;">Total</span>
-                            <span class="totalPriceDisplay" style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">$0.00</span>
+                            <span class="totalPriceDisplay" style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
                         </div>
                     </div>
                     <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
@@ -200,14 +196,18 @@
         const historyPage = document.getElementById('historyPage');
         const historyList = document.getElementById('historyList');
 
+        // Helper untuk format Rupiah
+        function formatRupiah(amount) {
+            return "Rp " + Math.floor(amount).toLocaleString('id-ID');
+        }
+
         const products = [
-            { id: 1, name: 'Cheese Burger', price: 5.59, category: 'makanan', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', rating: 4.0 },
-            { id: 2, name: 'Pepperoni Pizza', price: 7.10, category: 'makanan', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400', rating: 5.0 },
-            { id: 3, name: 'Healthy Salad', price: 4.20, category: 'makanan', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400', rating: 4.2 },
-            { id: 4, name: 'Fruity Smoothies', price: 3.50, category: 'minuman', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400', rating: 4.8 },
-            { id: 5, name: 'Iced Coffee', price: 2.99, category: 'minuman', img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400', rating: 4.5 },
-            { id: 6, name: 'French Fries', price: 2.50, category: 'snack', img: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400', rating: 4.3 },
-            { id: 7, name: 'Chicken Wings', price: 6.50, category: 'snack', img: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?w=400', rating: 4.7 }
+            { id: 1, name: 'Tepung Terigu Segi Tiga', price: 13000, category: 'olahan', img: "{{ asset('images/terigu.jpg') }}", rating: 4.8 },
+            { id: 2, name: 'Tepung Beras', price: 8000, category: 'olahan', img: "{{ asset('images/beras.webp') }}", rating: 4.5 },
+            { id: 3, name: 'Fernipan', price: 5000, category: 'pengembang', img: "{{ asset('images/fernipan.jpeg') }}", rating: 4.9 },
+            { id: 4, name: 'Baking Powder', price: 5300, category: 'pengembang', img: "{{ asset('images/backingpowder.jpg') }}", rating: 4.7 },
+            { id: 5, name: 'Pasta Vanilla 60ml', price: 6000, category: 'perasa', img: "{{ asset('images/vanila.webp') }}", rating: 4.6 },
+            { id: 6, name: 'Pewarna Makanan Merah', price: 5000, category: 'perasa', img: "{{ asset('images/merah.jpg') }}", rating: 4.4 }
         ];
 
         let cart = [];
@@ -225,7 +225,7 @@
             });
             
             if (filtered.length === 0) {
-                productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--sub-text);">Menu tidak ditemukan.</p>';
+                productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--sub-text);">Item tidak ditemukan.</p>';
                 return;
             }
 
@@ -237,7 +237,7 @@
                     <h4>${product.name}</h4>
                     <p style="color: var(--sub-text); font-size: 0.8rem; margin: 5px 0;">⭐ ${product.rating}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px;">
-                        <span style="font-weight: 800; color: var(--orange-brand);">$${product.price.toFixed(2)}</span>
+                        <span style="font-weight: 800; color: var(--orange-brand);">${formatRupiah(product.price)}</span>
                         <button class="add-btn" onclick="addToCart('${product.name}', ${product.price})">+</button>
                     </div>
                 `;
@@ -317,7 +317,7 @@
                 div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                        <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">🍴</div>
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">📦</div>
                         <div style="flex: 1;">
                             <h5 style="font-size: 0.85rem;">${item.name}</h5>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -328,16 +328,17 @@
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; text-align: right;">
-                        <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.85rem;">$${(item.price * item.qty).toFixed(2)}</span>
+                        <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.85rem;">${formatRupiah(item.price * item.qty)}</span>
                         <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
                     </div>
                 `;
                 cartItemsContainer.appendChild(div);
             });
 
-            let finalTotal = subtotal > 0 ? (subtotal + 1) * (1 - discountPercent) : 0;
+            // Biaya Service telah dihapus dari kalkulasi total
+            let finalTotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
-                el.innerText = `$${finalTotal.toFixed(2)}`;
+                el.innerText = formatRupiah(finalTotal);
             });
 
             if (isMobile) {
@@ -407,7 +408,6 @@
 
         function scrollToCategory() {
             switchPage('home');
-
             document.querySelectorAll('.nav-link, .mob-nav-item').forEach(l => l.classList.remove('active'));
             document.getElementById('nav-cat').classList.add('active');
             const mobCat = document.getElementById('mob-cat');
@@ -428,7 +428,8 @@
         function checkout() {
             if (cart.length === 0) return;
             const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-            const total = (subtotal + 1) * (1 - discountPercent);
+            // Biaya Service dihapus dari total akhir checkout
+            const total = subtotal * (1 - discountPercent);
             historyData.unshift({
                 id: Date.now(),
                 date: new Date().toLocaleString('id-ID'),
@@ -454,7 +455,7 @@
                         <p style="font-size: 0.85rem; margin-top: 8px;">${trx.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</p>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">$${trx.total.toFixed(2)}</span>
+                        <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>
                         <p style="color: #10b981; font-size: 0.7rem; font-weight: bold; margin-top: 5px;">BERHASIL</p>
                     </div>
                 </div>
