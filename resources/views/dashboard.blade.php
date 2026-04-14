@@ -52,14 +52,14 @@
             <tbody>
                 <tr>
                     <td>#TWN-001</td>
-                    <td>Budi Santoso</td>
+                    <td>Kiyomi Agatca</td>
                     <td>Kopi Susu Gula Aren</td>
                     <td><span class="badge success">Selesai</span></td>
                     <td>Rp 25.000</td>
                 </tr>
                 <tr>
                     <td>#TWN-002</td>
-                    <td>Siti Aminah</td>
+                    <td>Fara Yuanita Agustin</td>
                     <td>Croissant Almond</td>
                     <td><span class="badge warning">Proses</span></td>
                     <td>Rp 45.000</td>
