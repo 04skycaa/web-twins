@@ -11,7 +11,6 @@
     --glow: 0 0 30px rgba(14, 165, 233, 0.2);
     --card-border: rgba(255, 255, 255, 0.1);
     --orange-brand: #0ea5e9;
-    /* Mengikuti --accent-purple dari CSS Anda */
     --main-text: var(--text-color);
 }
 
@@ -232,7 +231,7 @@ header {
     text-decoration: none;
     font-size: 16px;
     font-weight: 500;
-    color: #333;
+    color: var(--text-color);
 
     transition: color 0.3s ease;
 }
@@ -675,7 +674,6 @@ header {
     color: var(--accent-purple);
 }
 
-/* --- EXPLORE NFTS SECTION --- */
 .explore-section {
     padding: 80px 8%;
     max-width: 1400px;
@@ -895,6 +893,191 @@ header {
     }
 }
 
+#promo-outlet {
+    overflow: hidden;
+    padding-bottom: 20px;
+}
+
+.promo-slider-container {
+    position: relative;
+    width: 100%;
+    height: 370px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+    margin-top: 5px;
+    cursor: grab;
+}
+
+.promo-slider-container:active {
+    cursor: grabbing;
+}
+
+.promo-card {
+    position: absolute;
+    width: 185px;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    user-select: none;
+    cursor: pointer;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    transform: translate3d(0, 0, -200px) scale(0.7);
+    /* Default posisi jauh */
+}
+
+body:not([data-theme='light']) .promo-card {
+    background: #1e1e2d;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.promo-card.active {
+    opacity: 1;
+    z-index: 10;
+    transform: translate3d(0, 0, 100px) scale(1.05);
+    pointer-events: auto;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.promo-card.prev,
+.promo-card.next {
+    opacity: 0.6;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.promo-card.prev {
+    transform: translate3d(-105%, 0, -50px) scale(0.85);
+}
+
+.promo-card.next {
+    transform: translate3d(105%, 0, -50px) scale(0.85);
+}
+
+.promo-card.prev2,
+.promo-card.next2 {
+    opacity: 0.3;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.promo-card.prev2 {
+    transform: translate3d(-190%, 0, -150px) scale(0.7);
+}
+
+.promo-card.next2 {
+    transform: translate3d(190%, 0, -150px) scale(0.7);
+}
+
+.promo-img-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    background: #f9f9f9;
+    overflow: hidden;
+}
+
+.promo-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 0.3s;
+}
+
+.discount-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    background: #ff4757;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.promo-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.outlet-info p {
+    margin: 0;
+    font-size: 8px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.category-tag {
+    font-size: 7.5px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.outlet-name {
+    font-weight: bold;
+    color: #0477bf !important;
+}
+
+.promo-content h4 {
+    font-size: 0.78rem;
+    margin: 0 0 2px 0;
+    line-height: 1.1;
+    color: #333;
+    font-weight: 700;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+body:not([data-theme='light']) .promo-content h4 {
+    color: #eee;
+}
+
+.promo-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.03);
+    padding-top: 6px;
+    margin-top: 2px;
+}
+
+.price-now {
+    font-size: 0.95rem !important;
+    font-weight: 800;
+    color: #2ed573;
+}
+
+.btn-add-item {
+    background: #0477bf;
+    color: white;
+    border: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
 .promo-header {
     width: 100%;
     text-align: center;
@@ -905,32 +1088,30 @@ header {
     justify-content: center;
 }
 
-.promo-section {
-    padding: 80px 8% 40px;
-    max-width: 1400px;
-    margin: 0 auto;
+.promo-header h2 {
+    font-size: 1.1rem;
+    margin: 0;
 }
 
-.promo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 30px;
+.promo-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 5px;
 }
 
-.promo-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 28px;
-    padding: 18px;
-    position: relative;
-    backdrop-filter: blur(10px);
-    transition: all 0.4s ease;
+.dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    transition: 0.3s;
 }
 
-.promo-card:hover {
-    transform: translateY(-8px);
-    border-color: var(--accent-purple);
-    box-shadow: var(--glow);
+.dot.active {
+    width: 10px;
+    border-radius: 2px;
+    background: #0477bf;
 }
 
 .outlet-info {
@@ -1046,7 +1227,7 @@ header {
 /*untuk user*/
 
 .promo-banner {
-    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80');
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../images/toko-bahan.jpg');
     background-size: cover;
     background-position: center;
     height: 280px;
@@ -1063,6 +1244,11 @@ header {
     font-size: 3rem;
     margin: 10px 0;
     letter-spacing: -1px;
+    color: #ffffff;
+}
+
+.promo-banner p {
+    color: #ffffff;
 }
 
 .search-filter-section {
@@ -1324,7 +1510,6 @@ header {
     align-items: center;
 }
 
-/* ----- STYLES BARU UNTUK MOBILE KERANJANG ----- */
 .mobile-cart-fab {
     position: fixed;
     bottom: 90px;
