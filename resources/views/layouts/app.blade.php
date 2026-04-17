@@ -19,37 +19,47 @@
         </div>
 
         <nav class="menu-nav">
-            <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:widget-4-bold-duotone"></iconify-icon>
-                <span>Dashboard</span>
-            </a>
+            @if(Auth::user()->operator->hasFeature('dashboard'))
+                <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:widget-4-bold-duotone"></iconify-icon>
+                    <span>Dashboard</span>
+                </a>
+            @endif
 
-            <a href="{{ url('/products') }}" class="menu-item {{ request()->is('products*') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
-                <span>Manajemen Produk</span>
-            </a>
+            @if(Auth::user()->operator->hasFeature('produk'))
+                <a href="{{ url('/products') }}" class="menu-item {{ request()->is('products*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
+                    <span>Manajemen Produk</span>
+                </a>
+            @endif
 
-            <a href="{{ url('/transaksi') }}" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
-                <span>Transaksi & Diskon</span>
-            </a>
+            @if(Auth::user()->operator->hasFeature('transaksi'))
+                <a href="{{ url('/transaksi') }}" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
+                    <span>Transaksi & Diskon</span>
+                </a>
+            @endif
 
-            <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
-                <span>Keuangan</span>
-            </a>
+            @if(Auth::user()->operator->hasFeature('keuangan'))
+                <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
+                    <span>Keuangan</span>
+                </a>
+            @endif
 
-            <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
-                <div class="curve-helper"></div>
-                <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
-                <span>Manajemen User</span>
-            </a>
+            @if(Auth::user()->operator->hasFeature('users'))
+                <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+                    <span>Manajemen User</span>
+                </a>
+            @endif
 
-            @if(Auth::user()->role == 'owner')
+            @if(Auth::user()->operator->hasFeature('outlet'))
                 <a href="{{ url('/outlet') }}" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
@@ -57,6 +67,7 @@
                 </a>
             @endif
         </nav>
+
     </aside>
 
     <div class="page-container">
@@ -68,9 +79,6 @@
                 @elseif(request()->is('products*'))
                     <i id="topbar-icon" data-lucide="package"></i>
                     <h2 id="topbar-title">Manajemen Produk</h2>
-                @elseif(request()->is('promo*'))
-                    <i id="topbar-icon" data-lucide="ticket-percent"></i>
-                    <h2 id="topbar-title">Promo & Marketing</h2>
                 @elseif(request()->is('transaksi*'))
                     <i id="topbar-icon" data-lucide="receipt"></i>
                     <h2 id="topbar-title">Manajemen Transaksi & Diskon</h2>
@@ -80,9 +88,12 @@
                 @elseif(request()->is('outlet*'))
                     <i id="topbar-icon" data-lucide="store"></i>
                     <h2 id="topbar-title">Operasional & Outlet</h2>
+                @elseif(request()->is('users*'))
+                    <i id="topbar-icon" data-lucide="users"></i>
+                    <h2 id="topbar-title">Manajemen User</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
-                    <h2 id="topbar-title">Manajemen User</h2>
+                    <h2 id="topbar-title">Web Twins</h2>
                 @endif
             </div>
 
@@ -96,7 +107,7 @@
                 </div>
                 <div class="user-profile">
                     <iconify-icon icon="solar:user-circle-bold-duotone"></iconify-icon>
-                    <span>{{ Auth::user()->name ?? 'Guest' }}</span>
+                    <span>{{ Auth::user()->name }}</span>
                 </div>
 
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
@@ -110,6 +121,7 @@
                 </button>
             </div>
         </header>
+
 
         <main class="main-content">
             @yield('content')

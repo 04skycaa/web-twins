@@ -24,14 +24,18 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->name();
         return [
-            'name' => fake()->name(),
+            'uuid' => (string) Str::uuid(),
+            'username' => $name, // Mapping 'name' to 'username'
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'status_aktif' => true,
         ];
     }
+
 
     /**
      * Indicate that the model's email address should be unverified.

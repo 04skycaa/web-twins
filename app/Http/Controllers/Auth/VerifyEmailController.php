@@ -19,7 +19,10 @@ class VerifyEmailController extends Controller
         }
 
         if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+            $user = $request->user();
+            $user->status_aktif = true;
+            $user->save();
+            event(new Verified($user));
         }
 
         return redirect()->to('/?verified=1')

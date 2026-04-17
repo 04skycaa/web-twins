@@ -5,16 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 class Outlet extends Model
 {
-    protected $table = 'outlet';
-    protected $primaryKey = 'id';
-    const UPDATED_AT = null;
+    use HasUuids;
 
-    protected $fillable = ['name', 'address', 'created_at'];
+    protected $table = 'store';
+    protected $primaryKey = 'uuid';
+    protected $keyType = 'string';
+
+    protected $fillable = ['nama', 'alamat'];
 
     public function users(): HasMany
     {
-        return $this->hasMany(User::class, 'outlet_id', 'id');
+        return $this->hasMany(User::class, 'store_id', 'uuid');
     }
 }

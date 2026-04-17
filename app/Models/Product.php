@@ -3,14 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Product extends Model
 {
-    protected $table = 'products'; 
-    protected $primaryKey = 'id';
-    
+    use HasUuids;
+
+    protected $table = 'products';
+    protected $primaryKey = 'uuid';
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public $timestamps = false;
+
     protected $fillable = [
-        'nama_produk', 'sku', 'kategori', 'harga_beli', 
-        'harga_jual', 'stok', 'minimal_stok', 'lokasi_rak', 'satuan'
+        'uuid',
+        'barcode',
+        'nama_produk',
+        'kategori_id',
+        'harga_modal',
+        'harga_jual',
+        'image_url'
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'kategori_id', 'uuid');
+    }
+
+    public function stores()
+    {
+        return $this->hasMany(ProductStore::class, 'product_id', 'uuid');
+    }
 }

@@ -5,19 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class StockRequest extends Model
+class StockCard extends Model
 {
     use HasUuids;
 
-    protected $table = 'stock_requests';
+    protected $table = 'stock_card';
     protected $primaryKey = 'uuid';
     protected $keyType = 'string';
     public $incrementing = false;
-    public $timestamps = false;
+
+    // Table has created_at but no updated_at
+    const UPDATED_AT = null;
 
     protected $fillable = [
-        'uuid', 'product_id', 'jumlah_minta', 'prioritas', 
-        'status', 'pemohon', 'alasan_permintaan', 'store_id'
+        'uuid', 'product_id', 'jmlh', 'keterangan', 'store_id'
     ];
 
     public function product()

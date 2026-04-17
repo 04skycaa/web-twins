@@ -6,13 +6,13 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Outlet;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules;
 
 class UserController extends Controller
 {
     public function index()
     {
-        // Load users with their associated outlet
         $users = User::with('outlet')->latest()->get();
         $outlets = Outlet::all();
         
@@ -24,14 +24,16 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'no_hp' => ['required', 'string', 'max:15', 'unique:'.User::class],
             'password' => ['required', Rules\Password::defaults()],
-            'role' => ['required', 'in:owner,kepala_toko,kasir'],
-            'outlet_id' => ['nullable'],
+            'role' => ['required'],
+            'outlet_id' => ['nullable'], 
         ]);
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'no_hp' => $request->no_hp,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'outlet_id' => $request->outlet_id,
@@ -42,18 +44,21 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
+        // $id di sini adalah UUID karena primary key model adalah uuid
         $user = User::findOrFail($id);
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email,'.$user->id],
-            'role' => ['required', 'in:owner,kepala_toko,kasir'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$user->uuid.',uuid'],
+            'no_hp' => ['required', 'string', 'max:15', 'unique:users,no_hp,'.$user->uuid.',uuid'],
+            'role' => ['required'],
             'outlet_id' => ['nullable'],
         ]);
 
         $data = [
             'name' => $request->name,
             'email' => $request->email,
+            'no_hp' => $request->no_hp,
             'role' => $request->role,
             'outlet_id' => $request->outlet_id,
         ];
@@ -71,10 +76,11 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        if(auth()->id() == $user->id) {
+        if(Auth::user()->uuid == $user->uuid) {
             return redirect()->route('users.index')->with('error', 'Tidak dapat menghapus akun sendiri!');
         }
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus');
     }
+
 }
