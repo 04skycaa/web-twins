@@ -4,11 +4,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\DashboardController; // Tambahkan ini
 use App\Http\Controllers\TransaksiController;
+use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [LandingController::class, 'index'])->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
@@ -79,8 +78,6 @@ Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('keuangan.index');
 
-Route::get('/user-produk', function () {
-    return view('user');
-})->name('user.index');
+Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');
 
 require __DIR__ . '/auth.php';

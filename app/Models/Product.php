@@ -34,4 +34,9 @@ class Product extends Model
     {
         return $this->hasMany(ProductStore::class, 'product_id', 'uuid');
     }
+
+    public function promos()
+    {
+        return $this->belongsToMany(Promo::class, 'promo_products', 'product_id', 'promo_id');
+    }
 }

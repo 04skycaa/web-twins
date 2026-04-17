@@ -87,119 +87,38 @@
         </div>
 
         <div class="promo-slider-container" id="promoSlider">
-            <div class="promo-card" data-index="0">
-                <div class="discount-label">15% OFF</div>
+            @forelse($promoProducts as $index => $promo)
+            <div class="promo-card" data-index="{{ $index }}">
+                <div class="discount-label">
+                    @if($promo->tipe == 'persen')
+                        {{ $promo->nilai }}% OFF
+                    @else
+                        Potongan Rp{{ number_format($promo->nilai, 0, ',', '.') }}
+                    @endif
+                </div>
                 <div class="promo-img">
-                    <img src="{{ asset('images/blueband.jpg') }}" alt="Mentega">
+                    <img src="{{ $promo->image_url }}" alt="{{ $product->product_name }}">
                 </div>
                 <div class="promo-content">
                     <div class="outlet-info">
-                        <p class="outlet-name">TWINS - Mastrip</p>
-                        <p class="outlet-address">Jl. Mastrip No. 12</p>
+                        <p class="outlet-name">{{ $promo->nama_promo }}</p>
+                        <p class="outlet-address">{{ $promo->outlet_address }}</p>
                     </div>
-                    <span class="category-tag">Bahan Kue</span>
-                    <h4>Blue Band</h4>
+                    <span class="category-tag">{{ $promo->category }}</span>
+                    <h4>{{ $promo->product_name }}</h4>
                     <div class="promo-footer">
                         <div class="price-box">
-                            <span class="price-now"><small>Rp</small>13.000</span>
+                            <span class="price-now"><small>Rp</small>{{ number_format($promo->price, 0, ',', '.') }}</span>
                         </div>
-                        <button class="btn-add-item-user">
+                        <button class="btn-add-item">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
                 </div>
             </div>
-
-            <div class="promo-card" data-index="1">
-                <div class="discount-label">20% OFF</div>
-                <div class="promo-img">
-                    <img src="{{ asset('images/fernipan.jpeg') }}" alt="Cokelat">
-                </div>
-                <div class="promo-content">
-                    <div class="outlet-info">
-                        <p class="outlet-name">TWINS - Situbondo</p>
-                        <p class="outlet-address">Jl. Basuki Rahmat</p>
-                    </div>
-                    <span class="category-tag">Bahan Kue</span>
-                    <h4>Fernipan</h4>
-                    <div class="promo-footer">
-                        <div class="price-box">
-                            <span class="price-now"><small>Rp</small>5.000</span>
-                        </div>
-                        <button class="btn-add-item-user">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="promo-card" data-index="2">
-                <div class="discount-label">10% OFF</div>
-                <div class="promo-img">
-                    <img src="{{ asset('images/terigu.jpg') }}" alt="Tepung">
-                </div>
-                <div class="promo-content">
-                    <div class="outlet-info">
-                        <p class="outlet-name">TWINS - Banyuwangi</p>
-                        <p class="outlet-address">Jl. Musi No. 12</p>
-                    </div>
-                    <span class="category-tag">Bahan Kue</span>
-                    <h4>Tepung Terigu Segi Tiga</h4>
-                    <div class="promo-footer">
-                        <div class="price-box">
-                            <span class="price-now"><small>Rp</small>14.500</span>
-                        </div>
-                        <button class="btn-add-item-user">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="promo-card" data-index="4">
-                <div class="discount-label">20% OFF</div>
-                <div class="promo-img">
-                    <img src="{{ asset('images/filma.jpg') }}" alt="Cokelat">
-                </div>
-                <div class="promo-content">
-                    <div class="outlet-info">
-                        <p class="outlet-name">TWINS - Situbondo</p>
-                        <p class="outlet-address">Jl. Basuki Rahmat</p>
-                    </div>
-                    <span class="category-tag">Bahan Kue</span>
-                    <h4>Filma</h4>
-                    <div class="promo-footer">
-                        <div class="price-box">
-                            <span class="price-now"><small>Rp</small>5.000</span>
-                        </div>
-                        <button class="btn-add-item-user">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="promo-card" data-index="5">
-                <div class="discount-label">10% OFF</div>
-                <div class="promo-img">
-                    <img src="{{ asset('images/gulaku.jpg') }}" alt="Tepung">
-                </div>
-                <div class="promo-content">
-                    <div class="outlet-info">
-                        <p class="outlet-name">TWINS - Banyuwangi</p>
-                        <p class="outlet-address">Jl. Musi No. 12</p>
-                    </div>
-                    <span class="category-tag">Bahan Kue</span>
-                    <h4>Gulaku</h4>
-                    <div class="promo-footer">
-                        <div class="price-box">
-                            <span class="price-now"><small>Rp</small>14.500</span>
-                        </div>
-                        <button class="btn-add-item-user">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            @empty
+            <p style="text-align: center; width: 100%; color: var(--sub-text);">Belum ada promo aktif saat ini.</p>
+            @endforelse
         </div>
         <div class="promo-dots" id="promoDots"></div>
     </section>
@@ -208,73 +127,31 @@
         <h2>Pilih Cabang<span>Terdekatmu</span></h2>
 
         <div class="nft-grid">
-            <div class="nft-item">
+            @foreach($outlets as $index => $outlet)
+            <div class="nft-item {{ $index === 1 ? 'featured' : '' }}">
                 <div class="owner-info">
                     <div class="owner-details">
                         <p>Outlet TWINS</p>
-                        <p>Cabang Jember</p>
+                        <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Cabang {{ $outlet->nama }}</p>
                     </div>
                 </div>
                 <div class="nft-item-img">
-                    <img src="images/toko1.jpg">
+                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}">
                 </div>
-                <h4>Outlet Jember - Mastrip</h4>
+                <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $outlet->nama }}</h4>
                 <div class="bid-box">
-                    <div class="bid-info">
+                    <div class="bid-info" style="flex: 1; min-width: 0;">
                         <p>TWINS</p>
-                        <p>📍 Jl. Mastrip No. 12</p>
-                        <p>🕒 Buka: 08.00 - 21.00</p>
-                        <p>⭐ Rating: 4.8</p>
+                        <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 {{ $outlet->alamat }}</p>
+                        <p>🕒 {{ $outlet->jam_buka }}</p>
+                        <p>⭐ {{ number_format($outlet->rating, 1) }}</p>
                     </div>
-                    <a href="{{ route('user.index') }}" class="btn-action" style="text-decoration: none; text-align: center; display: block;">
-                        Pilih Outlet
+                    <a href="{{ route('user.index', $outlet->uuid) }}" class="btn-action" style="text-decoration: none; text-align: center;">
+                        Pilih
                     </a>
                 </div>
             </div>
-
-            <div class="nft-item featured">
-                <div class="owner-info">
-                    <div class="owner-details">
-                        <p>Outlet TWINS</p>
-                        <p>Cabang Situbondo</p>
-                    </div>
-                </div>
-                <div class="nft-item-img">
-                    <img src="images/toko2.jpg">
-                </div>
-                <h4>Outlet Situbondo - Basuki Rahmat</h4>
-                <div class="bid-box">
-                    <div class="bid-info">
-                        <p>TWINS</p>
-                        <p>📍 Jl. Basuki Rahmat No. 12</p>
-                        <p>🕒 Buka: 08.00 - 21.00</p>
-                        <p>⭐ Rating: 4.8</p>
-                    </div>
-                    <button class="btn-action">Pilih Outlet</button>
-                </div>
-            </div>
-
-            <div class="nft-item">
-                <div class="owner-info">
-                    <div class="owner-details">
-                        <p>Outlet TWINS</p>
-                        <p>Cabang Banyuwangi</p>
-                    </div>
-                </div>
-                <div class="nft-item-img">
-                    <img src="images/toko3.jpg">
-                </div>
-                <h4>Outlet Banyuwangi - Musi</h4>
-                <div class="bid-box">
-                    <div class="bid-info">
-                        <p>TWINS</p>
-                        <p>📍 Jl. Musi No. 12</p>
-                        <p>🕒 Buka: 08.00 - 21.00</p>
-                        <p>⭐ Rating: 4.8</p>
-                    </div>
-                    <button class="btn-action">Pilih Outlet</button>
-                </div>
-            </div>
+            @endforeach
         </div>
     </section>
 

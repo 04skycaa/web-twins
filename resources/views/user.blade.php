@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TWINS - Food Delivery Dashboard</title>
-    
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     
 </head>
@@ -72,11 +71,14 @@
 
     <div class="container" id="mainContainer">
         <main class="main-content" id="homePage">
-            <div class="promo-banner">
-                <span style="color: var(--orange-brand); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Special Promo</span>
-                <h1>TWINS - AHLINYA BAHAN KUE</h1>
-                <p style="font-size: 1.1rem; opacity: 0.9;">Belanja lebih mudah dari mana saja</p>
-                <button class="btn-fill" style="width: fit-content; margin-top: 20px; padding: 15px 30px;">Order Now</button>
+            <div class="promo-banner" style="min-height: 280px; height: auto; padding: 40px;">
+                <span class="badge" style="margin-bottom: 10px;">Outlet TWINS</span>
+                <h1 style="margin: 5px 0 15px 0;">{{ $outlet->nama }}</h1>
+                <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 20px;">📍 {{ $outlet->alamat }}</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">🕒 {{ $outlet->jam_buka }}</span>
+                    <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">⭐ {{ number_format($outlet->rating, 1) }}</span>
+                </div>
             </div>
 
             <section id="categorySection" class="search-filter-section">
@@ -93,9 +95,9 @@
                 
                 <div class="filter-container" id="filterContainer">
                     <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">Semua</div>
-                    <div class="filter-chip" data-category="olahan" onclick="filterProducts('olahan', this)">Tepung & Olahan</div>
-                    <div class="filter-chip" data-category="pengembang" onclick="filterProducts('pengembang', this)">Pengembang</div>
-                    <div class="filter-chip" data-category="perasa" onclick="filterProducts('perasa', this)">Perasa & Pewarna</div>
+                    @foreach($categories as $category)
+                    <div class="filter-chip" data-category="{{ $category['id'] }}" onclick="filterProducts('{{ $category['id'] }}', this)">{{ $category['name'] }}</div>
+                    @endforeach
                 </div>
 
                 <div class="food-grid" id="productGrid"></div>
@@ -215,14 +217,7 @@
             return "Rp " + Math.floor(amount).toLocaleString('id-ID');
         }
 
-        const products = [
-            { id: 1, name: 'Tepung Terigu Segi Tiga', price: 13000, category: 'olahan', img: "{{ asset('images/terigu.jpg') }}", rating: 4.8 },
-            { id: 2, name: 'Tepung Beras', price: 8000, category: 'olahan', img: "{{ asset('images/beras.webp') }}", rating: 4.5 },
-            { id: 3, name: 'Fernipan', price: 5000, category: 'pengembang', img: "{{ asset('images/fernipan.jpeg') }}", rating: 4.9 },
-            { id: 4, name: 'Baking Powder', price: 5300, category: 'pengembang', img: "{{ asset('images/backingpowder.jpg') }}", rating: 4.7 },
-            { id: 5, name: 'Pasta Vanilla 60ml', price: 6000, category: 'perasa', img: "{{ asset('images/vanila.webp') }}", rating: 4.6 },
-            { id: 6, name: 'Pewarna Makanan Merah', price: 5000, category: 'perasa', img: "{{ asset('images/merah.jpg') }}", rating: 4.4 }
-        ];
+        const products = @json($products);
 
         let cart = [];
         let historyData = [];
@@ -247,11 +242,13 @@
                 const card = document.createElement('div');
                 card.className = 'food-card';
                 card.innerHTML = `
-                    <img src="${product.img}" class="food-img">
-                    <h4>${product.name}</h4>
-                    <p style="color: var(--sub-text); font-size: 0.8rem; margin: 5px 0;">⭐ ${product.rating}</p>
+                    <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 10px; margin-bottom: 10px;">
+                        <img src="${product.img}" class="food-img" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <h4 style="font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${product.name}</h4>
+                    <p style="color: var(--sub-text); font-size: 0.75rem; margin: 5px 0;">⭐ ${product.rating}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px;">
-                        <span style="font-weight: 800; color: var(--orange-brand);">${formatRupiah(product.price)}</span>
+                        <span style="font-weight: 800; color: var(--orange-brand); font-size: 0.9rem;">${formatRupiah(product.price)}</span>
                         <button class="add-btn" onclick="addToCart('${product.name}', ${product.price})">+</button>
                     </div>
                 `;
