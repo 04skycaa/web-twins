@@ -79,5 +79,11 @@ Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->name('keuangan.index');
 
 Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');
+Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
+    ->middleware(['auth', 'verified'])
+    ->name('store.review.store');
+Route::post('/submit-general-review', [LandingController::class, 'generalReview'])
+    ->middleware(['auth', 'verified'])
+    ->name('landing.review.store');
 
 require __DIR__ . '/auth.php';

@@ -3,15 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="session-success" content="{{ session('success') ?? '' }}">
+    <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - ahlinya belanja sembako</title>
 
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- GSAP + ScrollTrigger + Lenis untuk animasi premium -->
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+    <style>
+        .hero-text-clip {
+            display: inline-block;
+            overflow: hidden;
+            vertical-align: bottom;
+            line-height: 1.25;
+            margin-left: 0 !important; 
+        }
+        
+        .hero-text-clip + .hero-text-clip {
+            margin-left: 0.35em !important;
+        }
+
+        #hero-word-right,
+        #hero-word-right > span {
+            margin-left: 0 !important;
+        }
+        
+        #hero-paragraph { opacity: 0; filter: blur(8px); }
+
+        #hero-word-left {
+            background: none !important;
+            -webkit-text-fill-color: var(--text-color) !important;
+            color: var(--text-color) !important;
+        }
+    </style>
     
-</head>
 <body>
 
+    <div class="animated-bg"></div>
+    <div class="light-rays-container">
+        <div class="god-ray ray1"></div>
+        <div class="god-ray ray2"></div>
+        <div class="god-ray ray3"></div>
+        <div class="god-ray ray4"></div>
+    </div>
+    <div id="bakery-bg" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1;"></div>
     <div class="glow-sphere"></div>
 
     <header>
@@ -41,10 +82,20 @@
                 </div>
             </div>
 
-            <button class="theme-toggle" id="themeBtn">
-                <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                <svg id="sunIcon" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            </button>
+            <div class="theme-dropdown">
+                <button class="theme-btn" onclick="toggleThemeMenu()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    Tema
+                </button>
+                <div class="theme-dropdown-content" id="themeMenu">
+                    <button onclick="setTheme('dark')" data-theme-val="dark">🌙 Dark</button>
+                    <button onclick="setTheme('light')" data-theme-val="light">☀️ Light</button>
+                    <button onclick="setTheme('twins')" data-theme-val="twins">🏮 Twins (Red)</button>
+                    <button onclick="setTheme('neon')" data-theme-val="neon">🟣 Neon</button>
+                    <button onclick="setTheme('ocean')" data-theme-val="ocean">🌊 Ocean</button>
+                    <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn</button>
+                </div>
+            </div>
 
             @if (Route::has('login'))
                 @auth
@@ -66,12 +117,14 @@
     </header>
 
     <section id="beranda">
-        <main class="hero">
-            <div class="badge">TWINS by Kelompok 4</div>
-            <h1>Belanja Mudah<span>Dimana Saja</span></h1>
-            <p>Setiap outlet punya pilihan terbaiknya masing-masing. Pilih outlet terdekatmu sekarang dan mulai belanja bahan kue dengan lebih cepat, mudah, dan praktis.</p>
+        <main class="hero anim-fade-up">
+            <div class="badge" id="hero-badge">TWINS by Kelompok 4</div>
+            <h1 id="hero-title">
+                <span class="hero-text-clip"><span id="hero-word-left">Belanja Mudah</span></span><span class="hero-text-clip"><span id="hero-word-right"><span>Dimana Saja</span></span></span>
+            </h1>
+            <p id="hero-paragraph">Setiap outlet punya pilihan terbaiknya masing-masing. Pilih outlet terdekatmu sekarang dan mulai belanja bahan kue dengan lebih cepat, mudah, dan praktis.</p>
 
-            <div class="nft-container" id="nftContainer">
+            <div class="nft-container anim-zoom-in" id="nftContainer">
                 <div class="nft-card"><img src="{{ asset('images/toko1.jpg') }}" alt="Toko"></div>
                 <div class="nft-card"><img src="{{ asset('images/toko2.jpg') }}" alt="Toko"></div>
                 <div class="nft-card"><img src="{{ asset('images/toko3.jpg') }}" alt="Toko"></div>
@@ -83,7 +136,7 @@
 
     <section id="promo-outlet" class="promo-section">
         <div class="promo-header">
-            <h2>PROMO <span>PRODUK</span></h2>
+            <h2 data-split-text>PROMO <span>PRODUK</span></h2>
         </div>
 
         <div class="promo-slider-container" id="promoSlider">
@@ -124,19 +177,19 @@
     </section>
 
     <section id="outlet" class="explore-section">
-        <h2>Pilih Cabang<span>Terdekatmu</span></h2>
+        <h2 data-split-text>Pilih Cabang<span>Terdekatmu</span></h2>
 
-        <div class="nft-grid">
+        <div class="nft-grid" data-stagger-grid>
             @foreach($outlets as $index => $outlet)
-            <div class="nft-item {{ $index === 1 ? 'featured' : '' }}">
+            <div class="nft-item float-hover {{ $index === 1 ? 'featured' : '' }}" data-stagger-item>
                 <div class="owner-info">
                     <div class="owner-details">
                         <p>Outlet TWINS</p>
                         <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Cabang {{ $outlet->nama }}</p>
                     </div>
                 </div>
-                <div class="nft-item-img">
-                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}">
+                <div class="nft-item-img" data-parallax-wrap>
+                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" data-parallax>
                 </div>
                 <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $outlet->nama }}</h4>
                 <div class="bid-box">
@@ -154,75 +207,65 @@
             @endforeach
         </div>
     </section>
-
-    <!--<section id="cabang" class="stories-section">
-        <div class="stories-header">
-            <h2>Latest Stories</h2>
-            <button class="btn-outline">Read more articles</button>
+    
+    <section id="tentang-toko" class="highlight-section">
+        <div class="highlight-header">
+            <h2 data-split-text>Tentang Toko</h2>
         </div>
 
-        <div class="stories-grid">
-            <div class="main-story">
-                <div class="story-img">
-                    <img src="{{ asset('images/toko-luar.png') }}" alt="LA Guide">
+        <div class="highlight-container">
+            <!-- BOX 1: TEXT BOX -->
+            <div class="highlight-text-box" data-reveal-left>
+                <div class="owner-profile">
+                    <div class="owner-avatar">
+                        <img src="{{ asset('images/logo.png') }}" alt="Twins Owner">
+                    </div>
+                    <div class="owner-meta">
+                        <h4>Twins Bakery Team</h4>
+                        <p>Kualitas & Kepercayaan</p>
+                    </div>
                 </div>
-                <span class="category-tag">Mulai Baking Tanpa Ribet</span>
-                <h3>Temukan Semua Bahan Kue Favoritmu di Twins</h3>
-                <p>Mau bikin kue tapi bahan ribet? Tenang, semua ada di Twins. Tinggal pilih, checkout, langsung baking!</p>
+
+                <div class="star-rating">
+                    <span class="stars">★★★★★</span>
+                </div>
+
+                <div class="story-content">
+                    <h3 class="highlight-title">Perjalanan Menghadirkan Bahan Kue Terbaik</h3>
+                    <p class="highlight-desc">Berawal dari semangat untuk mendukung setiap kreator kue di Indonesia, Twins menghadirkan bahan-bahan berkualitas pilihan. Kami percaya bahwa setiap adonan punya cerita, dan setiap cerita layak mendapatkan hasil terbaik. Tekstur sempurna dan rasa yang autentik dimulai dari sini, membawa kebahagian dari setiap panggangan kami ke meja Anda.</p>
+                </div>
             </div>
 
-            <div class="side-stories">
-                <div class="side-story">
-                    <div class="side-img">
-                        <img src="{{ asset('images/toko1.jpg') }}" alt="London">
-                    </div>
-                    <div class="side-content">
-                        <span class="category-tag">Shopping</span>
-                        <h4>15 West London Markets You'll Love: Best Markets in West London</h4>
-                        <div class="story-meta">
-                            <span>Aug 12, 2024</span>
-                            <span>•</span>
-                            <span>4 min read</span>
-                        </div>
-                    </div>
+            <!-- BOX 2: MEDIA BOX -->
+            <div class="highlight-media-box" data-reveal-right>
+                <div class="media-item image-item" data-parallax-wrap>
+                    <img src="{{ asset('images/toko5.jpg') }}" alt="Store Gallery" class="main-media" data-parallax>
+                    <div class="media-badge">Galeri Store</div>
                 </div>
 
-                <div class="side-story">
-                    <div class="side-img">
-                        <img src="https://picsum.photos/seed/story3/200/200" alt="Hotels">
-                    </div>
-                    <div class="side-content">
-                        <span class="category-tag">Hotels</span>
-                        <h4>10 incredible hotels around the world you can book with points in 2024</h4>
-                        <div class="story-meta">
-                            <span>Aug 10, 2024</span>
-                            <span>•</span>
-                            <span>7 min read</span>
+                <div class="media-group-right">
+                    <div class="media-item video-item">
+                        <img src="{{ asset('images/toko-luar.png') }}" alt="Video Preview" class="main-media">
+                        <div class="play-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
                         </div>
                     </div>
-                </div>
-
-                <div class="side-story">
-                    <div class="side-img">
-                        <img src="https://picsum.photos/seed/story4/200/200" alt="Chicago">
-                    </div>
-                    <div class="side-content">
-                        <span class="category-tag">Travel, Budget</span>
-                        <h4>Visiting Chicago on a Budget: Affordable Eats and Attraction Deals</h4>
-                        <div class="story-meta">
-                            <span>Aug 07, 2024</span>
-                            <span>•</span>
-                            <span>6 min read</span>
+                    <div class="video-meta">
+                        <p>Suasana Hangat Toko Twins</p>
+                        <div class="action-wrap">
+                            <button class="btn-highlights-sm">Lihat Selengkapnya <span>→</span></button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>-->
+    </section>
 
     <section id="keunggulan" class="product-features-section">
-        <h2 class="heading">
-            Kenapa Belanja di Twins<br>Lebih Mudah & Menyenangkan?
+        <h2 class="heading" data-split-text>
+            Kenapa Belanja di Twins<br>Lebih Mudah &amp; Menyenangkan?
         </h2>
 
         <div class="grid-container">
@@ -255,11 +298,8 @@
             </div>
 
             <div class="product-image-container">
-                <div class="product-placeholder">
-                    <svg class="placeholder-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/>
-                    </svg>
-                    <span class="placeholder-label">PRODUK UNGGULAN</span>
+                <div class="featured-product-image" data-parallax-wrap>
+                    <img src="{{ asset('images/toko4.jpg') }}" alt="Produk Unggulan Twins" style="width:100%;height:100%;object-fit:cover;border-radius:20px;" data-parallax>
                 </div>
             </div>
 
@@ -292,8 +332,277 @@
         </div>
     </section>
 
-    <footer style="padding: 60px 8%; border-top: 1px solid var(--card-border); text-align: center; color: var(--sub-text); font-size: 14px;">
-        &copy; {{ date('Y') }} TWINS - Kelompok 4.
+    <!-- TESTIMONIALS MARQUEE SECTION -->
+    <section id="testimonials" class="testimonials-marquee-section">
+        <div class="marquee-header" data-reveal-up>
+            <h2 data-split-text>Suara <span>Pelanggan</span></h2>
+            <p data-reveal-up>Apa kata mereka yang sudah merasakan manisnya belanja di Twins Bakery?</p>
+        </div>
+
+        <div class="marquee-container">
+            <!-- Row 1: To the Right -->
+            <div class="marquee-row marquee-row-right">
+                <div class="marquee-track" id="trackTop">
+                    @php $row1 = $testimonials->shuffle(); @endphp
+                    @foreach($row1 as $testi)
+                    <div class="testimonial-item-card">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                    <!-- Cloning 2nd set -->
+                    @foreach($row1 as $testi)
+                    <div class="testimonial-item-card marquee-clone">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                    <!-- Cloning 3rd set (Security for small data) -->
+                    @foreach($row1 as $testi)
+                    <div class="testimonial-item-card marquee-clone">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Row 2: To the Left -->
+            <div class="marquee-row marquee-row-left">
+                <div class="marquee-track" id="trackBottom">
+                    @php $row2 = $testimonials->shuffle(); @endphp
+                    @foreach($row2 as $testi)
+                    <div class="testimonial-item-card">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                    <!-- Cloning 2nd set -->
+                    @foreach($row2 as $testi)
+                    <div class="testimonial-item-card marquee-clone">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                    <!-- Cloning 3rd set -->
+                    @foreach($row2 as $testi)
+                    <div class="testimonial-item-card marquee-clone">
+                        <div class="testi-overlay-text">“</div>
+                        <p class="testi-content">{{ $testi->comment ?? 'Sangat puas dengan kualitas bahan kue di Twins!' }}</p>
+                        <div class="testi-footer">
+                            <div class="testi-user-box">
+                                <div class="user-avatar-main">{{ strtoupper(substr($testi->user->username, 0, 1)) }}</div>
+                                <div class="user-details">
+                                    <strong>{{ $testi->user->username }}</strong>
+                                    <span>{{ $testi->store->nama }}</span>
+                                </div>
+                            </div>
+                            <div class="testi-stars">
+                                @for($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $testi->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            
+            <!-- Gradient Overlays for smooth entry/exit -->
+            <div class="marquee-overlay marquee-overlay-left"></div>
+            <div class="marquee-overlay marquee-overlay-right"></div>
+        </div>
+
+        <div class="add-review-cta">
+            <div class="cta-inner">
+                <p>Ingin berbagi pengalaman belanja Anda?</p>
+                @auth
+                    <button onclick="openReviewModal()" class="btn-fill main-cta">Tambah Komentar Anda <span>→</span></button>
+                @else
+                    <a href="{{ route('login') }}" class="btn-fill main-cta">Login untuk Menambah Komentar <span>→</span></a>
+                @endauth
+            </div>
+        </div>
+    </section>
+
+    <!-- REVIEW MODAL -->
+    @auth
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeReviewModal()">×</button>
+            <div class="modal-header">
+                <h3>Beri Ulasan <span>Twins Bakery</span></h3>
+                <p>Pilih cabang dan bagikan pengalaman manismu!</p>
+            </div>
+
+            <form action="{{ route('landing.review.store') }}" method="POST" id="reviewForm">
+                @csrf
+                <input type="hidden" name="store_id" id="selectedStoreId" required>
+
+                <div class="modal-body">
+                    <!-- Step 1: Select Outlet Grid -->
+                    <label class="form-label">1. Pilih Cabang</label>
+                    <div class="outlet-selection-grid">
+                        @foreach($outlets as $outlet)
+                        <div class="outlet-option-card" data-id="{{ $outlet->uuid }}" onclick="selectOutlet('{{ $outlet->uuid }}', this)">
+                            <div class="outlet-check">✓</div>
+                            <div class="outlet-info-mini">
+                                <strong>{{ $outlet->nama }}</strong>
+                                <span>{{ Str::limit($outlet->alamat, 30) }}</span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Step 2: Rating -->
+                    <label class="form-label">2. Berikan Bintang</label>
+                    <div class="rating-selector-modal">
+                        <input type="radio" name="rating" value="5" id="modal-star5"><label for="modal-star5">★</label>
+                        <input type="radio" name="rating" value="4" id="modal-star4"><label for="modal-star4">★</label>
+                        <input type="radio" name="rating" value="3" id="modal-star3"><label for="modal-star3">★</label>
+                        <input type="radio" name="rating" value="2" id="modal-star2"><label for="modal-star2">★</label>
+                        <input type="radio" name="rating" value="1" id="modal-star1" required><label for="modal-star1">★</label>
+                    </div>
+
+                    <!-- Step 3: Comment -->
+                    <label class="form-label">3. Tulis Komentar</label>
+                    <textarea name="comment" placeholder="Ceritakan pengalamanmu di toko ini..." rows="4"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="closeReviewModal()">Batal</button>
+                    <button type="submit" class="btn-fill">Kirim Ulasan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endauth
+
+    <!-- MODERN 3-COLUMN FOOTER -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <!-- Col 1: Identity -->
+            <div class="footer-col footer-identity">
+                <div class="footer-logo">
+                    <img src="{{ asset('images/logo.png') }}" alt="Twins Logo">
+                    <span>TWINS</span>
+                </div>
+                <p class="footer-desc">Solusi terpercaya untuk kebutuhan bahan kue dan sembako berkualitas. Kami hadir di berbagai cabang untuk melayani kebutuhan dapur Anda dengan sepenuh hati.</p>
+                <div class="social-links">
+                    <a href="#" class="social-icon" title="Facebook">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                    </a>
+                    <a href="#" class="social-icon" title="Twitter">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
+                    </a>
+                    <a href="#" class="social-icon" title="Instagram">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    </a>
+                    <a href="#" class="social-icon" title="Youtube">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.11 1 12 1 12s0 3.89.4 5.58a2.78 2.78 0 0 0 1.94 2c1.71.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.89 23 12 23 12s0-3.89-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Col 2: Other Page -->
+            <div class="footer-col">
+                <h4>Halaman Lain</h4>
+                <ul class="footer-links">
+                    <li><a href="#beranda" onclick="switchPage('beranda')">Beranda</a></li>
+                    <li><a href="#promo-outlet" onclick="switchPage('promo-outlet')">Promo Spesial</a></li>
+                    <li><a href="#outlet" onclick="scrollToCategory('outlet')">Cabang Kami</a></li>
+                    <li><a href="#tentang-toko" onclick="smoothScroll('#tentang-toko')">Tentang Toko</a></li>
+                    <li><a href="#keunggulan" onclick="smoothScroll('#keunggulan')">Keunggulan Kami</a></li>
+                    <li><a href="#testimonials" onclick="smoothScroll('#testimonials')">Komentar Pelanggan</a></li>
+                </ul>
+            </div>
+
+            <!-- Col 3: Quick Links -->
+            <div class="footer-col">
+                <h4>Tautan Cepat</h4>
+                <ul class="footer-links">
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">Hubungi Kami</a></li>
+                    <li><a href="#">Mitra Kami</a></li>
+                    <li><a href="#">Karir</a></li>
+                    <li><a href="#">Lokasi Galeri</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; {{ date('Y') }} TWINS Bakery - Premium Quality Baking Supplies. All Rights Reserved.</p>
+        </div>
     </footer>
 
     <nav class="mobile-nav">
@@ -461,18 +770,56 @@
             });
         });
 
-        themeBtn.addEventListener('click', () => {
-            const currentTheme = body.getAttribute('data-theme');
-            if (currentTheme === 'light') {
-                body.removeAttribute('data-theme');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                body.setAttribute('data-theme', 'light');
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
+        // Theme Menu Logic
+        function toggleThemeMenu() {
+            document.getElementById('themeMenu').classList.toggle('show');
+        }
+
+        function setTheme(themeName) {
+            body.setAttribute('data-theme', themeName);
+            localStorage.setItem('twins_theme', themeName);
+            document.getElementById('themeMenu').classList.remove('show');
+            updateActiveThemeBtn(themeName);
+        }
+
+        function updateActiveThemeBtn(themeName) {
+            document.querySelectorAll('#themeMenu button').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.getAttribute('data-theme-val') === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(e) {
+            const menu = document.getElementById('themeMenu');
+            const btn = document.querySelector('.theme-btn');
+            // Menutup dropdown user atau theme menu jika diklik di luar
+            const userMenu = document.getElementById('userMenu');
+            const userBtn = document.querySelector('.user-icon-btn');
+            if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
             }
-        });
+            if (userMenu && userBtn && !userBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                userMenu.classList.remove('show');
+            }
+        }, true); // Use capture phase to ensure it runs properly
+
+        // Initialize Theme from Storage
+        const savedTheme = localStorage.getItem('twins_theme') || 'dark';
+        setTheme(savedTheme);
+
+        // Intersection Observer for Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.anim-fade-up, .anim-zoom-in').forEach(el => observer.observe(el));
 
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', () => {
@@ -502,5 +849,228 @@
             }
         });
     </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
+            const bgContainer = document.getElementById('bakery-bg');
+            let parallaxLayers = [];
+
+            if(bgContainer) {
+                // Initialize 3D Engine for Background
+                bgContainer.style.perspective = '1200px';
+                bgContainer.style.transformStyle = 'preserve-3d';
+
+                for(let i = 0; i < 20; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
+                    el.innerText = items[Math.floor(Math.random() * items.length)];
+                    el.style.top = (Math.random() * 90) + 'vh';
+                    el.style.animationDuration = (Math.random() * 25 + 20) + 's';
+                    el.style.animationDelay = '-' + (Math.random() * 20) + 's';
+                    el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'absolute';
+                    wrapper.style.width = '100vw';
+                    wrapper.style.height = '100vh';
+                    wrapper.style.top = '0';
+                    wrapper.style.left = '0';
+                    wrapper.style.pointerEvents = 'none';
+                    wrapper.style.transformStyle = 'preserve-3d';
+                    
+                    const depth = Math.random() * 200 - 100; // Between -100px and +100px Z depth
+                    wrapper.dataset.depthZ = depth;
+                    
+                    wrapper.appendChild(el);
+                    bgContainer.appendChild(wrapper);
+                    parallaxLayers.push(wrapper);
+                }
+
+                // Smooth Animation Variables
+                let targetX = 0, targetY = 0;
+                let currentX = 0, currentY = 0;
+
+                document.addEventListener("mousemove", (e) => {
+                    targetX = (e.clientX - window.innerWidth / 2) * 0.08;
+                    targetY = (e.clientY - window.innerHeight / 2) * 0.08;
+                });
+
+                function animate3D() {
+                    currentX += (targetX - currentX) * 0.05;
+                    currentY += (targetY - currentY) * 0.05;
+
+                    // Tilt the entire bakery container & scale slightly to prevent edge cutoff
+                    bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.4}deg) rotateY(${currentX * 0.4}deg)`;
+
+                    // Shift individual cakes based on their 3D depth to create parallax distance
+                    parallaxLayers.forEach((layer) => {
+                        const z = parseFloat(layer.dataset.depthZ);
+                        const moveX = currentX * (z / 50); 
+                        const moveY = currentY * (z / 50);
+                        layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
+                    });
+
+                    requestAnimationFrame(animate3D);
+                }
+                animate3D();
+            }
+
+            const savedTheme = localStorage.getItem('twins_theme') || 'dark';
+            setTheme(savedTheme);
+        });
+        // Dual-Row Marquee Logic
+        class TestimonialMarquee {
+            constructor(rowSelector, speed = 1) {
+                this.row = document.querySelector(rowSelector);
+                this.speed = speed;
+                this.isPaused = false;
+                this.isDragging = false;
+                this.startX = 0;
+                this.scrollLeft = 0;
+                this.init();
+            }
+
+            init() {
+                // Diperbarui: Hapus listener pause agar ulasan jalan terus tanpa henti
+                
+                this.row.addEventListener('mousedown', (e) => this.startDragging(e));
+                window.addEventListener('mouseup', () => this.stopDragging());
+                window.addEventListener('mousemove', (e) => this.drag(e));
+
+                this.row.addEventListener('touchstart', (e) => this.startDragging(e.touches[0]), { passive: true });
+                window.addEventListener('touchend', () => this.stopDragging());
+                window.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
+
+                this.animate();
+            }
+
+            startDragging(e) {
+                this.isDragging = true;
+                this.isPaused = true;
+                this.startX = e.pageX - this.row.offsetLeft;
+                this.scrollLeft = this.row.scrollLeft;
+            }
+
+            stopDragging() {
+                this.isDragging = false;
+                this.isPaused = false; // Lanjut jalan setelah dilepas
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+                const x = e.pageX - this.row.offsetLeft;
+                const walk = (x - this.startX) * 1.5;
+                this.row.scrollLeft = this.scrollLeft - walk;
+            }
+
+            animate() {
+                if (!this.isPaused && !this.isDragging) {
+                    this.row.scrollLeft += this.speed;
+
+                    // Infinite Loop Logic (Based on 3 sets of items)
+                    const loopPoint = this.row.scrollWidth / 3;
+                    
+                    if (this.speed > 0 && this.row.scrollLeft >= loopPoint) {
+                        this.row.scrollLeft = 0;
+                    } else if (this.speed < 0 && this.row.scrollLeft <= 0) {
+                        this.row.scrollLeft = loopPoint;
+                    }
+                }
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize Rows: ATAS KE KANAN (speed negatif), BAWAH KE KIRI (speed positif)
+        window.onload = () => {
+            const rowTop = new TestimonialMarquee('.marquee-row-right', -0.8); 
+            const rowBottom = new TestimonialMarquee('.marquee-row-left', 0.8);
+            
+            // Set posisi awal random agar tidak terlihat terlalu sinkron di awal
+            const topTrack = document.querySelector('.marquee-row-right');
+            const bottomTrack = document.querySelector('.marquee-row-left');
+            if(topTrack) topTrack.scrollLeft = topTrack.scrollWidth / 3;
+            if(bottomTrack) bottomTrack.scrollLeft = (bottomTrack.scrollWidth / 3) * 0.5;
+        };
+
+        // Modal Functions
+        function openReviewModal() {
+            const modal = document.getElementById('reviewModal');
+            if(modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent scroll
+            }
+        }
+
+        function closeReviewModal() {
+            const modal = document.getElementById('reviewModal');
+            if(modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function selectOutlet(id, element) {
+            // Remove active class from all options
+            document.querySelectorAll('.outlet-option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add to clicked one
+            element.classList.add('selected');
+            
+            // Set hidden value
+            document.getElementById('selectedStoreId').value = id;
+        }
+
+        // Close on overlay click
+        window.onclick = function(event) {
+            const modal = document.getElementById('reviewModal');
+            if (event.target == modal) {
+                closeReviewModal();
+            }
+        }
+
+        function smoothScroll(target) {
+            const element = document.querySelector(target);
+            if(element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        // Auto slide every 5 seconds
+        setInterval(nextTesti, 5000);
+
+        // SweetAlert2 Session Messages
+        const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
+        const _sessionError   = document.querySelector('meta[name="session-error"]')?.content || null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (_sessionSuccess) {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: _sessionSuccess,
+                    icon: 'success',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--accent-purple)',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (_sessionError) {
+                Swal.fire({
+                    title: 'Oops!',
+                    text: _sessionError,
+                    icon: 'error',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--accent-pink)',
+                });
+            }
+        });
+    </script>
+
+    <!-- Animasi premium hero beranda -->
+    <script src="{{ asset('js/premium-animations.js') }}"></script>
 </body>
 </html>

@@ -22,6 +22,11 @@ class Outlet extends Model
         return $this->hasMany(User::class, 'store_id', 'uuid');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(StoreReview::class, 'store_id', 'uuid');
+    }
+
     public function promos()
     {
         return $this->belongsToMany(Promo::class, 'promo_store', 'store_id', 'promo_id');

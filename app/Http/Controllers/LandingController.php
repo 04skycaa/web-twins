@@ -7,6 +7,9 @@ use App\Models\Promo;
 use App\Models\Product;
 use App\Models\ProductStore;
 use App\Models\Category;
+use App\Models\StoreReview;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -39,7 +42,13 @@ class LandingController extends Controller
             }
         }
 
-        return view('welcome', compact('outlets', 'promoProducts'));
+        $testimonials = StoreReview::with(['user', 'store'])
+            ->where('rating', '>=', 4)
+            ->orderBy('created_at', 'desc')
+            ->limit(14)
+            ->get();
+
+        return view('welcome', compact('outlets', 'promoProducts', 'testimonials'));
     }
 
     public function showOutlet($id)
@@ -68,7 +77,77 @@ class LandingController extends Controller
             ];
         });
 
-        return view('user', compact('outlet', 'products', 'categories'));
+        $reviews = StoreReview::with('user')
+            ->where('store_id', $outlet->uuid)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('user', compact('outlet', 'products', 'categories', 'reviews'));
+    }
+
+    public function storeReview(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+
+        $outlet = Outlet::findOrFail($id);
+        $exists = StoreReview::where('store_id', $outlet->uuid)
+            ->where('user_id', Auth::id())
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Anda sudah memberikan ulasan untuk toko ini.');
+        }
+
+        DB::transaction(function() use ($request, $outlet) {
+            StoreReview::create([
+                'store_id' => $outlet->uuid,
+                'user_id' => Auth::id(),
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+
+            // Update average rating in store table
+            $avgRating = StoreReview::where('store_id', $outlet->uuid)->avg('rating');
+            $outlet->update(['rating' => $avgRating]);
+        });
+
+        return back()->with('success', 'Terima kasih atas ulasan Anda!');
+    }
+
+    public function generalReview(Request $request)
+    {
+        $request->validate([
+            'store_id' => 'required|exists:store,uuid',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+
+        $outlet = Outlet::findOrFail($request->store_id);
+
+        $exists = StoreReview::where('store_id', $outlet->uuid)
+            ->where('user_id', Auth::id())
+            ->exists();
+
+        if ($exists) {
+            return back()->with('error', 'Anda sudah memberikan ulasan untuk cabang ini.');
+        }
+
+        DB::transaction(function() use ($request, $outlet) {
+            StoreReview::create([
+                'store_id' => $outlet->uuid,
+                'user_id' => Auth::id(),
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+
+            $avgRating = StoreReview::where('store_id', $outlet->uuid)->avg('rating');
+            $outlet->update(['rating' => $avgRating]);
+        });
+
+        return back()->with('success', 'Terima kasih atas ulasan Anda!');
     }
 
     private function resolveImageUrl($path)

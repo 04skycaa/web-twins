@@ -3,12 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="session-success" content="{{ session('success') ?? '' }}">
+    <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<script type="application/json" id="products-data">
+    {!! json_encode($products) !!}
+</script>
 <body id="body">
-
+    <div class="animated-bg"></div>\
+    <div class="light-rays-container">
+        <div class="god-ray ray1"></div>
+        <div class="god-ray ray2"></div>
+        <div class="god-ray ray3"></div>
+        <div class="god-ray ray4"></div>
+    </div>
     <header id="mainHeader">
         <div class="logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-img">
@@ -35,10 +46,20 @@
                 </div>
             </div>
 
-            <button class="theme-toggle" id="themeBtn">
-                <svg id="moonIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                <svg id="sunIcon" style="display:none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            </button>
+            <div class="theme-dropdown">
+                <button class="theme-btn" onclick="toggleThemeMenu()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    Tema
+                </button>
+                <div class="theme-dropdown-content" id="themeMenu">
+                    <button onclick="setTheme('dark')" data-theme-val="dark">🌙 Dark</button>
+                    <button onclick="setTheme('light')" data-theme-val="light">☀️ Light</button>
+                    <button onclick="setTheme('twins')" data-theme-val="twins">🏮 Twins (Red)</button>
+                    <button onclick="setTheme('neon')" data-theme-val="neon">🟣 Neon</button>
+                    <button onclick="setTheme('ocean')" data-theme-val="ocean">🌊 Ocean</button>
+                    <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn (Orange)</button>
+                </div>
+            </div>
             @if (Route::has('login'))
                 @auth
                     <a href="{{ url('/dashboard') }}" class="user-profile-link">
@@ -69,9 +90,10 @@
         <div id="mobileSheetContent"></div>
     </div>
 
-    <div class="container" id="mainContainer">
-        <main class="main-content" id="homePage">
-            <div class="promo-banner" style="min-height: 280px; height: auto; padding: 40px;">
+    <div class="container" id=
+    "mainContainer">
+        <main class="main-content anim-fade-up" id="homePage">
+            <div class="promo-banner float-hover" style="min-height: 280px; height: auto; padding: 40px;">
                 <span class="badge" style="margin-bottom: 10px;">Outlet TWINS</span>
                 <h1 style="margin: 5px 0 15px 0;">{{ $outlet->nama }}</h1>
                 <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 20px;">📍 {{ $outlet->alamat }}</p>
@@ -96,11 +118,68 @@
                 <div class="filter-container" id="filterContainer">
                     <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">Semua</div>
                     @foreach($categories as $category)
-                    <div class="filter-chip" data-category="{{ $category['id'] }}" onclick="filterProducts('{{ $category['id'] }}', this)">{{ $category['name'] }}</div>
+                    <div class="filter-chip" data-category="{{ $category['id'] }}" onclick="filterProducts(this.dataset.category, this)">{{ $category['name'] }}</div>
                     @endforeach
                 </div>
 
                 <div class="food-grid" id="productGrid"></div>
+            </section>
+
+            <!-- STORE REVIEWS SECTION -->
+            <section class="reviews-section anim-fade-up">
+                <div class="reviews-header">
+                    <h3>Ulasan & Rating Toko</h3>
+                    <div class="avg-stats">
+                        <span class="avg-val">{{ number_format($outlet->rating, 1) }}</span>
+                        <span class="stars">★★★★★</span>
+                    </div>
+                </div>
+
+                <!-- Review Form -->
+                @auth
+                <div class="review-form-card">
+                    <h4>Bagaimana menurutmu tentang toko ini?</h4>
+                    <form action="{{ route('store.review.store', $outlet->uuid) }}" method="POST">
+                        @csrf
+                        <div class="rating-selector">
+                            <input type="radio" name="rating" value="5" id="star5"><label for="star5">★</label>
+                            <input type="radio" name="rating" value="4" id="star4"><label for="star4">★</label>
+                            <input type="radio" name="rating" value="3" id="star3"><label for="star3">★</label>
+                            <input type="radio" name="rating" value="2" id="star2"><label for="star2">★</label>
+                            <input type="radio" name="rating" value="1" id="star1" required><label for="star1">★</label>
+                        </div>
+                        <textarea name="comment" placeholder="Berikan komentar Anda..." rows="3"></textarea>
+                        <button type="submit" class="btn-fill" style="margin-top: 15px; width: 100%;">Kirim Ulasan</button>
+                    </form>
+                </div>
+                @else
+                <div class="login-prompt-card">
+                    <p>Silakan <a href="{{ route('login') }}">Login</a> untuk memberikan ulasan.</p>
+                </div>
+                @endauth
+
+                <!-- Reviews List -->
+                <div class="reviews-list">
+                    @forelse($reviews as $review)
+                    <div class="review-item-card">
+                        <div class="review-top">
+                            <div class="user-meta">
+                                <div class="user-avatar-sm">{{ strtoupper(substr($review->user->username, 0, 1)) }}</div>
+                                <strong>{{ $review->user->username }}</strong>
+                            </div>
+                            <span class="review-date">{{ $review->created_at->diffForHumans() }}</span>
+                        </div>
+                        <div class="review-rating">
+                            @for($i = 0; $i < 5; $i++)
+                                <span class="star {{ $i < $review->rating ? 'filled' : '' }}">★</span>
+                            @endfor
+                        </div>
+                        <p class="review-comment">{{ $review->comment ?? 'Hanya memberikan rating.' }}</p>
+                    </div>
+                    @empty
+                    <p class="empty-msg">Belum ada ulasan untuk toko ini.</p>
+                    @endforelse
+                </div>
             </section>
         </main>
 
@@ -111,7 +190,7 @@
             </div>
         </main>
 
-        <aside class="sidebar" id="sidebarArea">
+        <aside class="sidebar anim-fade-up" id="sidebarArea">
             <div id="sidebarContentWrapper">
                 <div class="white-card hidden" id="addressSection" style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -186,9 +265,6 @@
         });
 
         const body = document.getElementById('body');
-        const themeBtn = document.getElementById('themeBtn');
-        const sunIcon = document.getElementById('sunIcon');
-        const moonIcon = document.getElementById('moonIcon');
         
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
@@ -217,7 +293,7 @@
             return "Rp " + Math.floor(amount).toLocaleString('id-ID');
         }
 
-        const products = @json($products);
+        const products = JSON.parse(document.getElementById('products-data').textContent);
 
         let cart = [];
         let historyData = [];
@@ -240,7 +316,7 @@
 
             filtered.forEach(product => {
                 const card = document.createElement('div');
-                card.className = 'food-card';
+                card.className = 'food-card anim-zoom-in';
                 card.innerHTML = `
                     <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 10px; margin-bottom: 10px;">
                         <img src="${product.img}" class="food-img" style="width: 100%; height: 100%; object-fit: cover;">
@@ -253,6 +329,7 @@
                     </div>
                 `;
                 productGrid.appendChild(card);
+                if(window.observer) window.observer.observe(card);
             });
         }
 
@@ -473,21 +550,158 @@
             `).join('');
         }
 
-        themeBtn.addEventListener('click', () => {
-            if (body.hasAttribute('data-theme')) {
-                body.removeAttribute('data-theme');
-                sunIcon.style.display = 'none';
-                moonIcon.style.display = 'block';
-            } else {
-                body.setAttribute('data-theme', 'light');
-                sunIcon.style.display = 'block';
-                moonIcon.style.display = 'none';
+        // Intersection Observer for Animations
+        window.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Theme Menu Logic
+        function toggleThemeMenu() {
+            document.getElementById('themeMenu').classList.toggle('show');
+        }
+
+        function setTheme(themeName) {
+            body.setAttribute('data-theme', themeName);
+            localStorage.setItem('twins_theme', themeName);
+            document.getElementById('themeMenu').classList.remove('show');
+            updateActiveThemeBtn(themeName);
+        }
+
+        function updateActiveThemeBtn(themeName) {
+            document.querySelectorAll('#themeMenu button').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.getAttribute('data-theme-val') === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(e) {
+            const menu = document.getElementById('themeMenu');
+            const btn = document.querySelector('.theme-btn');
+            if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
             }
+        }, true);
+
+        // Initialize Theme from Storage
+        const savedTheme = localStorage.getItem('twins_theme') || 'dark';
+        setTheme(savedTheme);
+
+        document.querySelectorAll('.anim-fade-up, .anim-zoom-in, .white-card').forEach(el => {
+            if(!el.classList.contains('anim-fade-up') && !el.classList.contains('anim-zoom-in')) {
+                el.classList.add('anim-fade-up');
+            }
+            window.observer.observe(el);
         });
 
         window.addEventListener('resize', renderCart);
         renderProducts();
         renderCart();
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
+            const bgContainer = document.getElementById('bakery-bg');
+            let parallaxLayers = [];
+
+            if(bgContainer) {
+                // Initialize 3D Engine for Background
+                bgContainer.style.perspective = '1200px';
+                bgContainer.style.transformStyle = 'preserve-3d';
+
+                for(let i = 0; i < 20; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
+                    el.innerText = items[Math.floor(Math.random() * items.length)];
+                    el.style.top = (Math.random() * 90) + 'vh';
+                    el.style.animationDuration = (Math.random() * 25 + 20) + 's';
+                    el.style.animationDelay = '-' + (Math.random() * 20) + 's';
+                    el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'absolute';
+                    wrapper.style.width = '100vw';
+                    wrapper.style.height = '100vh';
+                    wrapper.style.top = '0';
+                    wrapper.style.left = '0';
+                    wrapper.style.pointerEvents = 'none';
+                    wrapper.style.transformStyle = 'preserve-3d';
+                    
+                    const depth = Math.random() * 200 - 100; // Between -100px and +100px Z depth
+                    wrapper.dataset.depthZ = depth;
+                    
+                    wrapper.appendChild(el);
+                    bgContainer.appendChild(wrapper);
+                    parallaxLayers.push(wrapper);
+                }
+
+                // Smooth Animation Variables
+                let targetX = 0, targetY = 0;
+                let currentX = 0, currentY = 0;
+
+                document.addEventListener("mousemove", (e) => {
+                    targetX = (e.clientX - window.innerWidth / 2) * 0.08;
+                    targetY = (e.clientY - window.innerHeight / 2) * 0.08;
+                });
+
+                function animate3D() {
+                    currentX += (targetX - currentX) * 0.05;
+                    currentY += (targetY - currentY) * 0.05;
+
+                    // Tilt the entire bakery container & scale slightly to prevent edge cutoff
+                    bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.4}deg) rotateY(${currentX * 0.4}deg)`;
+
+                    // Shift individual cakes based on their 3D depth to create parallax distance
+                    parallaxLayers.forEach((layer) => {
+                        const z = parseFloat(layer.dataset.depthZ);
+                        const moveX = currentX * (z / 50); 
+                        const moveY = currentY * (z / 50);
+                        layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
+                    });
+
+                    requestAnimationFrame(animate3D);
+                }
+                animate3D();
+            }
+
+            const savedTheme = localStorage.getItem('twins_theme') || 'dark';
+            setTheme(savedTheme);
+        });
+        // SweetAlert2 Session Messages
+        const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
+        const _sessionError   = document.querySelector('meta[name="session-error"]')?.content || null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (_sessionSuccess) {
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: _sessionSuccess,
+                    icon: 'success',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--accent-purple)',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (_sessionError) {
+                Swal.fire({
+                    title: 'Oops!',
+                    text: _sessionError,
+                    icon: 'error',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--accent-pink)',
+                });
+            }
+        });
     </script>
 </body>
 </html>

@@ -11,6 +11,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class User extends Authenticatable implements MustVerifyEmail
 {
     
@@ -23,12 +25,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $fillable = [
         'uuid',
-        'username', // Kita mapping 'name' ke sini
+        'username',
         'no_hp', 
         'email', 
         'password', 
-        'operator_id', // Kita mapping 'role' ke sini
-        'store_id',    // Kita mapping 'outlet_id' ke sini
+        'operator_id', 
+        'store_id',   
         'status_aktif'
     ];
 
@@ -43,7 +45,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'status_aktif' => 'boolean'
     ];
 
-    // MAPPING name -> username
     public function getNameAttribute()
     {
         return $this->username;
@@ -54,7 +55,6 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->attributes['username'] = $value;
     }
 
-    // MAPPING role -> operator relation
     public function getRoleAttribute()
     {
         if ($this->operator) {
@@ -73,9 +73,6 @@ class User extends Authenticatable implements MustVerifyEmail
         }
     }
 
-
-
-    // MAPPING outlet_id -> store_id
     public function getOutletIdAttribute()
     {
         return $this->store_id;
@@ -116,6 +113,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function outlet()
     {
         return $this->store();
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(StoreReview::class, 'user_id', 'uuid');
     }
 
 }
