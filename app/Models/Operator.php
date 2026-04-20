@@ -10,6 +10,7 @@ class Operator extends Model
     protected $primaryKey = 'uuid';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
         'uuid',
@@ -27,7 +28,7 @@ class Operator extends Model
      * @param string $feature
      * @return bool
      */
-    public function hasFeature(string $feature): bool
+    public function hasFeature($feature): bool
     {
         if (!$this->fitur) {
             return false;
@@ -36,7 +37,6 @@ class Operator extends Model
         if (in_array('all_access', $this->fitur) || $this->nama === 'Owner') {
             return true;
         }
-
         return in_array($feature, $this->fitur);
     }
 }

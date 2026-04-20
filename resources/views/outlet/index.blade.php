@@ -37,22 +37,22 @@
             <table class="custom-table">
                 <thead>
                     <tr>
-                        <th>Kode</th>
                         <th>Nama Outlet</th>
                         <th>Alamat</th>
-                        <th>Total User/Karyawan</th>
+                        <th>No. Telp</th>
+                        <th>Total User</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($outlets as $out)
                     <tr>
-                        <td class="text-bold">{{ $out['kode_outlet'] }}</td>
-                        <td class="text-bold text-success">{{ $out['nama_outlet'] }}</td>
-                        <td>{{ $out['alamat'] ?: '-' }}</td>
+                        <td class="text-bold text-success">{{ $out->nama }}</td>
+                        <td>{{ $out->alamat ?: '-' }}</td>
+                        <td>{{ $out->notelp ?: '-' }}</td>
                         <td>
                             @php
-                                $count = \App\Models\User::where('outlet_id', $out['idoutlet'])->count();
+                                $count = \App\Models\User::where('store_id', $out->uuid)->count();
                             @endphp
                             <span class="badge" style="background: #e0f2fe; color: #0284c7;">{{ $count }} User</span>
                         </td>
@@ -61,7 +61,7 @@
                                 <button class="btn-icon" onclick="openEditModal({{ json_encode($out) }})">
                                     <iconify-icon icon="solar:pen-2-bold-duotone"></iconify-icon>
                                 </button>
-                                <button class="btn-icon text-danger" onclick="openDeleteModal({{ $out['idoutlet'] }})">
+                                <button class="btn-icon text-danger" onclick="openDeleteModal('{{ $out->uuid }}')">
                                     <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                 </button>
                             </div>
@@ -93,8 +93,8 @@
                     <input type="text" name="nama_outlet" class="form-control" required placeholder="Contoh: SweetBake Cab. A">
                 </div>
                 <div class="form-group">
-                    <label>Kode Outlet (Opsional)</label>
-                    <input type="text" name="kode_outlet" class="form-control" placeholder="Contoh: OTL002">
+                    <label>No. Telp</label>
+                    <input type="text" name="notelp" class="form-control" placeholder="Contoh: 08123456789">
                 </div>
                 <div class="form-group">
                     <label>Alamat (Opsional)</label>
@@ -123,6 +123,10 @@
                 <div class="form-group">
                     <label>Nama Outlet</label>
                     <input type="text" name="nama_outlet" id="edit_nama_outlet" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>No. Telp</label>
+                    <input type="text" name="notelp" id="edit_notelp" class="form-control">
                 </div>
                 <div class="form-group">
                     <label>Alamat (Opsional)</label>
@@ -164,14 +168,15 @@
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
     function openEditModal(data) {
-        document.getElementById('editForm').action = `/outlet/${data.idoutlet}`;
-        document.getElementById('edit_nama_outlet').value = data.nama_outlet;
+        document.getElementById('editForm').action = `/outlet/${data.uuid}`;
+        document.getElementById('edit_nama_outlet').value = data.nama;
+        document.getElementById('edit_notelp').value = data.notelp || '';
         document.getElementById('edit_alamat').value = data.alamat || '';
         openModal('editModal');
     }
 
-    function openDeleteModal(id) {
-        document.getElementById('deleteForm').action = `/outlet/${id}`;
+    function openDeleteModal(uuid) {
+        document.getElementById('deleteForm').action = `/outlet/${uuid}`;
         openModal('deleteModal');
     }
 </script>

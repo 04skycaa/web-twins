@@ -3,18 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Outlet;
 
 class OutletController extends Controller
 {
     public function index()
     {
-        if (!session()->has('dummy_outlets')) {
-            session(['dummy_outlets' => [
-                ['idoutlet' => 1, 'kode_outlet' => 'OTL001', 'nama_outlet' => 'SweetBake Pusat', 'alamat' => 'Jl. Sudirman No 1'],
-                ['idoutlet' => 2, 'kode_outlet' => 'OTL002', 'nama_outlet' => 'SweetBake Cab. A', 'alamat' => 'Jl. Thamrin No 50'],
-            ]]);
-        }
-        $outlets = session('dummy_outlets');
+        $outlets = Outlet::all();
         return view('outlet.index', compact('outlets'));
     }
 
@@ -22,53 +17,47 @@ class OutletController extends Controller
     {
         $request->validate([
             'nama_outlet' => 'required|string|max:255',
-            'kode_outlet' => 'nullable|string|max:50',
             'alamat' => 'nullable|string',
+            'notelp' => 'nullable|string|max:20',
         ]);
 
-        $outlets = session('dummy_outlets', []);
-        $newId = count($outlets) > 0 ? max(array_column($outlets, 'idoutlet')) + 1 : 1;
-        
-        $outlets[] = [
-            'idoutlet' => $newId,
-            'kode_outlet' => $request->kode_outlet ?? 'OTL'.rand(100,999),
-            'nama_outlet' => $request->nama_outlet,
+        Outlet::create([
+            'nama' => $request->nama_outlet,
             'alamat' => $request->alamat,
-            'is_active' => true,
-        ];
+            'notelp' => $request->notelp,
+            'status_aktif' => true,
+        ]);
 
-        session(['dummy_outlets' => $outlets]);
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil ditambahkan');
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $uuid)
     {
         $request->validate([
             'nama_outlet' => 'required|string|max:255',
             'alamat' => 'nullable|string',
+            'notelp' => 'nullable|string|max:20',
         ]);
 
-        $outlets = session('dummy_outlets', []);
-        foreach ($outlets as &$outlet) {
-            if ($outlet['idoutlet'] == $id) {
-                $outlet['nama_outlet'] = $request->nama_outlet;
-                $outlet['alamat'] = $request->alamat;
-                break;
-            }
-        }
+        $outlet = Outlet::where('uuid', $uuid)->firstOrFail();
         
-        session(['dummy_outlets' => $outlets]);
+        $outlet->update([
+            'nama' => $request->nama_outlet,
+            'alamat' => $request->alamat,
+            'notelp' => $request->notelp,
+        ]);
+
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil diperbarui');
     }
 
-    public function destroy($id)
+    public function destroy($uuid)
     {
-        $outlets = session('dummy_outlets', []);
-        $outlets = array_values(array_filter($outlets, function($o) use ($id) {
-            return $o['idoutlet'] != $id;
-        }));
+        $outlet = Outlet::where('uuid', $uuid)->first();
+        if ($outlet) {
+            $outlet->delete();
+            return redirect()->route('outlet.index')->with('success', 'Outlet berhasil dihapus');
+        }
         
-        session(['dummy_outlets' => $outlets]);
-        return redirect()->route('outlet.index')->with('success', 'Outlet berhasil dihapus');
+        return redirect()->route('outlet.index')->with('error', 'Outlet tidak ditemukan');
     }
 }

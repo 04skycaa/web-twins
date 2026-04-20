@@ -503,10 +503,32 @@
                     <input type="number" name="harga_modal" class="form-control" value="0">
                 </div>
                 <div class="form-group">
-                    <label>Harga Jual</label>
+                    <label>Harga Jual (Retail)</label>
                     <input type="number" name="harga_jual" class="form-control" value="0">
                 </div>
             </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</label>
+                    <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('addPriceLevelBody')">
+                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
+                    </button>
+                </div>
+                <table style="width: 100%; font-size: 13px;">
+                    <thead>
+                        <tr style="text-align: left; color: #888;">
+                            <th>Min. Qty</th>
+                            <th>Harga per Unit</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="addPriceLevelBody">
+                        {{-- JS will add rows here --}}
+                    </tbody>
+                </table>
+            </div>
+
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('addModal')">Batal</button>
                 <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan</button>
@@ -607,10 +629,32 @@
                     <input type="number" name="harga_modal" id="edit_modal" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Harga Jual</label>
+                    <label>Harga Jual (Retail)</label>
                     <input type="number" name="harga_jual" id="edit_jual" class="form-control">
                 </div>
             </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</label>
+                    <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('editPriceLevelBody')">
+                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
+                    </button>
+                </div>
+                <table style="width: 100%; font-size: 13px;">
+                    <thead>
+                        <tr style="text-align: left; color: #888;">
+                            <th>Min. Qty</th>
+                            <th>Harga per Unit</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="editPriceLevelBody">
+                        {{-- JS will populate here --}}
+                    </tbody>
+                </table>
+            </div>
+
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('editModal')">Batal</button>
                 <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Update</button>
@@ -835,6 +879,27 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+    // --- Price Level Helpers (Grosir) ---
+    function addPriceLevelRow(containerId, data = null) {
+        const tbody = document.getElementById(containerId);
+        const i = tbody.children.length;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="padding: 4px 0;">
+                <input type="number" name="price_levels[${i}][jmlh]" class="form-control" style="font-size: 13px; height: 32px;" value="${data ? data.jmlh : ''}" placeholder="Min. Unit" required>
+            </td>
+            <td style="padding: 4px 0;">
+                <input type="number" name="price_levels[${i}][harga]" class="form-control" style="font-size: 13px; height: 32px;" value="${data ? data.harga : ''}" placeholder="Harga per unit" required>
+            </td>
+            <td style="padding: 4px 0; text-align: right;">
+                <button type="button" class="btn-filter" style="width: 32px; height: 32px; color: #D9534F; border-color: #FFEBEE;" onclick="this.closest('tr').remove()">
+                    <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+
     // --- Dropdown Logic ---
     function toggleDropdown(event) {
         const dropdown = event.currentTarget.closest('.dropdown');
@@ -941,6 +1006,30 @@
                     </div>
                     <iconify-icon icon="solar:box-bold-duotone" style="font-size: 32px; color: #cbd5e1;"></iconify-icon>
                 </div>
+                
+                ${product.price_levels && product.price_levels.length > 0 ? `
+                <div style="margin-top: 8px;">
+                    <div style="font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 8px;">Harga Grosir (Level)</div>
+                    <div style="background: #FFF9C4; padding: 12px; border-radius: 8px; border: 1px solid #FBC02D;">
+                        <table style="width: 100%; font-size: 13px;">
+                            <thead>
+                                <tr style="text-align: left; color: #827717;">
+                                    <th>Min. Qty</th>
+                                    <th>Harga / Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${product.price_levels.map(pl => `
+                                    <tr>
+                                        <td style="font-weight: 600; padding: 4px 0;">&ge; ${pl.jmlh} Unit</td>
+                                        <td style="font-weight: 700; color: #C62828;">Rp ${new Intl.NumberFormat('id-ID').format(pl.harga)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         `;
         openModal('viewModal');
@@ -990,6 +1079,14 @@
         document.getElementById('edit_kategori').value = product.kategori_id;
         document.getElementById('edit_modal').value = product.harga_modal;
         document.getElementById('edit_jual').value = product.harga_jual;
+
+        // Clear and Populate Price Levels (Grosir)
+        const tbody = document.getElementById('editPriceLevelBody');
+        tbody.innerHTML = '';
+        if (product.price_levels && product.price_levels.length > 0) {
+            product.price_levels.forEach(level => addPriceLevelRow('editPriceLevelBody', level));
+        }
+
         openModal('editModal');
     }
 

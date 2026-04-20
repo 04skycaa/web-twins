@@ -39,4 +39,9 @@ class Product extends Model
     {
         return $this->belongsToMany(Promo::class, 'promo_products', 'product_id', 'promo_id');
     }
+
+    public function priceLevels()
+    {
+        return $this->hasMany(PriceLevel::class, 'product_id', 'uuid')->orderBy('jmlh', 'asc');
+    }
 }

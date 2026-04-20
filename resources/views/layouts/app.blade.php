@@ -19,7 +19,7 @@
         </div>
 
         <nav class="menu-nav">
-            @if(Auth::user()->operator->hasFeature('dashboard'))
+            @if(Auth::user()->operator->hasFeature(1))
                 <a href="{{ route('dashboard') }}" class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:widget-4-bold-duotone"></iconify-icon>
@@ -27,7 +27,7 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature('produk'))
+            @if(Auth::user()->operator->hasFeature(2))
                 <a href="{{ url('/products') }}" class="menu-item {{ request()->is('products*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
@@ -35,7 +35,7 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature('transaksi'))
+            @if(Auth::user()->operator->hasFeature(3))
                 <a href="{{ url('/transaksi') }}" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
@@ -43,15 +43,15 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature('keuangan'))
-                <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
+            @if(Auth::user()->operator->hasFeature(4))
+                <a href="{{ url('/keuangan') }}" class="menu-item {{ request()->is('keuangan') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
                     <span>Keuangan</span>
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature('users'))
+            @if(Auth::user()->operator->hasFeature(5))
                 <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
@@ -59,11 +59,35 @@
                 </a>
             @endif
 
-            @if(Auth::user()->operator->hasFeature('outlet'))
+            @if(Auth::user()->operator->hasFeature(6))
                 <a href="{{ url('/outlet') }}" class="menu-item {{ request()->is('outlet*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
                     <span>Operasional Outlet</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->operator->hasFeature(7))
+                <a href="{{ route('kontak.index') }}" class="menu-item {{ request()->routeIs('kontak.*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:phone-calling-bold-duotone"></iconify-icon>
+                    <span>Kelola Kontak</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->operator->hasFeature(8))
+                <a href="{{ route('keuangan.transaksi') }}" class="menu-item {{ request()->routeIs('keuangan.transaksi') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
+                    <span>Transaksi Keuangan</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->operator->hasFeature(9))
+                <a href="{{ route('laporan.index') }}" class="menu-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                    <span>Laporan</span>
                 </a>
             @endif
         </nav>
@@ -79,10 +103,13 @@
                 @elseif(request()->is('products*'))
                     <i id="topbar-icon" data-lucide="package"></i>
                     <h2 id="topbar-title">Manajemen Produk</h2>
-                @elseif(request()->is('transaksi*'))
+                @elseif(request()->is('transaksi'))
                     <i id="topbar-icon" data-lucide="receipt"></i>
-                    <h2 id="topbar-title">Manajemen Transaksi & Diskon</h2>
-                @elseif(request()->is('keuangan*'))
+                    <h2 id="topbar-title">Riwayat Transaksi</h2>
+                @elseif(request()->is('transaksi/diskon'))
+                    <i id="topbar-icon" data-lucide="percent"></i>
+                    <h2 id="topbar-title">Manajemen Diskon</h2>
+                @elseif(request()->is('keuangan'))
                     <i id="topbar-icon" data-lucide="trending-up"></i>
                     <h2 id="topbar-title">Keuangan</h2>
                 @elseif(request()->is('outlet*'))
@@ -91,6 +118,15 @@
                 @elseif(request()->is('users*'))
                     <i id="topbar-icon" data-lucide="users"></i>
                     <h2 id="topbar-title">Manajemen User</h2>
+                @elseif(request()->routeIs('kontak.*'))
+                    <i id="topbar-icon" data-lucide="contact"></i>
+                    <h2 id="topbar-title">Kelola Kontak</h2>
+                @elseif(request()->routeIs('keuangan.transaksi'))
+                    <i id="topbar-icon" data-lucide="wallet"></i>
+                    <h2 id="topbar-title">Transaksi Keuangan</h2>
+                @elseif(request()->routeIs('laporan.*'))
+                    <i id="topbar-icon" data-lucide="file-text"></i>
+                    <h2 id="topbar-title">Laporan Keseluruhan</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
                     <h2 id="topbar-title">Web Twins</h2>

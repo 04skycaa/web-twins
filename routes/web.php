@@ -5,6 +5,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\DashboardController; // Tambahkan ini
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\KontakController;
+use App\Http\Controllers\TransaksiKeuanganController;
+use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -77,6 +80,19 @@ use App\Http\Controllers\KeuanganController;
 Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('keuangan.index');
+
+Route::get('/kontak', [KontakController::class, 'index'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
+    ->name('kontak.index');
+
+Route::get('/transaksi-keuangan', [TransaksiKeuanganController::class, 'index'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
+    ->name('keuangan.transaksi');
+
+Route::get('/laporan', [LaporanController::class, 'index'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
+    ->name('laporan.index');
+
 
 Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])

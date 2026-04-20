@@ -10,6 +10,7 @@ use App\Models\StockRequest;
 use App\Models\StockCard;
 use App\Models\Category;
 use App\Models\ProductStore;
+use App\Models\PriceLevel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'stores']);
+        $query = Product::with(['category', 'stores', 'priceLevels']);
 
         /** @var User $user */
         $user = Auth::user();
@@ -265,6 +266,20 @@ class ProductController extends Controller
             'harga_jual' => $request->harga_jual ?? 0,
             'image_url' => $imageUrl,
         ]);
+
+        // Save Price Levels (Grosir)
+        if ($request->has('price_levels')) {
+            foreach ($request->price_levels as $level) {
+                if ($level['jmlh'] > 0 && $level['harga'] > 0) {
+                    PriceLevel::create([
+                        'product_id' => $product->uuid,
+                        'jmlh' => $level['jmlh'],
+                        'harga' => $level['harga'],
+                    ]);
+                }
+            }
+        }
+
         StockCard::create([
             'product_id' => $product->uuid,
             'jmlh' => 0,
@@ -292,6 +307,20 @@ class ProductController extends Controller
             'harga_modal' => $request->harga_modal ?? 0,
             'harga_jual' => $request->harga_jual ?? 0,
         ]);
+
+        // Update Price Levels (Grosir) - Simple Sync
+        PriceLevel::where('product_id', $product->uuid)->delete();
+        if ($request->has('price_levels')) {
+            foreach ($request->price_levels as $level) {
+                if ($level['jmlh'] > 0 && $level['harga'] > 0) {
+                    PriceLevel::create([
+                        'product_id' => $product->uuid,
+                        'jmlh' => $level['jmlh'],
+                        'harga' => $level['harga'],
+                    ]);
+                }
+            }
+        }
 
         return redirect()->back()->with('success', 'Produk berhasil diperbarui!');
     }
