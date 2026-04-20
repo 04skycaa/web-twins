@@ -44,7 +44,6 @@
     </style>
     
 <body>
-
     <div class="animated-bg"></div>
     <div class="light-rays-container">
         <div class="god-ray ray1"></div>
@@ -125,11 +124,26 @@
             <p id="hero-paragraph">Setiap outlet punya pilihan terbaiknya masing-masing. Pilih outlet terdekatmu sekarang dan mulai belanja bahan kue dengan lebih cepat, mudah, dan praktis.</p>
 
             <div class="nft-container anim-zoom-in" id="nftContainer">
-                <div class="nft-card"><img src="{{ asset('images/toko1.jpg') }}" alt="Toko"></div>
-                <div class="nft-card"><img src="{{ asset('images/toko2.jpg') }}" alt="Toko"></div>
-                <div class="nft-card"><img src="{{ asset('images/toko3.jpg') }}" alt="Toko"></div>
-                <div class="nft-card"><img src="{{ asset('images/toko4.jpg') }}" alt="Toko"></div>
-                <div class="nft-card"><img src="{{ asset('images/toko5.jpg') }}" alt="Toko"></div>
+                @php
+                    $heroOutlets = $outlets->take(5);
+                    // Ensure we have at least 5 cards for the 3D stack effect by repeating if necessary
+                    if ($heroOutlets->count() > 0 && $heroOutlets->count() < 5) {
+                        $count = $heroOutlets->count();
+                        for ($i = $count; $i < 5; $i++) {
+                            $heroOutlets->push($heroOutlets[$i % $count]);
+                        }
+                    }
+                @endphp
+                
+                @foreach($heroOutlets as $index => $heroOutlet)
+                <div class="nft-card" onclick="location.href='{{ route('user.index', $heroOutlet->uuid) }}'">
+                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" alt="{{ $heroOutlet->nama }}">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; border-radius: 0 0 20px 20px;">
+                        <div style="font-size: 10px; opacity: 0.8; text-transform: uppercase;">Cabang</div>
+                        <div style="font-weight: 700; font-size: 14px;">{{ $heroOutlet->nama }}</div>
+                    </div>
+                </div>
+                @endforeach
             </div>
         </main>
     </section>
@@ -154,7 +168,7 @@
                 </div>
                 <div class="promo-content">
                     <div class="outlet-info">
-                        <p class="outlet-name">{{ $promo->nama_promo }}</p>
+                        <p class="outlet-name">{{ $promo->outlet_name }}</p>
                         <p class="outlet-address">{{ $promo->outlet_address }}</p>
                     </div>
                     <span class="category-tag">{{ $promo->category }}</span>

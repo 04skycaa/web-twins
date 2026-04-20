@@ -934,9 +934,52 @@
                         <div style="font-weight: 700; color: var(--primary-blue);">${priceJual}</div>
                     </div>
                 </div>
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Stok Saat Ini</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #1e293b;">${product.current_stok ?? 0} <span style="font-size: 12px; font-weight: 400; color: #64748b;">Unit</span></div>
+                    </div>
+                    <iconify-icon icon="solar:box-bold-duotone" style="font-size: 32px; color: #cbd5e1;"></iconify-icon>
+                </div>
             </div>
         `;
         openModal('viewModal');
+    }
+
+    function openOpnameDetailModal(uuid) {
+        Swal.fire({ title: 'Memuat detail...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        fetch(`/products/${uuid}`)
+            .then(r => r.json())
+            .then(d => {
+                Swal.close();
+                document.getElementById('det_op_tanggal').innerText = new Date(d.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('det_op_toko').innerText = d.store ? d.store.nama : '-';
+                document.getElementById('det_op_petugas').innerText = d.user ? (d.user.name || d.user.username) : '-';
+                
+                const tbody = document.getElementById('opnameDetailRows');
+                tbody.innerHTML = '';
+                
+                d.details.forEach(it => {
+                    const diffColor = it.selisih < 0 ? '#D9534F' : (it.selisih > 0 ? '#2E7D32' : '#666');
+                    const diffText = it.selisih > 0 ? `+${it.selisih}` : it.selisih;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div style="font-weight: 600;">${it.product ? it.product.nama_produk : 'Produk Terhapus'}</div>
+                            <div style="font-size: 11px; color: #888;">${it.product ? (it.product.barcode || '-') : '-'}</div>
+                        </td>
+                        <td>${it.stok_sistem}</td>
+                        <td>${it.stok_fisik}</td>
+                        <td style="font-weight: 700; color: ${diffColor}">${diffText}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                openModal('opnameDetailModal');
+            })
+            .catch(() => Swal.fire('Error', 'Gagal memuat detail opname.', 'error'));
     }
 
     function openEditModal(product) {

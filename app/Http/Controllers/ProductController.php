@@ -23,7 +23,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with('category');
+        $query = Product::with(['category', 'stores']);
 
         /** @var User $user */
         $user = Auth::user();
@@ -50,6 +50,16 @@ class ProductController extends Controller
         }
 
         $products = $query->paginate(10);
+
+        // Add current stock for each product based on user store context
+        $products->getCollection()->transform(function ($product) use ($user) {
+            if ($user->isOwner()) {
+                $product->current_stok = $product->stores->sum('stok');
+            } else {
+                $product->current_stok = $product->stores->where('store_id', $user->store_id)->first()->stok ?? 0;
+            }
+            return $product;
+        });
         $categories = Category::all();
 
         return view('product.index', [

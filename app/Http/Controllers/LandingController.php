@@ -28,6 +28,7 @@ class LandingController extends Controller
         $promoProducts = [];
         foreach ($promos as $promo) {
             foreach ($promo->products as $product) {
+                $store = $promo->stores->first();
                 $promoProducts[] = (object) [
                     'nama_promo' => $promo->nama_promo,
                     'tipe' => $promo->tipe,
@@ -36,8 +37,8 @@ class LandingController extends Controller
                     'image_url' => $this->resolveImageUrl($product->image_url),
                     'category' => $product->category ? $product->category->nama_category : 'Bahan Kue',
                     'price' => $product->harga_jual,
-                    'outlet_name' => 'Tersedia di berbagai cabang',
-                    'outlet_address' => 'Silakan pilih outlet terdekat'
+                    'outlet_name' => $store ? $store->nama : 'Tersedia di berbagai cabang',
+                    'outlet_address' => $store ? $store->alamat : 'Silakan pilih outlet terdekat'
                 ];
             }
         }

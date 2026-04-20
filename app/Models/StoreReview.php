@@ -16,7 +16,10 @@ class StoreReview extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     public $timestamps = false; 
-
+    
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
     protected $fillable = [
         'store_id',
         'user_id',

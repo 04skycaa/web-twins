@@ -13,7 +13,7 @@
     {!! json_encode($products) !!}
 </script>
 <body id="body">
-    <div class="animated-bg"></div>\
+    <div class="animated-bg"></div>
     <div class="light-rays-container">
         <div class="god-ray ray1"></div>
         <div class="god-ray ray2"></div>
