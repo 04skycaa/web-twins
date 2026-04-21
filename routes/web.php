@@ -8,6 +8,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\KontakController;
 use App\Http\Controllers\TransaksiKeuanganController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\AbsensiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -92,6 +93,10 @@ Route::get('/transaksi-keuangan', [TransaksiKeuanganController::class, 'index'])
 Route::get('/laporan', [LaporanController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('laporan.index');
+
+Route::get('/absensi', [AbsensiController::class, 'index'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
+    ->name('absensi.index');
 
 
 Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');

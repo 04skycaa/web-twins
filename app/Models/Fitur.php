@@ -10,6 +10,8 @@ class Fitur extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'nama'
+        'nama',
+        'ikon',
+        'route'
     ];
 }

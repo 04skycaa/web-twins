@@ -90,6 +90,14 @@
                     <span>Laporan</span>
                 </a>
             @endif
+
+            @if(Auth::user()->operator->hasFeature(10))
+                <a href="{{ route('absensi.index') }}" class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                    <div class="curve-helper"></div>
+                    <iconify-icon icon="solar:calendar-date-bold-duotone"></iconify-icon>
+                    <span>Absensi</span>
+                </a>
+            @endif
         </nav>
 
     </aside>
@@ -127,6 +135,9 @@
                 @elseif(request()->routeIs('laporan.*'))
                     <i id="topbar-icon" data-lucide="file-text"></i>
                     <h2 id="topbar-title">Laporan Keseluruhan</h2>
+                @elseif(request()->routeIs('absensi.*'))
+                    <i id="topbar-icon" data-lucide="calendar-check"></i>
+                    <h2 id="topbar-title">Absensi Kehadiran</h2>
                 @else
                     <i id="topbar-icon" data-lucide="layers"></i>
                     <h2 id="topbar-title">Web Twins</h2>
