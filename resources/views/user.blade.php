@@ -299,6 +299,8 @@
         let historyData = [];
         let currentFilter = 'semua';
         let discountPercent = 0;
+        const isAuthenticated = @json(auth()->check());
+        const loginUrl = @json(route('login'));
 
         function renderProducts() {
             productGrid.innerHTML = '';
@@ -515,6 +517,26 @@
 
         function checkout() {
             if (cart.length === 0) return;
+
+            if (!isAuthenticated) {
+                Swal.fire({
+                    title: 'Login Diperlukan',
+                    text: 'Silakan login terlebih dahulu untuk melanjutkan checkout.',
+                    icon: 'warning',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--orange-brand)',
+                    confirmButtonText: 'Login Sekarang',
+                    showCancelButton: true,
+                    cancelButtonText: 'Nanti',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = loginUrl;
+                    }
+                });
+                return;
+            }
+
             const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
             // Biaya Service dihapus dari total akhir checkout
             const total = subtotal * (1 - discountPercent);
