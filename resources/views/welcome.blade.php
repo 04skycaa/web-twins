@@ -43,7 +43,24 @@
         }
     </style>
     
-<body>
+<body class="hide-overflow">
+    <div id="welcome-splash">
+        <div class="splash-panel top"></div>
+        <div class="splash-panel bottom"></div>
+        <div class="splash-center">
+            <div class="logo-wrapper">
+                <div class="logo-energy-ring" id="energyRing"></div>
+                <img src="{{ asset('images/logo.png') }}" alt="Twins Logo" class="splash-logo" id="splashLogo">
+            </div>
+            <div class="splash-text" id="splashText">
+                <span class="splash-char">T</span>
+                <span class="splash-char">W</span>
+                <span class="splash-char">I</span>
+                <span class="splash-char">N</span>
+                <span class="splash-char">S</span>
+            </div>
+        </div>
+    </div>
     <div class="animated-bg"></div>
     <div class="light-rays-container">
         <div class="god-ray ray1"></div>
@@ -54,17 +71,17 @@
     <div id="bakery-bg" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1;"></div>
     <div class="glow-sphere"></div>
 
-    <header>
+    <header id="mainHeader">
         <div class="logo">
             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-img">
             <span class="logo-text">TWINS</span>
         </div>
 
         <nav class="main-nav" id="mainNav">
-            <a href="#Beranda" class="nav-link">Beranda</a>
-            <a href="#promo-outlet" class="nav-link">Promo</a>
-            <a href="#outlet" class="nav-link">Outlet</a>
-            <a href="#keunggulan" class="nav-link">Keunggulan</a>
+            <a href="#beranda" class="nav-link active" id="nav-home">Beranda</a>
+            <a href="#promo-outlet" class="nav-link" id="nav-promo">Promo</a>
+            <a href="#outlet" class="nav-link" id="nav-outlet">Outlet</a>
+            <a href="#keunggulan" class="nav-link" id="nav-features">Keunggulan</a>
         </nav>
 
         <div class="nav-btns">
@@ -92,7 +109,7 @@
                     <button onclick="setTheme('twins')" data-theme-val="twins">🏮 Twins (Red)</button>
                     <button onclick="setTheme('neon')" data-theme-val="neon">🟣 Neon</button>
                     <button onclick="setTheme('ocean')" data-theme-val="ocean">🌊 Ocean</button>
-                    <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn</button>
+                    <button onclick="setTheme('forest')" data-theme-val="forest">🍂 Autumn (Orange)</button>
                 </div>
             </div>
 
@@ -136,12 +153,8 @@
                 @endphp
                 
                 @foreach($heroOutlets as $index => $heroOutlet)
-                <div class="nft-card" onclick="location.href='{{ route('user.index', $heroOutlet->uuid) }}'">
-                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" alt="{{ $heroOutlet->nama }}">
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; border-radius: 0 0 20px 20px;">
-                        <div style="font-size: 10px; opacity: 0.8; text-transform: uppercase;">Cabang</div>
-                        <div style="font-weight: 700; font-size: 14px;">{{ $heroOutlet->nama }}</div>
-                    </div>
+                <div class="nft-card">
+                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" alt="Store Image">
                 </div>
                 @endforeach
             </div>
@@ -642,6 +655,150 @@
     </nav>
 
     <script>
+    (function() {
+        
+        function initFinalReliability() {
+            if (window._twinsStarted) return;
+            window._twinsStarted = true;
+            
+            if (typeof gsap === 'undefined') {
+                console.error("[TWINS] GSAP missing.");
+                return;
+            }
+
+            console.log("[TWINS] Cinematic Engine Initialized");
+
+            // --- PER-PAGE VISIBILITY (Prevent Flicker) ---
+            gsap.set("header", { y: -100, opacity: 0 });
+            gsap.set("section#beranda", { opacity: 0 });
+
+            const parseTransform = (str) => {
+                str = str || '';
+                const sm = str.match(/scale\(([\d.]+)\)/);
+                const rm = str.match(/rotate\(([-\d.]+)deg\)/);
+                return { scale: sm ? parseFloat(sm[1]) : 1, rotation: rm ? parseFloat(rm[1]) : 0 };
+            };
+
+            const runHeroReveal = () => {
+                try {
+                    console.log("[TWINS] Triggering High-Impact Reveal Sequence...");
+                    const badge = document.getElementById('hero-badge');
+                    const wordLeft = document.getElementById('hero-word-left');
+                    const wordRight = document.getElementById('hero-word-right');
+                    const paragraph = document.getElementById('hero-paragraph');
+                    const cards = Array.from(document.querySelectorAll('#nftContainer .nft-card'));
+                    const clips = document.querySelectorAll('.hero-text-clip');
+
+                    if (!cards.length) return;
+
+                    // I. Initial State (Clean & Fast)
+                    gsap.set(["#hero-badge", "#hero-word-left", "#hero-word-right", "#hero-paragraph"], { autoAlpha: 0 });
+                    gsap.set(clips, { overflow: 'visible' }); // No clipping during entry
+                    
+                    const finals = cards.map(card => {
+                        const t = parseTransform(card.style.transform);
+                        return {
+                            left: card.style.left || '50%', top: card.style.top || '50%',
+                            transform: card.style.transform || 'translate(-50%,-50%)',
+                            scale: t.scale, rotation: t.rotation,
+                            opacity: parseFloat(card.style.opacity) || 1,
+                            zIndex: card.style.zIndex || '1'
+                        };
+                    });
+
+                    // II. Prepare Elements
+                    cards.forEach(card => {
+                        card.style.transition = 'none';
+                        card.style.left = '50%'; card.style.top = '50%';
+                        card.style.zIndex = '5'; card.style.transform = '';
+                        gsap.set(card, { xPercent: -50, yPercent: -50, scale: 0.1, rotation: 0, autoAlpha: 0 });
+                    });
+
+                    // AMPLIFIED OFFSETS
+                    if (badge) gsap.set(badge, { y: -120 });
+                    if (wordLeft) gsap.set(wordLeft, { x: -150 });
+                    if (wordRight) gsap.set(wordRight, { x: 150 });
+                    if (paragraph) gsap.set(paragraph, { filter: 'blur(20px)', y: 40 });
+
+                    const htl = gsap.timeline({ defaults: { ease: 'power4.out' } });
+
+                    // III. THE SHOW (Parallel Action)
+                    // Start Text & Cards together for energy
+                    htl.to(cards, { scale: 0.75, autoAlpha: 1, duration: 0.8, stagger: 0.05, ease: "back.out(1.7)" }, 0);
+                    
+                    if (badge) htl.to(badge, { y: 0, autoAlpha: 1, duration: 1.2, ease: 'elastic.out(1, 0.6)' }, 0.1);
+                    if (wordLeft) htl.to(wordLeft, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.2);
+                    if (wordRight) htl.to(wordRight, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.3);
+                    if (paragraph) htl.to(paragraph, { autoAlpha: 1, filter: 'blur(0px)', y: 0, duration: 1.6 }, 0.5);
+
+                    // Opening Arc (Dramatic Sweep)
+                    cards.forEach((card, i) => {
+                        const f = finals[i];
+                        htl.to(card, {
+                            left: f.left, top: f.top, scale: f.scale, rotation: f.rotation, autoAlpha: f.opacity,
+                            duration: 1.8, ease: 'expo.out',
+                            onStart: () => { card.style.zIndex = f.zIndex; },
+                            onComplete: () => {
+                                gsap.set(card, { clearProps: 'all' });
+                                card.style.cssText = `left:${f.left}; top:${f.top}; transform:${f.transform}; opacity:${f.opacity}; z-index:${f.zIndex};`;
+                            }
+                        }, 0.8 + (i * 0.1));
+                    });
+
+                    // Cleanup states
+                    htl.set(clips, { overflow: 'hidden' }, "+=0.2");
+
+                } catch (e) {
+                    console.error("[TWINS] Hero Animation Error:", e);
+                    gsap.set(["section#beranda", "#hero-badge", "h1", "p", ".nft-card"], { autoAlpha: 1 });
+                }
+            };
+
+            window.twinsHeroManual = runHeroReveal;
+
+            // SPLASH TIMELINE
+            const stl = gsap.timeline({
+                onComplete: () => {
+                    document.getElementById('welcome-splash').style.display = 'none';
+                    document.body.classList.remove('hide-overflow');
+                    document.body.classList.add('show-content');
+                }
+            });
+
+            stl.to("#splashLogo", { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out", filter: "brightness(2) contrast(1.5)" })
+               .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
+               .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, filter: "blur(0px)", duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
+               .set("#energyRing", { opacity: 1 })
+               .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
+               .to("#splashText", { opacity: 0, scale: 0.8, filter: "blur(15px)", duration: 0.4, ease: "power2.in" }, "+=0.3")
+               .to("#splashLogo", { scale: 0, opacity: 0, filter: "brightness(4) blur(10px)", duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
+               .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
+               .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
+               .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
+               .to("section#beranda", { opacity: 1, duration: 0.8, ease: "power2.out" }, "-=1.0")
+               
+               // PRECISE SYNC: Trigger hero reveal earlier (1.2s before end)
+               .add(() => {
+                   console.log("[TWINS] Double-Trigger: Cinematic Reveal Started");
+                   runHeroReveal();
+               }, "-=1.2")
+
+               .to("header", { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, "-=0.6")
+               .set("body", { onStart: () => {
+                   document.body.classList.add('show-content');
+                   if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
+               }}, "-=0.2");
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initFinalReliability();
+        } else {
+            document.addEventListener('DOMContentLoaded', initFinalReliability);
+        }
+    })();
+    </script>
+
+    <script>
         const themeBtn = document.getElementById('themeBtn');
         const sunIcon = document.getElementById('sunIcon');
         const moonIcon = document.getElementById('moonIcon');
@@ -824,7 +981,8 @@
         const savedTheme = localStorage.getItem('twins_theme') || 'dark';
         setTheme(savedTheme);
 
-        // Intersection Observer for Animations
+        // Intersection Observer for Animations - Cleaned up
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -1081,6 +1239,41 @@
                     confirmButtonColor: 'var(--accent-pink)',
                 });
             }
+
+            // --- Scroll Spy & Nav Active Logic ---
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            function updateActiveLink() {
+                let scrollY = window.pageYOffset;
+                sections.forEach(section => {
+                    const sectionHeight = section.offsetHeight;
+                    const sectionTop = section.offsetTop - 100;
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                        document.querySelector('.main-nav a[href*=' + sectionId + ']')?.classList.add('active');
+                    } else {
+                        document.querySelector('.main-nav a[href*=' + sectionId + ']')?.classList.remove('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', updateActiveLink);
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Manual override for instant feedback
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Close mobile menu if open
+                    if (window.innerWidth <= 768) {
+                        mainNav.classList.remove('active');
+                        menuToggle.classList.remove('active');
+                    }
+                });
+            });
         });
     </script>
 
