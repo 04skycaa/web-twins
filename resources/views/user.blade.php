@@ -7,6 +7,7 @@
     <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <script type="application/json" id="products-data">
@@ -26,7 +27,7 @@
             <span class="logo-text">TWINS</span>
         </div>
         
-        <nav class="main-nav">
+        <nav class="main-nav" id="mainNav">
             <a class="nav-link active" id="nav-home" onclick="switchPage('home')">Beranda</a>
             <a class="nav-link" id="nav-cat" onclick="scrollToCategory()">Kategori</a>
             <a class="nav-link" id="nav-history" onclick="switchPage('history')">Riwayat</a>
@@ -721,6 +722,20 @@
                     background: 'var(--bg-color)',
                     color: 'var(--text-color)',
                     confirmButtonColor: 'var(--accent-pink)',
+                });
+            }
+        });
+
+        // --- DASHBOARD PREMIUM HEADER ANIMATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof gsap !== 'undefined') {
+                gsap.set("#mainHeader", { y: -100, opacity: 0 });
+                gsap.to("#mainHeader", { 
+                    y: 0, 
+                    opacity: 1, 
+                    duration: 1.2, 
+                    ease: "expo.out",
+                    delay: 0.2
                 });
             }
         });
