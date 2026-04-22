@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
 </script>
+
 <body id="body">
     <div class="animated-bg"></div>
     <div class="light-rays-container">
@@ -26,7 +28,7 @@
             <img src="{{ asset('images/logo.png') }}" alt="Logo" class="logo-img">
             <span class="logo-text">TWINS</span>
         </div>
-        
+
         <nav class="main-nav" id="mainNav">
             <a class="nav-link active" id="nav-home" onclick="switchPage('home')">Beranda</a>
             <a class="nav-link" id="nav-cat" onclick="scrollToCategory()">Kategori</a>
@@ -36,7 +38,8 @@
         <div class="nav-btns">
             <div class="mobile-user-drop">
                 <button class="user-icon-btn" onclick="toggleUserMenu()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
@@ -49,7 +52,10 @@
 
             <div class="theme-dropdown">
                 <button class="theme-btn" onclick="toggleThemeMenu()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
                     Tema
                 </button>
                 <div class="theme-dropdown-content" id="themeMenu">
@@ -81,7 +87,12 @@
     </header>
 
     <div class="mobile-cart-fab" id="mobileCartBtn" onclick="toggleBottomSheet()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
         <div class="cart-badge" id="cartBadge">0</div>
     </div>
 
@@ -99,27 +110,41 @@
                 <h1 style="margin: 5px 0 15px 0;">{{ $outlet->nama }}</h1>
                 <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 20px;">📍 {{ $outlet->alamat }}</p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">🕒 {{ $outlet->jam_buka }}</span>
-                    <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">⭐ {{ number_format($outlet->rating, 1) }}</span>
+                    <span class="badge"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">🕒
+                        {{ $outlet->jam_buka }}</span>
+                    <span class="badge"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">⭐
+                        {{ number_format($outlet->rating, 1) }}</span>
                 </div>
             </div>
 
             <section id="categorySection" class="search-filter-section">
                 <div class="search-row">
                     <div class="search-box">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="searchInput" placeholder="Cari menu favoritmu..." oninput="handleSearch()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Cari menu favoritmu..."
+                            oninput="handleSearch()">
                     </div>
                     <button class="filter-btn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
                         Filter
                     </button>
                 </div>
-                
+
                 <div class="filter-container" id="filterContainer">
-                    <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">Semua</div>
-                    @foreach($categories as $category)
-                    <div class="filter-chip" data-category="{{ $category['id'] }}" onclick="filterProducts(this.dataset.category, this)">{{ $category['name'] }}</div>
+                    <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">
+                        Semua</div>
+                    @foreach ($categories as $category)
+                        <div class="filter-chip" data-category="{{ $category['id'] }}"
+                            onclick="filterProducts(this.dataset.category, this)">{{ $category['name'] }}</div>
                     @endforeach
                 </div>
 
@@ -138,47 +163,54 @@
 
                 <!-- Review Form -->
                 @auth
-                <div class="review-form-card">
-                    <h4>Bagaimana menurutmu tentang toko ini?</h4>
-                    <form action="{{ route('store.review.store', $outlet->uuid) }}" method="POST">
-                        @csrf
-                        <div class="rating-selector">
-                            <input type="radio" name="rating" value="5" id="star5"><label for="star5">★</label>
-                            <input type="radio" name="rating" value="4" id="star4"><label for="star4">★</label>
-                            <input type="radio" name="rating" value="3" id="star3"><label for="star3">★</label>
-                            <input type="radio" name="rating" value="2" id="star2"><label for="star2">★</label>
-                            <input type="radio" name="rating" value="1" id="star1" required><label for="star1">★</label>
-                        </div>
-                        <textarea name="comment" placeholder="Berikan komentar Anda..." rows="3"></textarea>
-                        <button type="submit" class="btn-fill" style="margin-top: 15px; width: 100%;">Kirim Ulasan</button>
-                    </form>
-                </div>
+                    <div class="review-form-card">
+                        <h4>Bagaimana menurutmu tentang toko ini?</h4>
+                        <form action="{{ route('store.review.store', $outlet->uuid) }}" method="POST">
+                            @csrf
+                            <div class="rating-selector">
+                                <input type="radio" name="rating" value="5" id="star5"><label
+                                    for="star5">★</label>
+                                <input type="radio" name="rating" value="4" id="star4"><label
+                                    for="star4">★</label>
+                                <input type="radio" name="rating" value="3" id="star3"><label
+                                    for="star3">★</label>
+                                <input type="radio" name="rating" value="2" id="star2"><label
+                                    for="star2">★</label>
+                                <input type="radio" name="rating" value="1" id="star1" required><label
+                                    for="star1">★</label>
+                            </div>
+                            <textarea name="comment" placeholder="Berikan komentar Anda..." rows="3"></textarea>
+                            <button type="submit" class="btn-fill" style="margin-top: 15px; width: 100%;">Kirim
+                                Ulasan</button>
+                        </form>
+                    </div>
                 @else
-                <div class="login-prompt-card">
-                    <p>Silakan <a href="{{ route('login') }}">Login</a> untuk memberikan ulasan.</p>
-                </div>
+                    <div class="login-prompt-card">
+                        <p>Silakan <a href="{{ route('login') }}">Login</a> untuk memberikan ulasan.</p>
+                    </div>
                 @endauth
 
                 <!-- Reviews List -->
                 <div class="reviews-list">
                     @forelse($reviews as $review)
-                    <div class="review-item-card">
-                        <div class="review-top">
-                            <div class="user-meta">
-                                <div class="user-avatar-sm">{{ strtoupper(substr($review->user->username, 0, 1)) }}</div>
-                                <strong>{{ $review->user->username }}</strong>
+                        <div class="review-item-card">
+                            <div class="review-top">
+                                <div class="user-meta">
+                                    <div class="user-avatar-sm">
+                                        {{ strtoupper(substr($review->user->username, 0, 1)) }}</div>
+                                    <strong>{{ $review->user->username }}</strong>
+                                </div>
+                                <span class="review-date">{{ $review->created_at->diffForHumans() }}</span>
                             </div>
-                            <span class="review-date">{{ $review->created_at->diffForHumans() }}</span>
+                            <div class="review-rating">
+                                @for ($i = 0; $i < 5; $i++)
+                                    <span class="star {{ $i < $review->rating ? 'filled' : '' }}">★</span>
+                                @endfor
+                            </div>
+                            <p class="review-comment">{{ $review->comment ?? 'Hanya memberikan rating.' }}</p>
                         </div>
-                        <div class="review-rating">
-                            @for($i = 0; $i < 5; $i++)
-                                <span class="star {{ $i < $review->rating ? 'filled' : '' }}">★</span>
-                            @endfor
-                        </div>
-                        <p class="review-comment">{{ $review->comment ?? 'Hanya memberikan rating.' }}</p>
-                    </div>
                     @empty
-                    <p class="empty-msg">Belum ada ulasan untuk toko ini.</p>
+                        <p class="empty-msg">Belum ada ulasan untuk toko ini.</p>
                     @endforelse
                 </div>
             </section>
@@ -193,38 +225,48 @@
 
         <aside class="sidebar anim-fade-up" id="sidebarArea">
             <div id="sidebarContentWrapper">
-                <div class="white-card hidden" id="addressSection" style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div class="white-card hidden" id="addressSection"
+                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="font-size: 0.95rem;">Delivery Address</h4>
-                        <a href="#" style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
+                        <a href="#"
+                            style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 10px;">
                         <span style="font-size: 1.2rem;">📍</span>
                         <div>
                             <p style="font-size: 0.85rem; font-weight: 600;">Elm Street, 23</p>
-                            <p style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman default Anda.</p>
+                            <p style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman
+                                default Anda.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="white-card hidden" id="orderSection" style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                <div class="white-card hidden" id="orderSection"
+                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <h4 style="margin-bottom: 15px; font-size: 0.95rem;">Order Menu</h4>
                     <div id="cartItems"></div>
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600;">Total</span>
-                            <span class="totalPriceDisplay" style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
+                            <span class="totalPriceDisplay"
+                                style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
                         </div>
                     </div>
-                    <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
+                    <button class="btn-fill" onclick="checkout()"
+                        style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
                 </div>
 
-                <div id="discountSection" class="white-card hidden" style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
+                <div id="discountSection" class="white-card hidden"
+                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
                     <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="promoInput" placeholder="TWINS20" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem;">
-                        <button onclick="applyPromo()" style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
+                        <input type="text" id="promoInput" placeholder="TWINS20"
+                            style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem;">
+                        <button onclick="applyPromo()"
+                            style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
                     </div>
                     <p id="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
                 </div>
@@ -234,19 +276,37 @@
 
     <nav class="mobile-nav">
         <div class="mob-nav-item active" id="mob-home" onclick="switchPage('home')">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
             <span>Beranda</span>
         </div>
         <div class="mob-nav-item" id="mob-cat" onclick="scrollToCategory()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
             <span>Kategori</span>
         </div>
         <div class="mob-nav-item" id="mob-history" onclick="switchPage('history')">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
             <span>Riwayat</span>
         </div>
         <div class="mob-nav-item" onclick="goToWhatsApp()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                </path>
+            </svg>
             <span>Chat</span>
         </div>
     </nav>
@@ -266,7 +326,7 @@
         });
 
         const body = document.getElementById('body');
-        
+
         window.addEventListener('scroll', () => {
             const header = document.getElementById('mainHeader');
             if (window.scrollY > 50) {
@@ -280,7 +340,7 @@
         const productGrid = document.getElementById('productGrid');
         const searchInput = document.getElementById('searchInput');
         const mainContainer = document.getElementById('mainContainer');
-        
+
         const addressSection = document.getElementById('addressSection');
         const orderSection = document.getElementById('orderSection');
         const discountSection = document.getElementById('discountSection');
@@ -300,6 +360,8 @@
         let historyData = [];
         let currentFilter = 'semua';
         let discountPercent = 0;
+        const isAuthenticated = @json(auth()->check());
+        const loginUrl = @json(route('login'));
 
         function renderProducts() {
             productGrid.innerHTML = '';
@@ -309,9 +371,10 @@
                 const matchesSearch = p.name.toLowerCase().includes(searchTerm);
                 return matchesCategory && matchesSearch;
             });
-            
+
             if (filtered.length === 0) {
-                productGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--sub-text);">Item tidak ditemukan.</p>';
+                productGrid.innerHTML =
+                    '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--sub-text);">Item tidak ditemukan.</p>';
                 return;
             }
 
@@ -330,11 +393,13 @@
                     </div>
                 `;
                 productGrid.appendChild(card);
-                if(window.observer) window.observer.observe(card);
+                if (window.observer) window.observer.observe(card);
             });
         }
 
-        function handleSearch() { renderProducts(); }
+        function handleSearch() {
+            renderProducts();
+        }
 
         function filterProducts(category, element) {
             document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
@@ -348,11 +413,15 @@
             if (existingItem) {
                 existingItem.qty += 1;
             } else {
-                cart.push({ name, price, qty: 1 });
+                cart.push({
+                    name,
+                    price,
+                    qty: 1
+                });
             }
             renderCart();
             const fab = document.getElementById('mobileCartBtn');
-            if(fab) {
+            if (fab) {
                 fab.style.transform = 'scale(1.2)';
                 setTimeout(() => fab.style.transform = '', 200);
             }
@@ -375,7 +444,7 @@
             const isMobile = window.innerWidth <= 1024;
             const badge = document.getElementById('cartBadge');
             const totalCount = cart.reduce((acc, item) => acc + item.qty, 0);
-            if(badge) badge.innerText = totalCount;
+            if (badge) badge.innerText = totalCount;
 
             const mobileCartBtn = document.getElementById('mobileCartBtn');
 
@@ -385,15 +454,15 @@
                 discountSection.classList.remove('hidden');
                 if (!isMobile) {
                     mainContainer.classList.add('has-sidebar');
-                    if(mobileCartBtn) mobileCartBtn.style.display = 'none';
+                    if (mobileCartBtn) mobileCartBtn.style.display = 'none';
                 } else {
                     mainContainer.classList.remove('has-sidebar');
-                    if(mobileCartBtn) mobileCartBtn.style.display = 'flex';
+                    if (mobileCartBtn) mobileCartBtn.style.display = 'flex';
                 }
             } else {
                 [addressSection, orderSection, discountSection].forEach(el => el.classList.add('hidden'));
                 mainContainer.classList.remove('has-sidebar');
-                if(mobileCartBtn) mobileCartBtn.style.display = 'none';
+                if (mobileCartBtn) mobileCartBtn.style.display = 'none';
                 toggleBottomSheet(false);
             }
 
@@ -403,7 +472,8 @@
             cart.forEach((item, index) => {
                 subtotal += (item.price * item.qty);
                 const div = document.createElement('div');
-                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
+                div.style.cssText =
+                    'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
                 div.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
                         <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">📦</div>
@@ -433,7 +503,7 @@
             if (isMobile) {
                 const sheetContent = document.getElementById('mobileSheetContent');
                 const sidebarContent = document.getElementById('sidebarContentWrapper');
-                if(sheetContent && sidebarContent) {
+                if (sheetContent && sidebarContent) {
                     sheetContent.innerHTML = sidebarContent.innerHTML;
                 }
             }
@@ -442,10 +512,10 @@
         function toggleBottomSheet(force) {
             const sheet = document.getElementById('bottomSheet');
             const overlay = document.getElementById('sheetOverlay');
-            if(!sheet || !overlay) return;
-            
+            if (!sheet || !overlay) return;
+
             const isActive = force !== undefined ? force : !sheet.classList.contains('active');
-            
+
             if (isActive && cart.length > 0) {
                 sheet.classList.add('active');
                 overlay.classList.add('active');
@@ -477,19 +547,22 @@
             document.querySelectorAll('.nav-link, .mob-nav-item').forEach(l => l.classList.remove('active'));
             homePage.classList.add('hidden');
             historyPage.classList.add('hidden');
-            
+
             if (page === 'home') {
                 homePage.classList.remove('hidden');
                 document.getElementById('nav-home').classList.add('active');
                 const mobHome = document.getElementById('mob-home');
-                if(mobHome) mobHome.classList.add('active');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (mobHome) mobHome.classList.add('active');
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
                 renderCart();
             } else if (page === 'history') {
                 historyPage.classList.remove('hidden');
                 document.getElementById('nav-history').classList.add('active');
                 const mobHistory = document.getElementById('mob-history');
-                if(mobHistory) mobHistory.classList.add('active');
+                if (mobHistory) mobHistory.classList.add('active');
                 mainContainer.classList.remove('has-sidebar');
                 renderHistory();
             }
@@ -500,12 +573,14 @@
             document.querySelectorAll('.nav-link, .mob-nav-item').forEach(l => l.classList.remove('active'));
             document.getElementById('nav-cat').classList.add('active');
             const mobCat = document.getElementById('mob-cat');
-            if(mobCat) mobCat.classList.add('active');
+            if (mobCat) mobCat.classList.add('active');
 
             setTimeout(() => {
                 const categorySection = document.getElementById('categorySection');
-                if(categorySection) {
-                    categorySection.scrollIntoView({ behavior: 'smooth' });
+                if (categorySection) {
+                    categorySection.scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 }
             }, 100);
         }
@@ -516,6 +591,26 @@
 
         function checkout() {
             if (cart.length === 0) return;
+
+            if (!isAuthenticated) {
+                Swal.fire({
+                    title: 'Login Diperlukan',
+                    text: 'Silakan login terlebih dahulu untuk melanjutkan checkout.',
+                    icon: 'warning',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--orange-brand)',
+                    confirmButtonText: 'Login Sekarang',
+                    showCancelButton: true,
+                    cancelButtonText: 'Nanti',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = loginUrl;
+                    }
+                });
+                return;
+            }
+
             const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
             // Biaya Service dihapus dari total akhir checkout
             const total = subtotal * (1 - discountPercent);
@@ -533,7 +628,8 @@
 
         function renderHistory() {
             if (historyData.length === 0) {
-                historyList.innerHTML = '<p style="color: var(--sub-text); text-align: center; padding: 50px;">Belum ada riwayat pesanan.</p>';
+                historyList.innerHTML =
+                    '<p style="color: var(--sub-text); text-align: center; padding: 50px;">Belum ada riwayat pesanan.</p>';
                 return;
             }
             historyList.innerHTML = historyData.map(trx => `
@@ -558,7 +654,9 @@
                     entry.target.classList.add('in-view');
                 }
             });
-        }, { threshold: 0.1 });
+        }, {
+            threshold: 0.1
+        });
 
         // Theme Menu Logic
         function toggleThemeMenu() {
@@ -575,7 +673,7 @@
         function updateActiveThemeBtn(themeName) {
             document.querySelectorAll('#themeMenu button').forEach(btn => {
                 btn.classList.remove('active');
-                if(btn.getAttribute('data-theme-val') === themeName) {
+                if (btn.getAttribute('data-theme-val') === themeName) {
                     btn.classList.add('active');
                 }
             });
@@ -595,7 +693,7 @@
         setTheme(savedTheme);
 
         document.querySelectorAll('.anim-fade-up, .anim-zoom-in, .white-card').forEach(el => {
-            if(!el.classList.contains('anim-fade-up') && !el.classList.contains('anim-zoom-in')) {
+            if (!el.classList.contains('anim-fade-up') && !el.classList.contains('anim-zoom-in')) {
                 el.classList.add('anim-fade-up');
             }
             window.observer.observe(el);
@@ -611,12 +709,12 @@
             const bgContainer = document.getElementById('bakery-bg');
             let parallaxLayers = [];
 
-            if(bgContainer) {
+            if (bgContainer) {
                 // Initialize 3D Engine for Background
                 bgContainer.style.perspective = '1200px';
                 bgContainer.style.transformStyle = 'preserve-3d';
 
-                for(let i = 0; i < 20; i++) {
+                for (let i = 0; i < 20; i++) {
                     const el = document.createElement('div');
                     el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
                     el.innerText = items[Math.floor(Math.random() * items.length)];
@@ -624,7 +722,7 @@
                     el.style.animationDuration = (Math.random() * 25 + 20) + 's';
                     el.style.animationDelay = '-' + (Math.random() * 20) + 's';
                     el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
-                    
+
                     const wrapper = document.createElement('div');
                     wrapper.style.position = 'absolute';
                     wrapper.style.width = '100vw';
@@ -633,18 +731,20 @@
                     wrapper.style.left = '0';
                     wrapper.style.pointerEvents = 'none';
                     wrapper.style.transformStyle = 'preserve-3d';
-                    
+
                     const depth = Math.random() * 200 - 100; // Between -100px and +100px Z depth
                     wrapper.dataset.depthZ = depth;
-                    
+
                     wrapper.appendChild(el);
                     bgContainer.appendChild(wrapper);
                     parallaxLayers.push(wrapper);
                 }
 
                 // Smooth Animation Variables
-                let targetX = 0, targetY = 0;
-                let currentX = 0, currentY = 0;
+                let targetX = 0,
+                    targetY = 0;
+                let currentX = 0,
+                    currentY = 0;
 
                 document.addEventListener("mousemove", (e) => {
                     targetX = (e.clientX - window.innerWidth / 2) * 0.08;
@@ -656,12 +756,13 @@
                     currentY += (targetY - currentY) * 0.05;
 
                     // Tilt the entire bakery container & scale slightly to prevent edge cutoff
-                    bgContainer.style.transform = `scale(1.1) rotateX(${-currentY * 0.4}deg) rotateY(${currentX * 0.4}deg)`;
+                    bgContainer.style.transform =
+                        `scale(1.1) rotateX(${-currentY * 0.4}deg) rotateY(${currentX * 0.4}deg)`;
 
                     // Shift individual cakes based on their 3D depth to create parallax distance
                     parallaxLayers.forEach((layer) => {
                         const z = parseFloat(layer.dataset.depthZ);
-                        const moveX = currentX * (z / 50); 
+                        const moveX = currentX * (z / 50);
                         const moveY = currentY * (z / 50);
                         layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
                     });
@@ -676,7 +777,7 @@
         });
         // SweetAlert2 Session Messages
         const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
-        const _sessionError   = document.querySelector('meta[name="session-error"]')?.content || null;
+        const _sessionError = document.querySelector('meta[name="session-error"]')?.content || null;
 
         document.addEventListener('DOMContentLoaded', () => {
             if (_sessionSuccess) {
@@ -708,10 +809,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof gsap !== 'undefined') {
                 gsap.set("#mainHeader", { y: -100, opacity: 0 });
-                gsap.to("#mainHeader", { 
-                    y: 0, 
-                    opacity: 1, 
-                    duration: 1.2, 
+                gsap.to("#mainHeader", {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1.2,
                     ease: "expo.out",
                     delay: 0.2
                 });
@@ -719,4 +820,5 @@
         });
     </script>
 </body>
+
 </html>
