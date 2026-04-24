@@ -41,12 +41,12 @@
         grids.forEach(grid => {
             const items = grid.querySelectorAll('[data-stagger-item]');
             if (!items.length) return;
-            gsap.set(items, { opacity: 0, y: 60, scale: 0.94 });
+            gsap.set(items, { opacity: 0, y: 100, scale: 0.85, rotationX: -15, filter: 'blur(10px)' });
             ScrollTrigger.create({
-                trigger: grid, start: 'top 82%',
+                trigger: grid, start: 'top 85%',
                 onEnter: () => gsap.to(items, {
-                    opacity: 1, y: 0, scale: 1,
-                    duration: 0.75, stagger: 0.13, ease: 'back.out(1.3)', clearProps: 'all',
+                    opacity: 1, y: 0, scale: 1, rotationX: 0, filter: 'blur(0px)',
+                    duration: 1.2, stagger: 0.12, ease: 'expo.out', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -54,11 +54,11 @@
 
         const promoCards = document.querySelectorAll('.promo-card');
         if (promoCards.length) {
-            gsap.set(promoCards, { opacity: 0, y: 50 });
+            gsap.set(promoCards, { opacity: 0, y: 80, rotation: 5, scale: 0.9, filter: 'blur(10px)' });
             ScrollTrigger.create({
                 trigger: '.promo-slider-container', start: 'top 85%',
                 onEnter: () => gsap.to(promoCards, {
-                    opacity: 1, y: 0, duration: 0.7, stagger: 0.1, ease: 'power3.out', clearProps: 'all',
+                    opacity: 1, y: 0, rotation: 0, scale: 1, filter: 'blur(0px)', duration: 1.1, stagger: 0.15, ease: 'back.out(1.5)', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -67,13 +67,13 @@
         const boxLeft = document.querySelector('[data-reveal-left]');
         const boxRight = document.querySelector('[data-reveal-right]');
         if (boxLeft && boxRight) {
-            gsap.set(boxLeft, { opacity: 0, x: -60 });
-            gsap.set(boxRight, { opacity: 0, x: 60 });
+            gsap.set(boxLeft, { opacity: 0, x: -100, filter: 'blur(15px)', rotationY: 15 });
+            gsap.set(boxRight, { opacity: 0, x: 100, filter: 'blur(15px)', rotationY: -15 });
             ScrollTrigger.create({
                 trigger: '.highlight-container', start: 'top 80%',
                 onEnter: () => {
-                    gsap.to(boxLeft, { opacity: 1, x: 0, duration: 1.1, ease: 'expo.out', clearProps: 'all' });
-                    gsap.to(boxRight, { opacity: 1, x: 0, duration: 1.1, delay: 0.12, ease: 'expo.out', clearProps: 'all' });
+                    gsap.to(boxLeft, { opacity: 1, x: 0, filter: 'blur(0px)', rotationY: 0, duration: 1.4, ease: 'power4.out', clearProps: 'all' });
+                    gsap.to(boxRight, { opacity: 1, x: 0, filter: 'blur(0px)', rotationY: 0, duration: 1.4, delay: 0.15, ease: 'power4.out', clearProps: 'all' });
                 },
                 once: true,
             });
@@ -84,31 +84,31 @@
         const featImg = document.querySelector('.product-image-container');
 
         if (featLeft.length) {
-            gsap.set(featLeft, { opacity: 0, x: -50 });
+            gsap.set(featLeft, { opacity: 0, x: -80, scale: 0.9, filter: 'blur(8px)' });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featLeft, {
-                    opacity: 1, x: 0, duration: 0.85, stagger: 0.18, ease: 'power3.out', clearProps: 'all',
+                    opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
                 }),
                 once: true,
             });
         }
         if (featRight.length) {
-            gsap.set(featRight, { opacity: 0, x: 50 });
+            gsap.set(featRight, { opacity: 0, x: 80, scale: 0.9, filter: 'blur(8px)' });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featRight, {
-                    opacity: 1, x: 0, duration: 0.85, stagger: 0.18, ease: 'power3.out', clearProps: 'all',
+                    opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'back.out(1.4)', clearProps: 'all',
                 }),
                 once: true,
             });
         }
         if (featImg) {
-            gsap.set(featImg, { opacity: 0, scale: 0.88 });
+            gsap.set(featImg, { opacity: 0, scale: 0.7, rotation: -8, filter: 'blur(12px)' });
             ScrollTrigger.create({
                 trigger: '.grid-container', start: 'top 78%',
                 onEnter: () => gsap.to(featImg, {
-                    opacity: 1, scale: 1, duration: 1.1, ease: 'expo.out', clearProps: 'all',
+                    opacity: 1, scale: 1, rotation: 0, filter: 'blur(0px)', duration: 1.5, ease: 'expo.out', clearProps: 'all',
                 }),
                 once: true,
             });
@@ -116,13 +116,50 @@
 
         const testiHeader = document.querySelectorAll('[data-reveal-up]');
         testiHeader.forEach(el => {
-            gsap.set(el, { opacity: 0, y: 35 });
+            gsap.set(el, { opacity: 0, y: 50, scale: 0.9, filter: 'blur(5px)' });
             ScrollTrigger.create({
                 trigger: el, start: 'top 88%',
                 onEnter: () => gsap.to(el, {
-                    opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', clearProps: 'all',
+                    opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, ease: 'back.out(1.5)', clearProps: 'all',
                 }),
                 once: true,
+            });
+        });
+
+        // Footer Animations
+        const footerCols = document.querySelectorAll('.footer-col');
+        if (footerCols.length) {
+            gsap.set(footerCols, { opacity: 0, y: 60, filter: 'blur(5px)' });
+            ScrollTrigger.create({
+                trigger: '.main-footer', start: 'top 90%',
+                onEnter: () => gsap.to(footerCols, {
+                    opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.2, stagger: 0.2, ease: 'power3.out', clearProps: 'all'
+                }),
+                once: true
+            });
+        }
+        
+        const footerBottom = document.querySelector('.footer-bottom');
+        if(footerBottom) {
+             gsap.set(footerBottom, { opacity: 0 });
+             ScrollTrigger.create({
+                trigger: '.main-footer', start: 'top 90%',
+                onEnter: () => gsap.to(footerBottom, {
+                    opacity: 1, duration: 1.2, delay: 0.6, ease: 'power3.out', clearProps: 'all'
+                }),
+                once: true
+            });
+        }
+
+        // Section Fade & Zoom
+        const exploreSections = document.querySelectorAll('.explore-section, .highlight-section, .product-features-section, .promo-section, .testimonials-marquee-section');
+        exploreSections.forEach(sec => {
+            gsap.set(sec, { opacity: 0, y: 40 });
+            ScrollTrigger.create({
+                trigger: sec,
+                start: "top 85%",
+                onEnter: () => gsap.to(sec, { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", clearProps: 'all' }),
+                once: true
             });
         });
     }
@@ -214,8 +251,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        window.startHeroAnimation = initHeroAnimation;
-
         if (typeof ScrollTrigger !== 'undefined') {
             gsap.registerPlugin(ScrollTrigger);
 
@@ -228,12 +263,23 @@
             document.head.appendChild(style);
 
             initLenis();
-            initScrollReveal();
-            initTextSplit();
             initMagnetic();
-            initParallax();
 
-            window.addEventListener('load', () => ScrollTrigger.refresh());
+            // Tunggu animasi layar pembuka selesai dan layout full terekspansi 
+            // agar perhitungan start point ScrollTrigger akurat dan tidak meleset
+            const checkSplash = setInterval(() => {
+                if (!document.body.classList.contains('hide-overflow')) {
+                    clearInterval(checkSplash);
+                    
+                    // Jalankan semua instance Trigger setelah layout siap
+                    initScrollReveal();
+                    initTextSplit();
+                    initParallax();
+                    
+                    // Force refresh agar Trigger sinkron
+                    ScrollTrigger.refresh();
+                }
+            }, 100);
         }
     });
 
