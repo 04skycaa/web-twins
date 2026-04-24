@@ -30,6 +30,11 @@ class Product extends Model
         return $this->belongsTo(Category::class, 'kategori_id', 'uuid');
     }
 
+    public function productStores()
+    {
+        return $this->hasMany(ProductStore::class, 'product_id', 'uuid');
+    }
+
     public function stores()
     {
         return $this->hasMany(ProductStore::class, 'product_id', 'uuid');

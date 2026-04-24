@@ -13,6 +13,7 @@ class Promo extends Model
     protected $primaryKey = 'uuid';
     protected $keyType = 'string';
     public $incrementing = false;
+    public $timestamps = false;
 
     protected $fillable = [
         'nama_promo',
@@ -20,12 +21,15 @@ class Promo extends Model
         'nilai',
         'tanggal_mulai',
         'tanggal_selesai',
-        'status'
+        'status',
+        'image_banner',
+        'deskripsi'
     ];
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'promo_products', 'promo_id', 'product_id');
+        return $this->belongsToMany(Product::class, 'promo_products', 'promo_id', 'product_id')
+                    ->withPivot('tipe_diskon', 'nilai_diskon');
     }
 
     public function stores()

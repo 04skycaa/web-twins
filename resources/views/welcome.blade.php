@@ -166,38 +166,23 @@
             <h2 data-split-text>PROMO <span>PRODUK</span></h2>
         </div>
 
-        <div class="promo-slider-container" id="promoSlider">
+        <div class="promo-slider-container" id="promoSlider" style="max-width: 800px; margin: 0 auto; padding: 20px 0;">
             @forelse($promoProducts as $index => $promo)
-            <div class="promo-card" data-index="{{ $index }}">
-                <div class="discount-label">
-                    @if($promo->tipe == 'persen')
-                        {{ $promo->nilai }}% OFF
-                    @else
-                        Potongan Rp{{ number_format($promo->nilai, 0, ',', '.') }}
-                    @endif
-                </div>
-                <div class="promo-img">
-                    <img src="{{ $promo->image_url }}" alt="{{ $product->product_name }}">
-                </div>
-                <div class="promo-content">
-                    <div class="outlet-info">
-                        <p class="outlet-name">{{ $promo->outlet_name }}</p>
-                        <p class="outlet-address">{{ $promo->outlet_address }}</p>
-                    </div>
-                    <span class="category-tag">{{ $promo->category }}</span>
-                    <h4>{{ $promo->product_name }}</h4>
-                    <div class="promo-footer">
-                        <div class="price-box">
-                            <span class="price-now"><small>Rp</small>{{ number_format($promo->price, 0, ',', '.') }}</span>
-                        </div>
-                        <button class="btn-add-item">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        </button>
-                    </div>
-                </div>
+            <div class="promo-banner-card" data-index="{{ $index }}" style="width: 100%; min-width: 100%; aspect-ratio: 2 / 1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.15); transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); cursor: pointer; animation: floatBanner 6s ease-in-out infinite;">
+                <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease;">
             </div>
+            <style>
+                .promo-banner-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
+                .promo-banner-card:hover img { transform: scale(1.05); }
+                @keyframes floatBanner {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-15px); }
+                }
+            </style>
             @empty
-            <p style="text-align: center; width: 100%; color: var(--sub-text);">Belum ada promo aktif saat ini.</p>
+            <div style="text-align: center; width: 100%; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 24px; border: 2px dashed rgba(255,255,255,0.1);">
+                <p style="color: #888; font-size: 14px;">Belum ada promo aktif saat ini.</p>
+            </div>
             @endforelse
         </div>
         <div class="promo-dots" id="promoDots"></div>

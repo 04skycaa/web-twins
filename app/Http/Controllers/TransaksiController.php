@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Promo;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TransaksiController extends Controller
 {
@@ -14,7 +17,7 @@ class TransaksiController extends Controller
 
     public function riwayat()
     {
-        // Dummy data for riwayat
+        // Dummy data for riwayat (can be refactored later to use real transactions)
         $data = [
             ['id' => '#TW-00123', 'tanggal' => '24 Okt 2023 14:30', 'kasir' => 'Budi (Admin)', 'pelanggan' => 'Umum / Non-Member', 'qty' => 3, 'total' => 'Rp 60.000', 'status' => 'Selesai'],
             ['id' => '#TW-00124', 'tanggal' => '24 Okt 2023 15:10', 'kasir' => 'Siti (Kasir)', 'pelanggan' => 'Member (Andi)', 'qty' => 5, 'total' => 'Rp 120.000', 'status' => 'Selesai'],
@@ -26,61 +29,77 @@ class TransaksiController extends Controller
 
     public function diskon()
     {
-        if (!session()->has('dummy_diskons')) {
-            session(['dummy_diskons' => [
-                ['id' => 1, 'nama' => 'Diskon Member', 'kode' => 'MEMBER-ROSTER', 'tipe' => 'Potongan Harga', 'nilai' => 'Rp 5.000', 'periode' => 'Selamanya', 'status' => 'Aktif'],
-                ['id' => 2, 'nama' => 'Promo Akhir Tahun', 'kode' => 'YREND-2023', 'tipe' => 'Persentase', 'nilai' => '15%', 'periode' => '01 Des - 31 Des', 'status' => 'Nonaktif'],
-            ]]);
-        }
-        $diskons = session('dummy_diskons');
-
+        $diskons = Promo::orderBy('tanggal_mulai', 'desc')->get();
         return view('transaksi.diskon', compact('diskons'));
     }
 
     public function storeDiskon(Request $request)
     {
-        $diskons = session('dummy_diskons', []);
-        $newId = count($diskons) > 0 ? max(array_column($diskons, 'id')) + 1 : 1;
+        $request->validate([
+            'nama_promo' => 'required|string|max:255',
+            'tipe' => 'required|string',
+            'nilai' => 'required|numeric',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        $data = $request->all();
+        $data['status'] = $request->status == 'Aktif' ? true : false;
+
+        if ($request->hasFile('image_banner')) {
+            $file = $request->file('image_banner');
+            $filename = time() . '_' . Str::slug($request->nama_promo) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('promos', $filename, 'public');
+            $data['image_banner'] = $path;
+        }
+
+        Promo::create($data);
         
-        $diskons[] = [
-            'id' => $newId,
-            'nama' => $request->nama,
-            'kode' => $request->kode,
-            'tipe' => $request->tipe,
-            'nilai' => $request->nilai,
-            'periode' => $request->periode,
-            'status' => $request->status,
-        ];
-        
-        session(['dummy_diskons' => $diskons]);
-        return redirect()->route('transaksi.diskon')->with('success', 'Diskon berhasil ditambahkan');
+        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil ditambahkan');
     }
 
     public function updateDiskon(Request $request, $id)
     {
-        $diskons = session('dummy_diskons', []);
-        foreach ($diskons as &$d) {
-            if ($d['id'] == $id) {
-                $d['nama'] = $request->nama;
-                $d['kode'] = $request->kode;
-                $d['tipe'] = $request->tipe;
-                $d['nilai'] = $request->nilai;
-                $d['periode'] = $request->periode;
-                $d['status'] = $request->status;
-                break;
+        $promo = Promo::findOrFail($id);
+        
+        $request->validate([
+            'nama_promo' => 'required|string|max:255',
+            'tipe' => 'required|string',
+            'nilai' => 'required|numeric',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        $data = $request->all();
+        $data['status'] = $request->status == 'Aktif' ? true : false;
+
+        if ($request->hasFile('image_banner')) {
+            // Delete old banner if exists
+            if ($promo->image_banner) {
+                Storage::disk('public')->delete($promo->image_banner);
             }
+            
+            $file = $request->file('image_banner');
+            $filename = time() . '_' . Str::slug($request->nama_promo) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('promos', $filename, 'public');
+            $data['image_banner'] = $path;
         }
-        session(['dummy_diskons' => $diskons]);
-        return redirect()->route('transaksi.diskon')->with('success', 'Diskon berhasil diperbarui');
+
+        $promo->update($data);
+        
+        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil diperbarui');
     }
 
     public function destroyDiskon($id)
     {
-        $diskons = session('dummy_diskons', []);
-        $diskons = array_filter($diskons, function($d) use ($id) {
-            return $d['id'] != $id;
-        });
-        session(['dummy_diskons' => array_values($diskons)]);
-        return redirect()->route('transaksi.diskon')->with('success', 'Diskon berhasil dihapus');
+        $promo = Promo::findOrFail($id);
+        if ($promo->image_banner) {
+            Storage::disk('public')->delete($promo->image_banner);
+        }
+        $promo->delete();
+        
+        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil dihapus');
     }
 }

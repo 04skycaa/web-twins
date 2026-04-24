@@ -55,18 +55,22 @@ class ProductController extends Controller
         // Add current stock for each product based on user store context
         $products->getCollection()->transform(function ($product) use ($user) {
             if ($user->isOwner()) {
-                $product->current_stok = $product->stores->sum('stok');
+                $product->current_stok = $product->stores ? $product->stores->sum('stok') : 0;
             } else {
-                $product->current_stok = $product->stores->where('store_id', $user->store_id)->first()->stok ?? 0;
+                $storeRelation = $product->stores ? $product->stores->where('store_id', $user->store_id)->first() : null;
+                $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
             }
             return $product;
         });
         $categories = Category::all();
+        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
         return view('product.index', [
             'active_tab' => 'produk',
             'products' => $products,
-            'categories' => $categories
+            'categories' => $categories,
+            'stores' => $stores,
+            'all_products' => Product::all()
         ]);
     }
 
@@ -161,6 +165,7 @@ class ProductController extends Controller
             'opnames' => $opnames,
             'stores' => $stores,
             'products' => $products,
+            'all_products' => Product::all(),
             'categories' => $categories,
             'unfinished_count' => $unfinished_count,
             'total_selisih_today' => $total_selisih_today,
@@ -300,13 +305,34 @@ class ProductController extends Controller
             'harga_jual' => 'nullable|numeric',
         ]);
 
-        $product->update([
+        $updateData = [
             'nama_produk' => $request->nama_produk,
             'barcode' => $request->barcode,
             'kategori_id' => $request->kategori_id,
             'harga_modal' => $request->harga_modal ?? 0,
             'harga_jual' => $request->harga_jual ?? 0,
-        ]);
+        ];
+
+        if ($request->filled('cropped_image')) {
+            $base64Image = $request->input('cropped_image');
+            @list(, $fileData) = explode(';', $base64Image);
+            @list(, $fileData) = explode(',', $fileData);
+            
+            if ($fileData) {
+                $imageBinary = base64_decode($fileData);
+                $fileName = \Illuminate\Support\Str::uuid() . '.png';
+                
+                // Delete old image if exists
+                if ($product->image_url && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image_url)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image_url);
+                }
+
+                \Illuminate\Support\Facades\Storage::disk('public')->put('products/' . $fileName, $imageBinary);
+                $updateData['image_url'] = 'products/' . $fileName;
+            }
+        }
+
+        $product->update($updateData);
 
         // Update Price Levels (Grosir) - Simple Sync
         PriceLevel::where('product_id', $product->uuid)->delete();

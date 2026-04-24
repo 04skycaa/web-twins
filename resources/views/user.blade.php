@@ -6,10 +6,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="session-success" content="{{ session('success') ?? '' }}">
     <meta name="session-error" content="{{ session('error') ?? '' }}">
+    <meta name="auth-check" content="{{ auth()->check() ? 'true' : 'false' }}">
+    <meta name="login-url" content="{{ route('login') }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* CSS to replace inline hover logic and satisfy IDE */
+        .discounted-item-vertical {
+            min-width: 135px; 
+            width: 135px; 
+            background: #1a1625; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 16px; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            transition: transform 0.3s ease; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            position: relative;
+        }
+        .discounted-item-vertical:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-pink);
+        }
+        .img-out-of-stock {
+            filter: grayscale(1) opacity(0.5);
+        }
+        .text-muted-stock {
+            color: #777 !important;
+        }
+        .product-name-discount {
+            font-size: 0.75rem; margin: 0; color: white; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600;
+        }
+        .btn-oos { background: #ef4444 !important; }
+        .btn-available { background: #0ea5e9 !important; }
+        .product-new-price-discount {
+            font-size: 0.95rem; font-weight: 800; color: #00c853;
+        }
+        .discount-add-btn {
+            width: 32px; 
+            height: 32px; 
+            border-radius: 10px; 
+            color: white; 
+            border: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+        }
+        .discount-add-btn:not(.out-of-stock):hover {
+            background: #0284c7 !important;
+            transform: scale(1.05);
+        }
+        /* Force visibility for main components to prevent blank page */
+        .main-content, .discounts-container, .food-card, .promo-banner {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: block !important;
+        }
+        .food-grid {
+            display: grid !important;
+        }
+    </style>
 </head>
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
@@ -119,6 +181,78 @@
                 </div>
             </div>
 
+            @if(count($discounts) > 0)
+            <div class="discounts-container anim-fade-up" style="margin-top: 30px;">
+                <h3 style="margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                    <iconify-icon icon="solar:ticket-sale-bold-duotone" style="color: #f59e0b; font-size: 28px;"></iconify-icon>
+                    Penawaran Diskon Hari Ini
+                </h3>
+                <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
+                    @php $shownProducts = []; @endphp
+                    @foreach($discounts as $discount)
+                        @foreach($discount->products as $p)
+                            @if(!in_array($p->uuid, $shownProducts))
+                                @php
+                                    $shownProducts[] = $p->uuid;
+                                    $originalPrice = (int) $p->harga_jual;
+                                    $tipeDiskon = $p->pivot->tipe_diskon ?? $discount->tipe;
+                                    $nilaiDiskon = (int) ($p->pivot->nilai_diskon ?? $discount->nilai);
+                                    $newPrice = ($tipeDiskon == 'persen' || $tipeDiskon == 'Promo') 
+                                        ? $originalPrice * (1 - ($nilaiDiskon / 100)) 
+                                        : $originalPrice - $nilaiDiskon;
+                                    if($newPrice < 0) $newPrice = 0;
+                                @endphp
+                                @php
+                                    $currentStok = $stockMap[$p->uuid] ?? 0;
+                                    $isOutOfStock = $currentStok <= 0;
+                                @endphp
+                                <div class="discounted-item-vertical {{ $isOutOfStock ? 'out-of-stock' : '' }}" 
+                                     style="opacity: {{ $isOutOfStock ? '0.6' : '1' }};">
+                                    <div style="width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: white; position: relative;">
+                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url) }}" 
+                                             class="{{ $isOutOfStock ? 'img-out-of-stock' : '' }}"
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                        <div style="position: absolute; top: 8px; left: 8px; background: #ff4d4d; color: white; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 3;">
+                                            -{{ $tipeDiskon == 'persen' ? $nilaiDiskon.'%' : 'Rp'.number_format($nilaiDiskon/1000, 0).'k' }}
+                                        </div>
+                                        @if($isOutOfStock)
+                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 4;">HABIS</div>
+                                        @endif
+                                    </div>
+
+                                    <div style="padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <h5 class="product-name-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
+                                            {{ $p->nama_produk }}
+                                        </h5>
+                                        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                            <div>
+                                                <div style="font-size: 0.7rem; text-decoration: line-through; color: #777; margin-bottom: 2px;">
+                                                    Rp{{ number_format($originalPrice, 0, ',', '.') }}
+                                                </div>
+                                                <div class="product-new-price-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
+                                                    Rp{{ number_format($newPrice, 0, ',', '.') }}
+                                                </div>
+                                            </div>
+                                            
+                                            <button class="discount-add-btn {{ $isOutOfStock ? 'out-of-stock btn-oos' : 'btn-available' }}"
+                                                    data-name="{{ $p->nama_produk }}"
+                                                    data-price="{{ $newPrice }}"
+                                                    data-stock="{{ $currentStok }}"
+                                                    onclick="addToCartFromEl(this)">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M12 5V19M5 12H19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <section id="categorySection" class="search-filter-section">
                 <div class="search-row">
                     <div class="search-box">
@@ -130,22 +264,50 @@
                         <input type="text" id="searchInput" placeholder="Cari menu favoritmu..."
                             oninput="handleSearch()">
                     </div>
-                    <button class="filter-btn">
+                    <button class="filter-btn" onclick="toggleFilterPanel()">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                         </svg>
-                        Filter
+                        Filter & Sort
                     </button>
                 </div>
 
-                <div class="filter-container" id="filterContainer">
-                    <div class="filter-chip active" data-category="semua" onclick="filterProducts('semua', this)">
-                        Semua</div>
-                    @foreach ($categories as $category)
-                        <div class="filter-chip" data-category="{{ $category['id'] }}"
-                            onclick="filterProducts(this.dataset.category, this)">{{ $category['name'] }}</div>
-                    @endforeach
+                <!-- Wadah Badge Filter Aktif -->
+                <div id="activeFilters" class="active-filters-container"></div>
+
+                <!-- Advanced Filter Panel (Hidden by default) -->
+                <div id="filterPanel" class="filter-panel hidden">
+                    <div class="filter-content">
+                        <div class="filter-section">
+                            <h5>Kategori Produk</h5>
+                            <div class="category-grid">
+                                <label class="check-container">Semua Kategori
+                                    <input type="checkbox" id="check-all" checked onchange="toggleAllCategories(this)">
+                                    <span class="checkmark"></span>
+                                </label>
+                                @foreach ($categories as $category)
+                                    <label class="check-container">{{ $category['name'] }}
+                                        <input type="checkbox" class="cat-check" value="{{ $category['id'] }}" data-name="{{ $category['name'] }}">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                            <div class="filter-section" style="flex: 1; min-width: 250px;">
+                                <h5>Urutkan Harga</h5>
+                                <select id="priceSort" class="filter-select">
+                                    <option value="default">Default</option>
+                                    <option value="low-high">Harga: Terendah ke Tertinggi</option>
+                                    <option value="high-low">Harga: Tertinggi ke Terendah</option>
+                                </select>
+                            </div>
+                            <div style="padding-bottom: 5px;">
+                                <button onclick="applyFilters()" class="btn-fill" style="padding: 12px 30px; border-radius: 12px;">Terapkan Filter</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="food-grid" id="productGrid"></div>
@@ -358,42 +520,189 @@
 
         let cart = [];
         let historyData = [];
-        let currentFilter = 'semua';
         let discountPercent = 0;
-        const isAuthenticated = @json(auth()->check());
-        const loginUrl = @json(route('login'));
+        const isAuthenticated = document.querySelector('meta[name="auth-check"]').content === 'true';
+        const loginUrl = document.querySelector('meta[name="login-url"]').content;
+
+        // Toggle Panel Filter
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filterPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        // Toggle Semua Kategori
+        function toggleAllCategories(checkbox) {
+            if (checkbox.checked) {
+                // Jika 'Semua' dicentang, hapus semua centang kategori lain
+                const catChecks = document.querySelectorAll('.cat-check');
+                catChecks.forEach(c => c.checked = false);
+            }
+            // Jangan panggil applyFilters di sini agar user bisa pilih dulu
+        }
+
+        // Event listener untuk kategori satuan
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('cat-check')) {
+                if (e.target.checked) {
+                    // Jika kategori satuan dicentang, hapus centang 'Semua'
+                    document.getElementById('check-all').checked = false;
+                } else {
+                    // Jika semua kategori satuan tidak dicentang, centang kembali 'Semua'
+                    const anyChecked = document.querySelectorAll('.cat-check:checked').length > 0;
+                    if (!anyChecked) document.getElementById('check-all').checked = true;
+                }
+            }
+        });
+
+        // Jalankan Filter & Sort
+        function applyFilters() {
+            renderProducts();
+            renderActiveFilters();
+            
+            // Tutup panel secara paksa
+            const panel = document.getElementById('filterPanel');
+            panel.classList.add('hidden');
+        }
+
+        // Tampilkan Badge Filter Aktif
+        function renderActiveFilters() {
+            const container = document.getElementById('activeFilters');
+            container.innerHTML = '';
+            
+            const isAllChecked = document.getElementById('check-all').checked;
+            const priceSort = document.getElementById('priceSort');
+            
+            // 1. Tambah Badge Harga (Jika tidak default)
+            if (priceSort.value !== 'default') {
+                const priceText = priceSort.options[priceSort.selectedIndex].text;
+                const priceBadge = document.createElement('div');
+                priceBadge.className = 'filter-badge';
+                priceBadge.style.borderColor = '#10b981'; // Beri warna hijau agar beda dengan kategori
+                priceBadge.style.color = '#10b981';
+                priceBadge.innerHTML = `
+                    <span>${priceText}</span>
+                    <div class="remove-btn" onclick="removePriceFilter()">✕</div>
+                `;
+                container.appendChild(priceBadge);
+            }
+
+            // 2. Tambah Badge Kategori
+            if (!isAllChecked) {
+                const checkedCats = document.querySelectorAll('.cat-check:checked');
+                checkedCats.forEach(cb => {
+                    const badge = document.createElement('div');
+                    badge.className = 'filter-badge';
+                    badge.innerHTML = `
+                        <span>${cb.dataset.name}</span>
+                        <div class="remove-btn" onclick="removeFilterBadge('${cb.value}')">✕</div>
+                    `;
+                    container.appendChild(badge);
+                });
+            }
+        }
+
+        // Hapus Filter Harga lewat Badge
+        function removePriceFilter() {
+            document.getElementById('priceSort').value = 'default';
+            renderProducts();
+            renderActiveFilters();
+        }
+
+        // Hapus Filter Kategori lewat Badge
+        function removeFilterBadge(catId) {
+            const cb = document.querySelector(`.cat-check[value="${catId}"]`);
+            if (cb) {
+                cb.checked = false;
+                
+                // Jika setelah dihapus tidak ada lagi yang dicentang, balikkan ke 'Semua'
+                const anyChecked = document.querySelectorAll('.cat-check:checked').length > 0;
+                if (!anyChecked) {
+                    document.getElementById('check-all').checked = true;
+                }
+                
+                renderProducts();
+                renderActiveFilters();
+            }
+        }
 
         function renderProducts() {
+            if (!productGrid) return;
             productGrid.innerHTML = '';
-            const searchTerm = searchInput.value.toLowerCase();
-            const filtered = products.filter(p => {
-                const matchesCategory = currentFilter === 'semua' || p.category === currentFilter;
+
+            const searchEl = document.getElementById('searchInput');
+            const sortEl = document.getElementById('priceSort');
+            const searchTerm = searchEl ? searchEl.value.toLowerCase().trim() : '';
+            const priceSort = sortEl ? sortEl.value : 'default';
+            const checkedCats = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value);
+            const isAllChecked = document.getElementById('check-all') ? document.getElementById('check-all').checked : true;
+
+            let filtered = products.filter(p => {
+                const matchesCategory = isAllChecked || checkedCats.length === 0 || checkedCats.includes(p.category_id);
                 const matchesSearch = p.name.toLowerCase().includes(searchTerm);
                 return matchesCategory && matchesSearch;
             });
 
+            if (priceSort === 'low-high') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (priceSort === 'high-low') {
+                filtered.sort((a, b) => b.price - a.price);
+            }
+
             if (filtered.length === 0) {
-                productGrid.innerHTML =
-                    '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--sub-text);">Item tidak ditemukan.</p>';
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 60px; color: var(--sub-text); font-size: 1.1rem;';
+                emptyMsg.innerHTML = '<div style="margin-bottom: 15px; font-size: 3rem;">🔍</div>Item tidak ditemukan.';
+                productGrid.appendChild(emptyMsg);
                 return;
             }
 
             filtered.forEach(product => {
+                const isOutOfStock = product.stok <= 0;
                 const card = document.createElement('div');
-                card.className = 'food-card anim-zoom-in';
+                card.className = `food-card anim-zoom-in ${isOutOfStock ? 'out-of-stock' : ''}`;
+                
                 card.innerHTML = `
-                    <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 10px; margin-bottom: 10px;">
-                        <img src="${product.img}" class="food-img" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div style="width: 100%; aspect-ratio: 1/1; overflow: hidden; border-radius: 18px; margin-bottom: 15px; position: relative; background: #fff;">
+                        <img src="${product.img}" class="food-img" style="filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
+                        
+                        ${product.is_discount && !isOutOfStock ? `
+                            <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
+                                -${product.discount_label}
+                            </div>
+                        ` : ''}
+
+                        ${isOutOfStock ? `
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
+                        ` : ''}
                     </div>
-                    <h4 style="font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${product.name}</h4>
-                    <p style="color: var(--sub-text); font-size: 0.75rem; margin: 5px 0;">⭐ ${product.rating}</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 10px;">
-                        <span style="font-weight: 800; color: var(--orange-brand); font-size: 0.9rem;">${formatRupiah(product.price)}</span>
-                        <button class="add-btn" onclick="addToCart('${product.name}', ${product.price})">+</button>
+                    <h4 style="font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-color); font-weight: 700; margin-bottom: 4px;">${product.name}</h4>
+                    
+                    ${!isOutOfStock ? `
+                        <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
+                    ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
+                        <div>
+                            ${product.is_discount && !isOutOfStock ? `
+                                <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
+                                    ${formatRupiah(product.original_price)}
+                                </span>
+                            ` : ''}
+                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 1.15rem;">
+                                ${formatRupiah(product.price)}
+                            </span>
+                        </div>
+                        <button class="add-btn" 
+                                data-name="${product.name}"
+                                data-price="${product.price}"
+                                data-stock="${product.stok}"
+                                onclick="addToCartFromEl(this)" 
+                                style="width: 38px; height: 38px; border-radius: 12px; background: ${isOutOfStock ? 'rgba(255,255,255,0.1)' : 'var(--btn-grad)'}; color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: ${isOutOfStock ? 'none' : 'var(--glow)'};">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
                     </div>
                 `;
                 productGrid.appendChild(card);
-                if (window.observer) window.observer.observe(card);
             });
         }
 
@@ -401,16 +710,33 @@
             renderProducts();
         }
 
-        function filterProducts(category, element) {
-            document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
-            element.classList.add('active');
-            currentFilter = category;
-            renderProducts();
+        function addToCartFromEl(el) {
+            const name = el.getAttribute('data-name');
+            const price = parseFloat(el.getAttribute('data-price'));
+            const stock = parseInt(el.getAttribute('data-stock'));
+
+            if (stock <= 0) {
+                Swal.fire('Opps!', 'Stok produk ini sedang habis.', 'error');
+                return;
+            }
+            addToCart(name, price);
         }
 
         function addToCart(name, price) {
+            // Temukan info stok asli dari array products
+            const productInfo = products.find(p => p.name === name);
+            if (productInfo && productInfo.stok <= 0) {
+                Swal.fire('Maaf!', 'Stok barang ini sudah habis.', 'error');
+                return;
+            }
+
             const existingItem = cart.find(item => item.name === name);
             if (existingItem) {
+                // Cek jika jumlah di keranjang sudah melebihi stok
+                if (existingItem.qty >= productInfo.stok) {
+                    Swal.fire('Limit Stok!', `Anda hanya bisa memesan maksimal ${productInfo.stok} item.`, 'warning');
+                    return;
+                }
                 existingItem.qty += 1;
             } else {
                 cart.push({
@@ -817,6 +1143,10 @@
                     delay: 0.2
                 });
             }
+        });
+        // Panggil render pertama kali saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
         });
     </script>
 </body>
