@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
     <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
 </head>
 
 <body>
@@ -36,7 +37,7 @@
             @endif
 
             @if(Auth::user()->operator->hasFeature(3))
-                <a href="{{ url('/transaksi') }}" class="menu-item {{ request()->is('transaksi*') ? 'active' : '' }}">
+                <a href="{{ url('/transaksi') }}" class="menu-item {{ (request()->is('transaksi') || request()->is('transaksi/*')) ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
                     <span>Transaksi & Diskon</span>
@@ -79,7 +80,7 @@
                 <a href="{{ route('keuangan.transaksi') }}" class="menu-item {{ request()->routeIs('keuangan.transaksi') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
-                    <span>Transaksi Keuangan</span>
+                    <span>Buku Kas</span>
                 </a>
             @endif
 
@@ -131,7 +132,7 @@
                     <h2 id="topbar-title">Kelola Kontak</h2>
                 @elseif(request()->routeIs('keuangan.transaksi'))
                     <i id="topbar-icon" data-lucide="wallet"></i>
-                    <h2 id="topbar-title">Transaksi Keuangan</h2>
+                    <h2 id="topbar-title">Buku Kas</h2>
                 @elseif(request()->routeIs('laporan.*'))
                     <i id="topbar-icon" data-lucide="file-text"></i>
                     <h2 id="topbar-title">Laporan Keseluruhan</h2>

@@ -6,7 +6,7 @@ use App\Http\Controllers\DashboardController; // Tambahkan ini
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\KontakController;
-use App\Http\Controllers\TransaksiKeuanganController;
+use App\Http\Controllers\BukuKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\AbsensiController;
 use Illuminate\Support\Facades\Route;
@@ -86,9 +86,17 @@ Route::get('/kontak', [KontakController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('kontak.index');
 
-Route::get('/transaksi-keuangan', [TransaksiKeuanganController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
-    ->name('keuangan.transaksi');
+Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/', [BukuKasController::class, 'index'])->name('keuangan.transaksi');
+    Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
+    Route::put('/cashflow/{id}', [BukuKasController::class, 'updateCashFlow'])->name('keuangan.cashflow.update');
+    Route::delete('/cashflow/{id}', [BukuKasController::class, 'deleteCashFlow'])->name('keuangan.cashflow.destroy');
+    
+    Route::post('/debt', [BukuKasController::class, 'storeDebt'])->name('keuangan.debt.store');
+    Route::put('/debt/{id}', [BukuKasController::class, 'updateDebt'])->name('keuangan.debt.update');
+    Route::post('/debt/{id}/pay', [BukuKasController::class, 'payDebt'])->name('keuangan.debt.pay');
+    Route::delete('/debt/{id}', [BukuKasController::class, 'deleteDebt'])->name('keuangan.debt.destroy');
+});
 
 Route::get('/laporan', [LaporanController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
