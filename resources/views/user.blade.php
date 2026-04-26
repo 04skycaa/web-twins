@@ -62,14 +62,27 @@
             background: #0284c7 !important;
             transform: scale(1.05);
         }
-        /* Force visibility for main components to prevent blank page */
-        .main-content, .discounts-container, .food-card, .promo-banner {
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: block !important;
-        }
-        .food-grid {
-            display: grid !important;
+        @media (max-width: 600px) {
+            .discounted-item-vertical {
+                min-width: 110px !important;
+                width: 110px !important;
+            }
+            .product-name-discount {
+                font-size: 0.65rem !important;
+            }
+            .product-new-price-discount {
+                font-size: 0.8rem !important;
+            }
+            .wholesale-badge {
+                font-size: 0.45rem !important;
+                padding: 2px 4px !important;
+                bottom: 4px !important;
+                left: 4px !important;
+                border-radius: 4px !important;
+            }
+            .wholesale-badge iconify-icon {
+                font-size: 0.6rem !important;
+            }
         }
     </style>
 </head>
@@ -161,7 +174,49 @@
     <div class="sheet-overlay" id="sheetOverlay" onclick="toggleBottomSheet()"></div>
     <div class="bottom-sheet" id="bottomSheet">
         <div class="handle"></div>
-        <div id="mobileSheetContent"></div>
+        <div id="mobileSheetContent" style="padding: 0 15px 30px 15px;">
+            <!-- Pre-populated for mobile to avoid innerHTML copy issues -->
+            <div class="white-card hidden address-section"
+                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="font-size: 0.95rem;">Delivery Address</h4>
+                    <a href="#" style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 1.2rem;">📍</span>
+                    <div>
+                        <p style="font-size: 0.85rem; font-weight: 600;">Elm Street, 23</p>
+                        <p style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman default Anda.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="white-card hidden order-section"
+                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
+                <h4 style="margin-bottom: 15px; font-size: 0.95rem;">Order Menu</h4>
+                <div class="cart-items-container"></div>
+                <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">Total</span>
+                        <span class="totalPriceDisplay" style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
+                    </div>
+                </div>
+                <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
+            </div>
+
+            <div class="white-card hidden discount-section"
+                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
+                <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="promoInputMobile" placeholder="TWINS20"
+                        style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem;">
+                    <button onclick="applyPromo('mobile')"
+                        style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
+                </div>
+                <p class="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
+            </div>
+        </div>
     </div>
 
     <div class="container" id=
@@ -387,7 +442,7 @@
 
         <aside class="sidebar anim-fade-up" id="sidebarArea">
             <div id="sidebarContentWrapper">
-                <div class="white-card hidden" id="addressSection"
+                <div class="white-card hidden address-section"
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -405,10 +460,10 @@
                     </div>
                 </div>
 
-                <div class="white-card hidden" id="orderSection"
+                <div class="white-card hidden order-section"
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <h4 style="margin-bottom: 15px; font-size: 0.95rem;">Order Menu</h4>
-                    <div id="cartItems"></div>
+                    <div class="cart-items-container"></div>
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -421,7 +476,7 @@
                         style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
                 </div>
 
-                <div id="discountSection" class="white-card hidden"
+                <div class="white-card hidden discount-section"
                     style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
                     <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
                     <div style="display: flex; gap: 8px;">
@@ -503,9 +558,9 @@
         const searchInput = document.getElementById('searchInput');
         const mainContainer = document.getElementById('mainContainer');
 
-        const addressSection = document.getElementById('addressSection');
-        const orderSection = document.getElementById('orderSection');
-        const discountSection = document.getElementById('discountSection');
+        const addressSections = document.querySelectorAll('.address-section');
+        const orderSections = document.querySelectorAll('.order-section');
+        const discountSections = document.querySelectorAll('.discount-section');
 
         const homePage = document.getElementById('homePage');
         const historyPage = document.getElementById('historyPage');
@@ -671,11 +726,18 @@
                             </div>
                         ` : ''}
 
+                        ${product.price_levels && product.price_levels.length > 0 && !isOutOfStock ? `
+                            <div onclick="showWholesaleInfo('${product.id}')" class="wholesale-badge" style="position: absolute; bottom: 10px; left: 10px; background: #FFD600; color: #000; padding: 4px 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; z-index: 2; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 4px 10px rgba(255,214,0,0.3);">
+                                <iconify-icon icon="solar:tag-price-bold-duotone"></iconify-icon>
+                                Beli ${Math.min(...product.price_levels.map(l => l.jmlh))}+ Lebih Murah
+                            </div>
+                        ` : ''}
+
                         ${isOutOfStock ? `
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
                         ` : ''}
                     </div>
-                    <h4 style="font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-color); font-weight: 700; margin-bottom: 4px;">${product.name}</h4>
+                    <h4 style="font-size: 0.9rem; color: var(--text-color); font-weight: 700; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; height: 2.4em;">${product.name}</h4>
                     
                     ${!isOutOfStock ? `
                         <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
@@ -688,7 +750,7 @@
                                     ${formatRupiah(product.original_price)}
                                 </span>
                             ` : ''}
-                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 1.15rem;">
+                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 1.05rem;">
                                 ${formatRupiah(product.price)}
                             </span>
                         </div>
@@ -775,9 +837,7 @@
             const mobileCartBtn = document.getElementById('mobileCartBtn');
 
             if (cart.length > 0) {
-                addressSection.classList.remove('hidden');
-                orderSection.classList.remove('hidden');
-                discountSection.classList.remove('hidden');
+                [...addressSections, ...orderSections, ...discountSections].forEach(el => el.classList.remove('hidden'));
                 if (!isMobile) {
                     mainContainer.classList.add('has-sidebar');
                     if (mobileCartBtn) mobileCartBtn.style.display = 'none';
@@ -786,51 +846,61 @@
                     if (mobileCartBtn) mobileCartBtn.style.display = 'flex';
                 }
             } else {
-                [addressSection, orderSection, discountSection].forEach(el => el.classList.add('hidden'));
+                [...addressSections, ...orderSections, ...discountSections].forEach(el => el.classList.add('hidden'));
                 mainContainer.classList.remove('has-sidebar');
                 if (mobileCartBtn) mobileCartBtn.style.display = 'none';
                 toggleBottomSheet(false);
             }
 
-            cartItemsContainer.innerHTML = '';
+            // Calculate totals
             let subtotal = 0;
-
-            cart.forEach((item, index) => {
-                subtotal += (item.price * item.qty);
-                const div = document.createElement('div');
-                div.style.cssText =
-                    'display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;';
-                div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                        <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">📦</div>
-                        <div style="flex: 1;">
-                            <h5 style="font-size: 0.85rem;">${item.name}</h5>
-                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                                <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
-                                <span style="font-size: 0.8rem;">${item.qty}</span>
-                                <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+            const cartHtmlItems = cart.map((item, index) => {
+                const pInfo = products.find(p => p.name === item.name);
+                let displayPrice = item.price;
+                if (pInfo && pInfo.price_levels && pInfo.price_levels.length > 0) {
+                    const levels = [...pInfo.price_levels].sort((a, b) => b.jmlh - a.jmlh);
+                    const appliedLevel = levels.find(l => item.qty >= l.jmlh);
+                    if (appliedLevel) displayPrice = appliedLevel.harga;
+                }
+                subtotal += (displayPrice * item.qty);
+                
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">📦</div>
+                            <div style="flex: 1;">
+                                <h5 style="font-size: 0.85rem;">${item.name}</h5>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                    <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+                                    <span style="font-size: 0.8rem;">${item.qty}</span>
+                                    <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px; text-align: right;">
-                        <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.85rem;">${formatRupiah(item.price * item.qty)}</span>
-                        <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right;">
+                            <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.85rem;">${formatRupiah(displayPrice * item.qty)}</span>
+                            ${displayPrice < item.price ? `<span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">Hemat Grosir!</span>` : ''}
+                            <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
+                        </div>
                     </div>
                 `;
-                cartItemsContainer.appendChild(div);
-            });
+            }).join('');
 
-            // Biaya Service telah dihapus dari kalkulasi total
             let finalTotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
+            const formattedTotal = formatRupiah(finalTotal);
+
+            document.querySelectorAll('.cart-items-container').forEach(container => {
+                container.innerHTML = cartHtmlItems;
+            });
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
-                el.innerText = formatRupiah(finalTotal);
+                el.innerText = formattedTotal;
             });
 
             if (isMobile) {
                 const sheetContent = document.getElementById('mobileSheetContent');
-                const sidebarContent = document.getElementById('sidebarContentWrapper');
-                if (sheetContent && sidebarContent) {
-                    sheetContent.innerHTML = sidebarContent.innerHTML;
+                if (sheetContent) {
+                    sheetContent.querySelectorAll('.cart-items-container').forEach(c => c.innerHTML = cartHtmlItems);
+                    sheetContent.querySelectorAll('.totalPriceDisplay').forEach(el => el.innerText = formattedTotal);
                 }
             }
         }
@@ -840,17 +910,60 @@
             const overlay = document.getElementById('sheetOverlay');
             if (!sheet || !overlay) return;
 
-            const isActive = force !== undefined ? force : !sheet.classList.contains('active');
-
-            if (isActive && cart.length > 0) {
+            let isActive = false;
+            if (force === true) {
                 sheet.classList.add('active');
                 overlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            } else {
+                isActive = true;
+            } else if (force === false) {
                 sheet.classList.remove('active');
                 overlay.classList.remove('active');
-                document.body.style.overflow = '';
+                isActive = false;
+            } else {
+                sheet.classList.toggle('active');
+                overlay.classList.toggle('active');
+                isActive = sheet.classList.contains('active');
             }
+
+            if (isActive) {
+                renderCart();
+            }
+        }
+
+        function showWholesaleInfo(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || !product.price_levels) return;
+
+            let tableHtml = `
+                <div style="text-align: left; margin-top: 10px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #eee;">
+                                <th style="padding: 10px 5px; text-align: left;">Min. Pembelian</th>
+                                <th style="padding: 10px 5px; text-align: left;">Harga per Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            product.price_levels.forEach(level => {
+                tableHtml += `
+                    <tr style="border-bottom: 1px solid #f5f5f5;">
+                        <td style="padding: 12px 5px; font-weight: 600;">${level.jmlh} Unit atau lebih</td>
+                        <td style="padding: 12px 5px; color: #C62828; font-weight: 700;">${formatRupiah(level.harga)}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+
+            Swal.fire({
+                title: 'Harga Grosir',
+                html: `Dapatkan harga lebih hemat untuk pembelian dalam jumlah banyak pada produk <strong>${product.name}</strong>.<br>${tableHtml}`,
+                icon: 'info',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: 'var(--orange-brand)'
+            });
         }
 
         function applyPromo() {

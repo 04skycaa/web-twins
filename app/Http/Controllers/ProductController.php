@@ -24,16 +24,23 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'stores', 'priceLevels']);
-
         /** @var User $user */
         $user = Auth::user();
+        $selectedStoreId = $request->get('store_id');
+
+        $query = Product::with(['category', 'stores.store', 'priceLevels']);
+
         if (!$user->isOwner()) {
-            $query->whereHas('stores', function($q) use ($user) {
-                $q->where('store_id', $user->store_id)
+            $selectedStoreId = $user->store_id;
+        }
+
+        if ($selectedStoreId && $selectedStoreId !== 'all') {
+            $query->whereHas('stores', function($q) use ($selectedStoreId) {
+                $q->where('store_id', $selectedStoreId)
                   ->where('status_aktif', true);
             });
         } else {
+            // Owner viewing all or default view
             $query->where(function($q) {
                 $q->whereDoesntHave('stores')
                   ->orWhereHas('stores', function($sq) {
@@ -52,16 +59,23 @@ class ProductController extends Controller
 
         $products = $query->paginate(10);
 
-        // Add current stock for each product based on user store context
-        $products->getCollection()->transform(function ($product) use ($user) {
+        // Add current stock for each product based on store context
+        $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
             if ($user->isOwner()) {
-                $product->current_stok = $product->stores ? $product->stores->sum('stok') : 0;
+                if ($selectedStoreId && $selectedStoreId !== 'all') {
+                    $storeRelation = $product->stores ? $product->stores->where('store_id', $selectedStoreId)->first() : null;
+                    $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
+                } else {
+                    $product->current_stok = $product->stores ? $product->stores->sum('stok') : 0;
+                }
             } else {
                 $storeRelation = $product->stores ? $product->stores->where('store_id', $user->store_id)->first() : null;
                 $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
             }
+            $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
             return $product;
         });
+
         $categories = Category::all();
         $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
@@ -70,6 +84,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => $categories,
             'stores' => $stores,
+            'selected_store_id' => $selectedStoreId,
             'all_products' => Product::all()
         ]);
     }
@@ -667,11 +682,22 @@ class ProductController extends Controller
         
         if ($tab == 'produk') {
             $query = Product::with(['category', 'stores']);
+            $selectedStoreId = $request->get('store_id');
+            
             if (!$user->isOwner()) {
-                $query->whereHas('stores', function($q) use ($user) {
-                    $q->where('store_id', $user->store_id)->where('status_aktif', true);
+                $selectedStoreId = $user->store_id;
+            }
+
+            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                $query->whereHas('stores', function($q) use ($selectedStoreId) {
+                    $q->where('store_id', $selectedStoreId)->where('status_aktif', true);
+                });
+            } else {
+                $query->whereHas('stores', function($q) {
+                    $q->where('status_aktif', true);
                 });
             }
+
             if ($request->category_id) $query->where('kategori_id', $request->category_id);
             if ($request->search) $query->where('nama_produk', 'ilike', '%' . $request->search . '%');
             return $query->get();
@@ -720,13 +746,26 @@ class ProductController extends Controller
         $user = Auth::user();
 
         if ($tab == 'produk') {
+            $selectedStoreId = request('store_id');
+            $stok = 0;
+
+            if (!$user->isOwner()) {
+                $selectedStoreId = $user->store_id;
+            }
+
+            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                $stok = $item->stores->where('store_id', $selectedStoreId)->first()->stok ?? 0;
+            } else {
+                $stok = $item->stores->sum('stok');
+            }
+
              return [
                 $item->nama_produk,
                 $item->barcode,
                 $item->category->nama_category ?? '-',
                 $item->harga_modal,
                 $item->harga_jual,
-                $user->isOwner() ? $item->stores->sum('stok') : ($item->stores->where('store_id', $user->store_id)->first()->stok ?? 0)
+                $stok
             ];
         }
         if ($tab == 'opname') {
