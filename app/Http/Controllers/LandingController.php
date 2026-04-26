@@ -28,7 +28,7 @@ class LandingController extends Controller
         $promoProducts = [];
         foreach ($promos as $promo) {
             $store = $promo->stores->first();
-            
+
             $promoProducts[] = (object) [
                 'nama_promo' => $promo->nama_promo,
                 'image_banner' => self::resolveImageUrl($promo->image_banner),
@@ -52,13 +52,15 @@ class LandingController extends Controller
         $outlet = Outlet::findOrFail($id);
         // 1. Ambil promo aktif untuk store ini
         $activePromos = Promo::where('status', true)
-            ->whereHas('stores', function($q) use ($outlet) {
+            ->whereHas('stores', function ($q) use ($outlet) {
                 $q->where('store_id', $outlet->uuid);
             })
-            ->with(['products' => function($q) {
-                // Jangan hanya select uuid, tapi ambil semua data yang dibutuhkan View
-                $q->select('products.uuid', 'products.nama_produk', 'products.harga_jual', 'products.image_url', 'products.kategori_id');
-            }])
+            ->with([
+                'products' => function ($q) {
+                    // Jangan hanya select uuid, tapi ambil semua data yang dibutuhkan View
+                    $q->select('products.uuid', 'products.nama_produk', 'products.harga_jual', 'products.image_url', 'products.kategori_id');
+                }
+            ])
             ->get();
 
         // 2. Map produk ke diskon (Ambil diskon terbesar jika ada multiple)
@@ -67,7 +69,7 @@ class LandingController extends Controller
             foreach ($promo->products as $p) {
                 $tipe = strtolower($p->pivot->tipe_diskon); // Paksa huruf kecil sesuai skema
                 $nilai = (int) $p->pivot->nilai_diskon;
-                
+
                 $productDiscounts[$p->uuid] = [
                     'tipe' => $tipe,
                     'nilai' => $nilai,
@@ -76,7 +78,7 @@ class LandingController extends Controller
             }
         }
 
-        $products = Product::with('priceLevels')
+        $products = DB::table('products')
             ->join('product_store', 'products.uuid', '=', 'product_store.product_id')
             ->where('product_store.store_id', $outlet->uuid)
             ->select(
@@ -84,8 +86,8 @@ class LandingController extends Controller
                 'product_store.stok as stok'
             )
             ->get()
-            ->map(function($p) use ($productDiscounts) {
-                $originalPrice = (int) $p->harga_jual;
+            ->map(function ($p) use ($productDiscounts) {
+                $originalPrice = (int) $p->price;
                 $discountPrice = $originalPrice;
                 $isDiscount = false;
                 $discountLabel = '';
@@ -118,7 +120,7 @@ class LandingController extends Controller
                 ];
             })->values()->all();
 
-        $categories = Category::all()->map(function($cat) {
+        $categories = Category::all()->map(function ($cat) {
             return [
                 'id' => $cat->uuid,
                 'name' => $cat->nama_category
@@ -135,10 +137,62 @@ class LandingController extends Controller
             $stockMap[$p['id']] = $p['stok'];
         }
 
+        $storedDeliveryAddress = session('delivery_address.' . $outlet->uuid);
+        $deliveryPreference = null;
+
+        if (is_array($storedDeliveryAddress) && !empty($storedDeliveryAddress['address'])) {
+            $coords = $storedDeliveryAddress['coordinates'] ?? null;
+            $validCoordinates = is_array($coords)
+                && isset($coords['lat'], $coords['lng'])
+                && is_numeric($coords['lat'])
+                && is_numeric($coords['lng']);
+
+            $deliveryPreference = [
+                'address' => trim((string) $storedDeliveryAddress['address']),
+                'coordinates' => $validCoordinates ? [
+                    'lat' => (float) $coords['lat'],
+                    'lng' => (float) $coords['lng'],
+                ] : null,
+            ];
+        }
+
         // Ambil promo untuk banner (Sama seperti activePromos tapi dengan relasi lengkap)
         $discounts = $activePromos;
 
-        return view('user', compact('outlet', 'products', 'categories', 'reviews', 'discounts', 'stockMap'));
+        return view('user', compact('outlet', 'products', 'categories', 'reviews', 'discounts', 'stockMap', 'deliveryPreference'));
+    }
+
+    public function saveDeliveryAddress(Request $request, $id)
+    {
+        $outlet = Outlet::findOrFail($id);
+
+        $validated = $request->validate([
+            'address' => ['required', 'string', 'max:1000'],
+            'coordinates' => ['nullable', 'array'],
+            'coordinates.lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'coordinates.lng' => ['nullable', 'numeric', 'between:-180,180'],
+        ]);
+
+        $coordinates = null;
+        if (isset($validated['coordinates']['lat'], $validated['coordinates']['lng'])) {
+            $coordinates = [
+                'lat' => (float) $validated['coordinates']['lat'],
+                'lng' => (float) $validated['coordinates']['lng'],
+            ];
+        }
+
+        $deliveryData = [
+            'address' => trim($validated['address']),
+            'coordinates' => $coordinates,
+            'updated_at' => now()->toIso8601String(),
+        ];
+
+        session()->put('delivery_address.' . $outlet->uuid, $deliveryData);
+
+        return response()->json([
+            'message' => 'Alamat pengiriman tersimpan aman di sesi server.',
+            'delivery' => $deliveryData,
+        ]);
     }
 
     public function storeReview(Request $request, $id)
@@ -157,7 +211,7 @@ class LandingController extends Controller
             return back()->with('error', 'Anda sudah memberikan ulasan untuk toko ini.');
         }
 
-        DB::transaction(function() use ($request, $outlet) {
+        DB::transaction(function () use ($request, $outlet) {
             StoreReview::create([
                 'store_id' => $outlet->uuid,
                 'user_id' => Auth::id(),
@@ -191,7 +245,7 @@ class LandingController extends Controller
             return back()->with('error', 'Anda sudah memberikan ulasan untuk cabang ini.');
         }
 
-        DB::transaction(function() use ($request, $outlet) {
+        DB::transaction(function () use ($request, $outlet) {
             StoreReview::create([
                 'store_id' => $outlet->uuid,
                 'user_id' => Auth::id(),
