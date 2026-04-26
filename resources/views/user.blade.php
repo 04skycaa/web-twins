@@ -22,33 +22,57 @@
             min-width: 135px;
             width: 135px;
             background: #1a1625;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             position: relative;
         }
+
         .discounted-item-vertical:hover {
             transform: translateY(-5px);
             border-color: var(--accent-pink);
         }
+
         .img-out-of-stock {
             filter: grayscale(1) opacity(0.5);
         }
+
         .text-muted-stock {
             color: #777 !important;
         }
+
         .product-name-discount {
-            font-size: 0.75rem; margin: 0; color: white; line-height: 1.2; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; font-weight: 600;
+            font-size: 0.75rem;
+            margin: 0;
+            color: white;
+            line-height: 1.2;
+            height: 2.4em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            font-weight: 600;
         }
-        .btn-oos { background: #ef4444 !important; }
-        .btn-available { background: #0ea5e9 !important; }
+
+        .btn-oos {
+            background: #ef4444 !important;
+        }
+
+        .btn-available {
+            background: #0ea5e9 !important;
+        }
+
         .product-new-price-discount {
-            font-size: 0.95rem; font-weight: 800; color: #00c853;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #00c853;
         }
+
         .discount-add-btn {
             width: 32px;
             height: 32px;
@@ -62,16 +86,22 @@
             transition: all 0.2s ease;
             box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
         }
+
         .discount-add-btn:not(.out-of-stock):hover {
             background: #0284c7 !important;
             transform: scale(1.05);
         }
+
         /* Force visibility for main components to prevent blank page */
-        .main-content, .discounts-container, .food-card, .promo-banner {
+        .main-content,
+        .discounts-container,
+        .food-card,
+        .promo-banner {
             opacity: 1 !important;
             visibility: visible !important;
             display: block !important;
         }
+
         .food-grid {
             display: grid !important;
         }
@@ -153,8 +183,8 @@
     </header>
 
     <div class="mobile-cart-fab" id="mobileCartBtn" onclick="toggleBottomSheet()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
@@ -185,76 +215,92 @@
                 </div>
             </div>
 
-            @if(count($discounts) > 0)
-            <div class="discounts-container anim-fade-up" style="margin-top: 30px;">
-                <h3 style="margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
-                    <iconify-icon icon="solar:ticket-sale-bold-duotone" style="color: #f59e0b; font-size: 28px;"></iconify-icon>
-                    Penawaran Diskon Hari Ini
-                </h3>
-                <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
-                    @php $shownProducts = []; @endphp
-                    @foreach($discounts as $discount)
-                        @foreach($discount->products as $p)
-                            @if(!in_array($p->uuid, $shownProducts))
-                                @php
-                                    $shownProducts[] = $p->uuid;
-                                    $originalPrice = (int) $p->harga_jual;
-                                    $tipeDiskon = $p->pivot->tipe_diskon ?? $discount->tipe;
-                                    $nilaiDiskon = (int) ($p->pivot->nilai_diskon ?? $discount->nilai);
-                                    $newPrice = ($tipeDiskon == 'persen' || $tipeDiskon == 'Promo')
-                                        ? $originalPrice * (1 - ($nilaiDiskon / 100))
-                                        : $originalPrice - $nilaiDiskon;
-                                    if($newPrice < 0) $newPrice = 0;
-                                @endphp
-                                @php
-                                    $currentStok = $stockMap[$p->uuid] ?? 0;
-                                    $isOutOfStock = $currentStok <= 0;
-                                @endphp
-                                <div class="discounted-item-vertical {{ $isOutOfStock ? 'out-of-stock' : '' }}"
-                                     style="opacity: {{ $isOutOfStock ? '0.6' : '1' }};">
-                                    <div style="width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: white; position: relative;">
-                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url) }}"
-                                             class="{{ $isOutOfStock ? 'img-out-of-stock' : '' }}"
-                                             style="width: 100%; height: 100%; object-fit: cover;">
-                                        <div style="position: absolute; top: 8px; left: 8px; background: #ff4d4d; color: white; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 3;">
-                                            -{{ $tipeDiskon == 'persen' ? $nilaiDiskon.'%' : 'Rp'.number_format($nilaiDiskon/1000, 0).'k' }}
-                                        </div>
-                                        @if($isOutOfStock)
-                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 4;">HABIS</div>
-                                        @endif
-                                    </div>
-
-                                    <div style="padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
-                                        <h5 class="product-name-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
-                                            {{ $p->nama_produk }}
-                                        </h5>
-                                        <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
-                                            <div>
-                                                <div style="font-size: 0.7rem; text-decoration: line-through; color: #777; margin-bottom: 2px;">
-                                                    Rp{{ number_format($originalPrice, 0, ',', '.') }}
-                                                </div>
-                                                <div class="product-new-price-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
-                                                    Rp{{ number_format($newPrice, 0, ',', '.') }}
-                                                </div>
+            @if (count($discounts) > 0)
+                <div class="discounts-container anim-fade-up" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                        <iconify-icon icon="solar:ticket-sale-bold-duotone"
+                            style="color: #f59e0b; font-size: 28px;"></iconify-icon>
+                        Penawaran Diskon Hari Ini
+                    </h3>
+                    <div
+                        style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
+                        @php $shownProducts = []; @endphp
+                        @foreach ($discounts as $discount)
+                            @foreach ($discount->products as $p)
+                                @if (!in_array($p->uuid, $shownProducts))
+                                    @php
+                                        $shownProducts[] = $p->uuid;
+                                        $originalPrice = (int) $p->harga_jual;
+                                        $tipeDiskon = $p->pivot->tipe_diskon ?? $discount->tipe;
+                                        $nilaiDiskon = (int) ($p->pivot->nilai_diskon ?? $discount->nilai);
+                                        $newPrice =
+                                            $tipeDiskon == 'persen' || $tipeDiskon == 'Promo'
+                                                ? $originalPrice * (1 - $nilaiDiskon / 100)
+                                                : $originalPrice - $nilaiDiskon;
+                                        if ($newPrice < 0) {
+                                            $newPrice = 0;
+                                        }
+                                    @endphp
+                                    @php
+                                        $currentStok = $stockMap[$p->uuid] ?? 0;
+                                        $isOutOfStock = $currentStok <= 0;
+                                    @endphp
+                                    <div class="discounted-item-vertical {{ $isOutOfStock ? 'out-of-stock' : '' }}"
+                                        style="opacity: {{ $isOutOfStock ? '0.6' : '1' }};">
+                                        <div
+                                            style="width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: white; position: relative;">
+                                            <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url) }}"
+                                                class="{{ $isOutOfStock ? 'img-out-of-stock' : '' }}"
+                                                style="width: 100%; height: 100%; object-fit: cover;">
+                                            <div
+                                                style="position: absolute; top: 8px; left: 8px; background: #ff4d4d; color: white; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 3;">
+                                                -{{ $tipeDiskon == 'persen' ? $nilaiDiskon . '%' : 'Rp' . number_format($nilaiDiskon / 1000, 0) . 'k' }}
                                             </div>
+                                            @if ($isOutOfStock)
+                                                <div
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 4;">
+                                                    HABIS</div>
+                                            @endif
+                                        </div>
 
-                                            <button class="discount-add-btn {{ $isOutOfStock ? 'out-of-stock btn-oos' : 'btn-available' }}"
+                                        <div
+                                            style="padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                                            <h5
+                                                class="product-name-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
+                                                {{ $p->nama_produk }}
+                                            </h5>
+                                            <div
+                                                style="margin-top: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
+                                                <div>
+                                                    <div
+                                                        style="font-size: 0.7rem; text-decoration: line-through; color: #777; margin-bottom: 2px;">
+                                                        Rp{{ number_format($originalPrice, 0, ',', '.') }}
+                                                    </div>
+                                                    <div
+                                                        class="product-new-price-discount {{ $isOutOfStock ? 'text-muted-stock' : '' }}">
+                                                        Rp{{ number_format($newPrice, 0, ',', '.') }}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    class="discount-add-btn {{ $isOutOfStock ? 'out-of-stock btn-oos' : 'btn-available' }}"
                                                     data-name="{{ $p->nama_produk }}"
                                                     data-price="{{ $newPrice }}"
-                                                    data-stock="{{ $currentStok }}"
-                                                    onclick="addToCartFromEl(this)">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M12 5V19M5 12H19" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                                </svg>
-                                            </button>
+                                                    data-stock="{{ $currentStok }}" onclick="addToCartFromEl(this)">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24"
+                                                        fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M12 5V19M5 12H19" stroke="white" stroke-width="3"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            @endif
+                                @endif
+                            @endforeach
                         @endforeach
-                    @endforeach
+                    </div>
                 </div>
-            </div>
             @endif
 
             <section id="categorySection" class="search-filter-section">
@@ -287,12 +333,14 @@
                             <h5>Kategori Produk</h5>
                             <div class="category-grid">
                                 <label class="check-container">Semua Kategori
-                                    <input type="checkbox" id="check-all" checked onchange="toggleAllCategories(this)">
+                                    <input type="checkbox" id="check-all" checked
+                                        onchange="toggleAllCategories(this)">
                                     <span class="checkmark"></span>
                                 </label>
                                 @foreach ($categories as $category)
                                     <label class="check-container">{{ $category['name'] }}
-                                        <input type="checkbox" class="cat-check" value="{{ $category['id'] }}" data-name="{{ $category['name'] }}">
+                                        <input type="checkbox" class="cat-check" value="{{ $category['id'] }}"
+                                            data-name="{{ $category['name'] }}">
                                         <span class="checkmark"></span>
                                     </label>
                                 @endforeach
@@ -308,7 +356,8 @@
                                 </select>
                             </div>
                             <div style="padding-bottom: 5px;">
-                                <button onclick="applyFilters()" class="btn-fill" style="padding: 12px 30px; border-radius: 12px;">Terapkan Filter</button>
+                                <button onclick="applyFilters()" class="btn-fill"
+                                    style="padding: 12px 30px; border-radius: 12px;">Terapkan Filter</button>
                             </div>
                         </div>
                     </div>
@@ -420,6 +469,10 @@
                     <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.85rem; color: var(--sub-text);">Ongkir (sementara)</span>
+                            <span class="shippingFeeDisplay" style="font-size: 0.9rem; font-weight: 700;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600;">Total</span>
                             <span class="totalPriceDisplay"
                                 style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
@@ -524,6 +577,18 @@
             return "Rp " + Math.floor(amount).toLocaleString('id-ID');
         }
 
+        // Rumus sementara ongkir sampai ketentuan final tersedia.
+        function calculateTemporaryShippingFee(subtotal, totalQty) {
+            if (subtotal <= 0 || totalQty <= 0) return 0;
+
+            const baseFee = 5000;
+            const perExtraItemFee = 1000;
+            const smallOrderSurcharge = subtotal < 50000 ? 3000 : 0;
+            const qtySurcharge = Math.max(0, totalQty - 1) * perExtraItemFee;
+
+            return baseFee + qtySurcharge + smallOrderSurcharge;
+        }
+
         const products = JSON.parse(document.getElementById('products-data').textContent);
 
         let cart = [];
@@ -531,6 +596,45 @@
         let discountPercent = 0;
         const isAuthenticated = document.querySelector('meta[name="auth-check"]').content === 'true';
         const loginUrl = document.querySelector('meta[name="login-url"]').content;
+        const csrfToken = @json(csrf_token());
+        const deliveryAddressStoreUrl = @json(route('user.delivery-address.store', ['id' => $outlet->uuid]));
+        const persistedDeliveryPreference = @json($deliveryPreference ?? null);
+
+        function savePersistedDeliveryAddress() {
+            if (!isAuthenticated) return Promise.resolve(true);
+
+            const safeAddress = (deliveryAddress || '').trim();
+            const hasCoordinates = !!(deliveryCoordinates && Number.isFinite(deliveryCoordinates.lat) && Number.isFinite(
+                deliveryCoordinates.lng));
+
+            if (!safeAddress) return Promise.resolve(false);
+
+            return fetch(deliveryAddressStoreUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        address: safeAddress,
+                        coordinates: hasCoordinates ? {
+                            lat: deliveryCoordinates.lat,
+                            lng: deliveryCoordinates.lng
+                        } : null
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`save_delivery_failed_${response.status}`);
+                    }
+                    return true;
+                })
+                .catch(() => {
+                    return false;
+                });
+        }
 
         // Toggle Panel Filter
         function toggleFilterPanel() {
@@ -633,10 +737,17 @@
             }
         }
         const outletAddress = @json($outlet->alamat ?? 'Alamat outlet belum tersedia');
-        let deliveryAddress = @json($outlet->alamat ?? '');
-        let deliveryCoordinates = null;
+        let deliveryAddress = (persistedDeliveryPreference && typeof persistedDeliveryPreference.address === 'string' &&
+                persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() :
+            @json($outlet->alamat ?? '');
+        let deliveryCoordinates = (persistedDeliveryPreference && persistedDeliveryPreference.coordinates && Number
+            .isFinite(persistedDeliveryPreference.coordinates.lat) && Number.isFinite(persistedDeliveryPreference
+                .coordinates.lng)) ? {
+            lat: Number(persistedDeliveryPreference.coordinates.lat),
+            lng: Number(persistedDeliveryPreference.coordinates.lng)
+        } : null;
         let deliveryContactName = @json(optional(auth()->user())->name ?? '');
-        let deliveryPhone = '';
+        let deliveryPhone = @json(optional(auth()->user())->no_hp ?? '');
         let outletCoordinates = null;
         let outletGeocodeTried = false;
 
@@ -677,31 +788,63 @@
             let geocodeRequestToken = 0;
 
             const popupHtml = `
-                <div style="text-align:left;">
-                    <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:10px;">
-                        <p style="font-size:11px; letter-spacing:0.02em; color:#9ca3af; margin:0 0 6px 0; font-weight:700;">ROUTE TRACKING</p>
-                        <p style="font-size:12px; color:#f3f4f6; margin:0; line-height:1.45;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
-                    </div>
+                <style>
+                    .address-popup-wrap {
+                        text-align: left;
+                    }
 
-                    <label style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Saat Ini (Outlet)</label>
-                    <div style="border:1px solid #374151; border-radius:10px; padding:10px; background:#1f2937; color:#f3f4f6; font-size:13px; margin-bottom:10px; line-height:1.4;">${outletAddress}</div>
+                    .address-popup-layout {
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+                        gap: 12px;
+                        align-items: start;
+                    }
 
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
-                        <div>
-                            <label for="recipientNameInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Nama Penerima</label>
-                            <input id="recipientNameInput" type="text" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; background:#111827; color:#f9fafb; font-size:13px;" placeholder="Contoh: Budi Santoso">
+                    .address-popup-left,
+                    .address-popup-right {
+                        min-width: 0;
+                    }
+
+                    .address-popup-right {
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    #addressMapCanvas {
+                        height: 340px;
+                        border-radius: 12px;
+                        overflow: hidden;
+                    }
+
+                    @media (max-width: 920px) {
+                        .address-popup-layout {
+                            grid-template-columns: 1fr;
+                        }
+
+                        #addressMapCanvas {
+                            height: 260px;
+                        }
+                    }
+                </style>
+
+                <div class="address-popup-wrap">
+                    <div class="address-popup-layout">
+                        <div class="address-popup-left">
+                            <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:10px;">
+                                <p style="font-size:11px; letter-spacing:0.02em; color:#9ca3af; margin:0 0 6px 0; font-weight:700;">ROUTE TRACKING</p>
+                                <p style="font-size:12px; color:#f3f4f6; margin:0; line-height:1.45;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
+                            </div>
+
+                            <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Lengkap</label>
+                            <textarea id="manualAddressInput" rows="8" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:vertical; background:#111827; color:#f9fafb; font-size:13px;"></textarea>
                         </div>
-                        <div>
-                            <label for="recipientPhoneInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">No HP</label>
-                            <input id="recipientPhoneInput" type="text" inputmode="tel" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; background:#111827; color:#f9fafb; font-size:13px;" placeholder="08xxxxxxxxxx">
+
+                        <div class="address-popup-right">
+                            <p style="font-size:12px; margin:0 0 8px 0; color:#9ca3af;">Input alamat akan menggeser peta, dan klik peta akan memperbarui teks alamat.</p>
+                            <div id="addressMapCanvas"></div>
+                            <div id="mapAddressResult" style="margin-top:8px; font-size:12px; color:#d1d5db; line-height:1.4;"></div>
                         </div>
                     </div>
-
-                    <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Lengkap</label>
-                    <textarea id="manualAddressInput" rows="4" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:vertical; background:#111827; color:#f9fafb; font-size:13px; margin-bottom:10px;"></textarea>
-                    <p style="font-size:12px; margin:0 0 8px 0; color:#9ca3af;">Input alamat akan menggeser peta, dan klik peta akan memperbarui teks alamat.</p>
-                    <div id="addressMapCanvas" style="height:260px; border-radius:12px; overflow:hidden;"></div>
-                    <div id="mapAddressResult" style="margin-top:8px; font-size:12px; color:#d1d5db; line-height:1.4;"></div>
                 </div>
             `;
 
@@ -714,12 +857,10 @@
                 confirmButtonText: 'Simpan',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: 'var(--orange-brand)',
-                width: 650,
+                width: 'min(980px, 96vw)',
                 didOpen: () => {
                     const popup = Swal.getPopup();
                     const htmlContainer = Swal.getHtmlContainer();
-                    const recipientNameInput = popup.querySelector('#recipientNameInput');
-                    const recipientPhoneInput = popup.querySelector('#recipientPhoneInput');
                     const manualAddressInput = popup.querySelector('#manualAddressInput');
                     const mapAddressResult = popup.querySelector('#mapAddressResult');
                     const routeTrackingSummary = popup.querySelector('#routeTrackingSummary');
@@ -733,8 +874,6 @@
                         popup.style.maxHeight = '92vh';
                     }
 
-                    recipientNameInput.value = (deliveryContactName || '').trim();
-                    recipientPhoneInput.value = (deliveryPhone || '').trim();
                     manualAddressInput.value = (deliveryAddress || '').trim();
 
                     function renderMapResultText(text) {
@@ -1000,25 +1139,18 @@
                 },
                 preConfirm: () => {
                     const popup = Swal.getPopup();
-                    const recipientNameInput = popup.querySelector('#recipientNameInput');
-                    const recipientPhoneInput = popup.querySelector('#recipientPhoneInput');
                     const manualAddressInput = popup.querySelector('#manualAddressInput');
-                    const recipientName = (recipientNameInput.value || '').trim();
-                    const recipientPhone = (recipientPhoneInput.value || '').trim();
+                    const recipientName = (deliveryContactName || '').trim();
+                    const recipientPhone = (deliveryPhone || '').trim();
                     const manualAddress = (manualAddressInput.value || '').trim();
 
                     if (!recipientName) {
-                        Swal.showValidationMessage('Nama penerima wajib diisi.');
+                        Swal.showValidationMessage('Nama penerima dari profil belum tersedia.');
                         return false;
                     }
 
                     if (!recipientPhone) {
-                        Swal.showValidationMessage('No HP wajib diisi.');
-                        return false;
-                    }
-
-                    if (!/^\+?[0-9\s-]{8,20}$/.test(recipientPhone)) {
-                        Swal.showValidationMessage('Format No HP tidak valid.');
+                        Swal.showValidationMessage('No HP dari profil belum tersedia.');
                         return false;
                     }
 
@@ -1037,14 +1169,27 @@
                         } : null
                     };
                 }
-            }).then((result) => {
+            }).then(async (result) => {
                 if (!result.isConfirmed || !result.value) return;
 
                 deliveryContactName = result.value.recipientName;
                 deliveryPhone = result.value.recipientPhone;
                 deliveryAddress = result.value.address;
                 deliveryCoordinates = result.value.coordinates;
+                const persisted = await savePersistedDeliveryAddress();
                 updateDeliveryAddressUI();
+
+                if (!persisted && isAuthenticated) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Alamat tersimpan sementara',
+                        text: 'Penyimpanan alamat ke server gagal. Coba simpan ulang alamat Anda.',
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        confirmButtonColor: 'var(--orange-brand)'
+                    });
+                    return;
+                }
 
                 Swal.fire({
                     icon: 'success',
@@ -1069,7 +1214,8 @@
             const isAllChecked = document.getElementById('check-all') ? document.getElementById('check-all').checked : true;
 
             let filtered = products.filter(p => {
-                const matchesCategory = isAllChecked || checkedCats.length === 0 || checkedCats.includes(p.category_id);
+                const matchesCategory = isAllChecked || checkedCats.length === 0 || checkedCats.includes(p
+                    .category_id);
                 const matchesSearch = p.name.toLowerCase().includes(searchTerm);
                 return matchesCategory && matchesSearch;
             });
@@ -1082,7 +1228,8 @@
 
             if (filtered.length === 0) {
                 const emptyMsg = document.createElement('div');
-                emptyMsg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 60px; color: var(--sub-text); font-size: 1.1rem;';
+                emptyMsg.style.cssText =
+                    'grid-column: 1/-1; text-align: center; padding: 60px; color: var(--sub-text); font-size: 1.1rem;';
                 emptyMsg.innerHTML = '<div style="margin-bottom: 15px; font-size: 3rem;">🔍</div>Item tidak ditemukan.';
                 productGrid.appendChild(emptyMsg);
                 return;
@@ -1098,28 +1245,28 @@
                         <img src="${product.img}" class="food-img" style="filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
 
                         ${product.is_discount && !isOutOfStock ? `
-                            <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
-                                -${product.discount_label}
-                            </div>
-                        ` : ''}
+                                                            <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
+                                                                -${product.discount_label}
+                                                            </div>
+                                                        ` : ''}
 
                         ${isOutOfStock ? `
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
-                        ` : ''}
+                                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
+                                                        ` : ''}
                     </div>
                     <h4 style="font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-color); font-weight: 700; margin-bottom: 4px;">${product.name}</h4>
 
                     ${!isOutOfStock ? `
-                        <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
-                    ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
+                                                        <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
+                                                    ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
 
                     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
                         <div>
                             ${product.is_discount && !isOutOfStock ? `
-                                <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
-                                    ${formatRupiah(product.original_price)}
-                                </span>
-                            ` : ''}
+                                                                <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
+                                                                    ${formatRupiah(product.original_price)}
+                                                                </span>
+                                                            ` : ''}
                             <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 1.15rem;">
                                 ${formatRupiah(product.price)}
                             </span>
@@ -1252,8 +1399,14 @@
                 cartItemsContainer.appendChild(div);
             });
 
-            // Biaya Service telah dihapus dari kalkulasi total
-            let finalTotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
+            const shippingFee = calculateTemporaryShippingFee(subtotal, totalCount);
+            const discountedSubtotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
+            const finalTotal = discountedSubtotal + shippingFee;
+
+            document.querySelectorAll('.shippingFeeDisplay').forEach(el => {
+                el.innerText = formatRupiah(shippingFee);
+            });
+
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
                 el.innerText = formatRupiah(finalTotal);
             });
@@ -1372,13 +1525,16 @@
             }
 
             const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-            // Biaya Service dihapus dari total akhir checkout
-            const total = subtotal * (1 - discountPercent);
+            const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
+            const shippingFee = calculateTemporaryShippingFee(subtotal, totalQty);
+            const total = (subtotal * (1 - discountPercent)) + shippingFee;
+
             historyData.unshift({
                 id: Date.now(),
                 date: new Date().toLocaleString('id-ID'),
                 items: [...cart],
                 total: total,
+                shipping_fee: shippingFee,
                 recipient_name: deliveryContactName,
                 recipient_phone: deliveryPhone,
                 address: deliveryAddress,
@@ -1407,6 +1563,7 @@
                         <p style="font-size: 0.85rem; margin-top: 8px;">${trx.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</p>
                         <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">👤 ${trx.recipient_name || '-'} | 📞 ${trx.recipient_phone || '-'}</p>
                         <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">📍 ${trx.address || '-'}</p>
+                        <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">🚚 Ongkir: ${formatRupiah(trx.shipping_fee || 0)}</p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>

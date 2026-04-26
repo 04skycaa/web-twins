@@ -91,7 +91,7 @@ Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_to
     Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
     Route::put('/cashflow/{id}', [BukuKasController::class, 'updateCashFlow'])->name('keuangan.cashflow.update');
     Route::delete('/cashflow/{id}', [BukuKasController::class, 'deleteCashFlow'])->name('keuangan.cashflow.destroy');
-    
+
     Route::post('/debt', [BukuKasController::class, 'storeDebt'])->name('keuangan.debt.store');
     Route::put('/debt/{id}', [BukuKasController::class, 'updateDebt'])->name('keuangan.debt.update');
     Route::post('/debt/{id}/pay', [BukuKasController::class, 'payDebt'])->name('keuangan.debt.pay');
@@ -108,6 +108,9 @@ Route::get('/absensi', [AbsensiController::class, 'index'])
 
 
 Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');
+Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDeliveryAddress'])
+    ->middleware(['auth'])
+    ->name('user.delivery-address.store');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');
