@@ -184,10 +184,10 @@
                             </th>
                             <th>PRODUK</th>
                             <th>KATEGORI</th>
-                            <th>HARGA MODAL</th>
-                            <th>HARGA JUAL</th>
+                            <th style="white-space: nowrap;">HARGA MODAL</th>
+                            <th style="white-space: nowrap;">HARGA JUAL</th>
                             <th>STOK</th>
-                            <th>AKSI</th>
+                            <th style="white-space: nowrap; min-width: 130px;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -206,8 +206,8 @@
                                     </div>
                                 </td>
                                 <td>{{ $product->category->nama_category ?? '-' }}</td>
-                                <td class="price-text">Rp {{ number_format($product->harga_modal, 0, ',', '.') }}</td>
-                                <td class="price-text">Rp {{ number_format($product->harga_jual, 0, ',', '.') }}</td>
+                                <td class="price-text" style="white-space: nowrap;">Rp {{ number_format($product->harga_modal, 0, ',', '.') }}</td>
+                                <td class="price-text" style="white-space: nowrap;">Rp {{ number_format($product->harga_jual, 0, ',', '.') }}</td>
                                 <td style="min-width: 120px;">
                                     @if(Auth::user()->isOwner())
                                         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -233,7 +233,7 @@
                                         <div style="font-size: 10px; color: #888;">Stok di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
                                     @endif
                                 </td>
-                                <td>
+                                <td style="white-space: nowrap;">
                                     <div style="display: flex; gap: 8px;">
                                         <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($product)' onclick="openViewModal(JSON.parse(this.dataset.item))">
                                             <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
@@ -1188,6 +1188,10 @@
         document.getElementById('edit_kategori').value = product.kategori_id;
         document.getElementById('edit_modal').value = product.harga_modal;
         document.getElementById('edit_jual').value = product.harga_jual;
+        
+        // Reset hidden image input to prevent old data persistence
+        const resultInput = document.getElementById('editCroppedImageResult');
+        if (resultInput) resultInput.value = '';
 
         // Clear and Populate Price Levels (Grosir)
         const tbody = document.getElementById('editPriceLevelBody');

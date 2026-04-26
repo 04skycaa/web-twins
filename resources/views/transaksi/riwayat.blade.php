@@ -1,226 +1,271 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="transaksi-wrapper">
+<div class="fitur-container">
     @include('transaksi.partials.tabs')
 
-    <div class="content-card mt-3">
-        <div class="card-header">
-            <h4>Riwayat Transaksi</h4>
-            <div class="header-actions">
-                <input type="date" class="date-filter">
-                <button class="btn-primary-small">
-                    <iconify-icon icon="solar:printer-minimalistic-line-duotone"></iconify-icon>
-                    Cetak Laporan
-                </button>
+    <div class="action-bar">
+        <div class="left-actions-group">
+            <div class="search-wrapper">
+                <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                <input type="text" class="search-input" placeholder="Cari ID transaksi, kasir, atau pelanggan...">
             </div>
+            <input type="date" class="category-filter">
         </div>
 
-        <div class="table-responsive">
-            <table class="custom-table">
+        <div class="right-actions">
+            <button class="btn-action">
+                <iconify-icon icon="solar:printer-minimalistic-line-duotone"></iconify-icon>
+                <span>Cetak Laporan</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content-box">
+        <div class="table-container">
+            <table class="fitur-table">
                 <thead>
                     <tr>
-                        <th>ID Transaksi</th>
-                        <th>Tanggal</th>
-                        <th>Kasir</th>
-                        <th>Pelanggan</th>
-                        <th>Total Item</th>
-                        <th>Total Harga</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
+                        <th>ID TRANSAKSI</th>
+                        <th>TANGGAL</th>
+                        <th>KASIR</th>
+                        <th>PELANGGAN</th>
+                        <th>ITEM</th>
+                        <th>TOTAL HARGA</th>
+                        <th>STATUS</th>
+                        <th>AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($data as $trx)
                     <tr>
-                        <td class="text-bold">{{ $trx['id'] }}</td>
+                        <td style="font-weight: 700; color: var(--primary-blue);">{{ $trx['id'] }}</td>
                         <td>{{ $trx['tanggal'] }}</td>
                         <td>{{ $trx['kasir'] }}</td>
                         <td>{{ $trx['pelanggan'] }}</td>
                         <td>{{ $trx['qty'] }} pcs</td>
-                        <td class="text-bold">{{ $trx['total'] }}</td>
-                        <td><span class="badge {{ strtolower($trx['status']) == 'selesai' ? 'success' : 'warning' }}">{{ $trx['status'] }}</span></td>
+                        <td class="price-text">{{ $trx['total'] }}</td>
                         <td>
-                            <button class="btn-icon">
-                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                            <span class="status-badge {{ strtolower($trx['status']) == 'selesai' ? 'status-active' : 'status-proses' }}">
+                                {{ $trx['status'] }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-filter" style="width: 32px; height: 32px;">
+                                <iconify-icon icon="solar:eye-bold-duotone" style="font-size: 18px;"></iconify-icon>
                             </button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Belum ada riwayat transaksi.</td>
+                        <td colspan="8" style="text-align: center; padding: 50px; color: #94a3b8; font-style: italic;">
+                            Belum ada riwayat transaksi.
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
         
-        <div class="pagination-wrapper">
-            <span class="text-muted">Menampilkan {{ count($data) }} dari {{ count($data) }} transaksi</span>
-            <div class="pagination-buttons">
-                <button disabled>&laquo; Prev</button>
-                <button class="active">1</button>
-                <button disabled>Next &raquo;</button>
-            </div>
+        <div class="pagination-container">
+            <ul class="pagination">
+                <li class="disabled"><span>&laquo; Prev</span></li>
+                <li class="active"><span>1</span></li>
+                <li class="disabled"><span>Next &raquo;</span></li>
+            </ul>
         </div>
     </div>
 </div>
 
 <style>
-    .transaksi-wrapper {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
+    /* Import styles from fitur.css logic */
+    :root {
+        --primary-blue: #0081C9;
+        --light-blue: #EEF7FF;
+        --border-blue: #5EB7EB;
+        --text-dark: #333333;
     }
 
-    .mt-3 { margin-top: 1rem; }
+    .fitur-container {
+        padding: 24px;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
 
-    .content-card {
-        background: #fff;
-        padding: 20px;
-        border-radius: 15px;
+    .action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        gap: 12px;
+    }
+
+    .left-actions-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .search-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 16px 12px 48px;
+        border-radius: 50px;
+        border: 2px solid var(--border-blue);
+        outline: none;
+        font-size: 15px;
+        background: white;
+        transition: border-color 0.3s;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--primary-blue);
+        font-size: 24px;
+    }
+
+    .category-filter {
+        padding: 10px 16px;
+        border-radius: 50px;
+        border: 2px solid var(--border-blue);
+        outline: none;
+        font-size: 14px;
+        background: white;
+        color: var(--text-dark);
+        cursor: pointer;
+    }
+
+    .btn-action {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 12px;
+        border: none;
+        background: var(--primary-blue);
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+
+    .btn-action:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .main-content-box {
+        border: 2px solid var(--border-blue);
+        border-radius: 30px;
+        min-height: 400px;
+        background: white;
+        padding: 24px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .card-header h4 {
-        margin: 0;
-        font-size: 16px;
-        color: #1e293b;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .date-filter {
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #475569;
-        outline: none;
-    }
-
-    .btn-primary-small {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: #0ea5e9;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: opacity 0.2s;
-    }
-    .btn-primary-small:hover { opacity: 0.9; }
-
-    .table-responsive {
+    .table-container {
         overflow-x: auto;
     }
 
-    .custom-table {
+    .fitur-table {
         width: 100%;
         border-collapse: collapse;
-    }
-
-    .custom-table th {
         text-align: left;
-        padding: 12px 15px;
-        background: #f8fafc;
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 600;
-        border-bottom: 1px solid #e2e8f0;
     }
 
-    .custom-table td {
-        padding: 15px;
+    .fitur-table th {
+        padding: 16px;
+        background: var(--light-blue);
+        color: var(--primary-blue);
+        font-weight: 700;
+        font-size: 13px;
+        border-bottom: 2px solid var(--border-blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .fitur-table td {
+        padding: 18px 16px;
         border-bottom: 1px solid #f1f5f9;
-        font-size: 13px;
-        color: #334155;
+        font-size: 14px;
+        color: #475569;
+        vertical-align: middle;
     }
 
-    .text-bold { font-weight: 600; }
-    .text-center { text-align: center; }
-    .py-4 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .price-text {
+        font-weight: 700;
+        color: var(--primary-blue);
+    }
 
-    .badge {
-        padding: 4px 10px;
-        border-radius: 20px;
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 50px;
         font-size: 12px;
-        font-weight: 500;
-    }
-    .success { background: #dcfce7; color: #166534; }
-    .warning { background: #fef9c3; color: #854d0e; }
-
-    .btn-icon {
-        background: #f1f5f9;
-        border: none;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        color: #64748b;
+        font-weight: 700;
         display: inline-flex;
+    }
+
+    .status-active { background: #E8F5E9; color: #2E7D32; }
+    .status-proses { background: #FFF3E0; color: #E65100; }
+
+    .btn-filter {
+        display: flex;
         align-items: center;
         justify-content: center;
+        background: white;
+        border: 2px solid var(--border-blue);
+        border-radius: 50%;
+        color: var(--primary-blue);
         cursor: pointer;
-        transition: all 0.2s;
-    }
-    .btn-icon:hover {
-        background: #e0f2fe;
-        color: #0ea5e9;
+        transition: all 0.3s;
     }
 
-    .pagination-wrapper {
+    .btn-filter:hover { background: var(--light-blue); }
+
+    .pagination-container {
+        padding: 30px 0 10px;
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+    }
+
+    .pagination li span {
+        display: flex;
         align-items: center;
-        margin-top: 20px;
-        padding-top: 15px;
-        border-top: 1px solid #f1f5f9;
-    }
-
-    .text-muted {
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        background: white;
+        border: 2px solid var(--border-blue);
+        color: var(--primary-blue);
+        font-weight: 700;
         font-size: 13px;
-        color: #64748b;
     }
 
-    .pagination-buttons {
-        display: flex;
-        gap: 5px;
-    }
-
-    .pagination-buttons button {
-        padding: 6px 12px;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        border-radius: 6px;
-        font-size: 13px;
-        color: #475569;
-        cursor: pointer;
-    }
-
-    .pagination-buttons button.active {
-        background: #0ea5e9;
+    .pagination li.active span {
+        background: var(--primary-blue);
         color: white;
-        border-color: #0ea5e9;
+        border-color: var(--primary-blue);
     }
 
-    .pagination-buttons button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    .pagination li.disabled span {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #cbd5e1;
     }
 </style>
 @endsection

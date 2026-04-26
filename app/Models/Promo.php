@@ -17,6 +17,7 @@ class Promo extends Model
 
     protected $fillable = [
         'nama_promo',
+        'kode_promo',
         'tipe',
         'nilai',
         'tanggal_mulai',
@@ -28,12 +29,12 @@ class Promo extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'promo_products', 'promo_id', 'product_id')
-                    ->withPivot('tipe_diskon', 'nilai_diskon');
+        return $this->belongsToMany(Product::class, 'promo_products', 'promo_id', 'product_id', 'uuid', 'uuid')
+                    ->withPivot('nilai_diskon', 'tipe_diskon');
     }
 
     public function stores()
     {
-        return $this->belongsToMany(Outlet::class, 'promo_store', 'promo_id', 'store_id');
+        return $this->belongsToMany(Outlet::class, 'promo_store', 'promo_id', 'store_id', 'uuid', 'uuid');
     }
 }

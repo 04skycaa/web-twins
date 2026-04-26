@@ -8,7 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
     <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @stack('styles')
 </head>
 
 <body>
@@ -219,6 +220,7 @@
             }
         }
     </script>
+    @stack('scripts')
 </body>
 
 </html>

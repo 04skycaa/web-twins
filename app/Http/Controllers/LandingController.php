@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class LandingController extends Controller
 {
@@ -21,7 +22,7 @@ class LandingController extends Controller
         $now = Carbon::now();
         $promos = Promo::with('stores')
             ->where('status', true)
-            ->where('tipe', 'Promo')
+            ->whereNotNull('image_banner')
             ->orderBy('tanggal_mulai', 'desc')
             ->get();
 
@@ -270,34 +271,60 @@ class LandingController extends Controller
     public static function resolveImageUrl($path)
     {
         if (!$path) {
-            return asset('images/placeholder.jpg');
+            return asset('images/placeholder-product.png');
         }
 
-        // Jika path adalah URL lengkap, langsung kembalikan
-        if (filter_var($path, FILTER_VALIDATE_URL)) {
+        if (str_starts_with($path, 'http')) {
             return $path;
         }
 
-        // Bersihkan path dari awalan yang sering dobel
+        // Clean path from /storage/ prefix for Storage::url()
         $cleanPath = ltrim($path, '/');
-        $cleanPath = str_replace(['storage/', 'public/'], '', $cleanPath);
-
-        // 1. Cek di public/storage/ (Hasil upload)
-        if (file_exists(public_path('storage/' . $cleanPath))) {
-            return asset('storage/' . $cleanPath);
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
         }
 
-        // 2. Cek di public/images/
-        if (file_exists(public_path('images/' . $cleanPath))) {
-            return asset('images/' . $cleanPath);
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+    }
+
+    public static function uploadToCloudinary($file, $folder = 'twins')
+    {
+        $cloudName = env('CLOUDINARY_CLOUD_NAME');
+        $uploadPreset = env('CLOUDINARY_UPLOAD_PRESET', 'ml_default');
+
+        if (!$cloudName) {
+            return null;
         }
 
-        // 3. Cek langsung di public/
-        if (file_exists(public_path($cleanPath))) {
-            return asset($cleanPath);
-        }
+        $url = "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload";
 
-        // Fallback terakhir: asumsikan di storage
-        return asset('storage/' . $cleanPath);
+        try {
+            // Jika file adalah base64 string
+            if (is_string($file) && str_starts_with($file, 'data:image')) {
+                $response = Http::asForm()->post($url, [
+                    'file' => $file,
+                    'upload_preset' => $uploadPreset,
+                    'folder' => $folder
+                ]);
+            } 
+            // Jika file adalah UploadedFile object
+            else {
+                $response = Http::attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                    ->post($url, [
+                        'upload_preset' => $uploadPreset,
+                        'folder' => $folder
+                    ]);
+            }
+
+            if ($response->successful()) {
+                return $response->json()['secure_url'];
+            }
+
+            \Illuminate\Support\Facades\Log::error('Cloudinary Upload Failed: ' . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Cloudinary Exception: ' . $e->getMessage());
+            return null;
+        }
     }
 }

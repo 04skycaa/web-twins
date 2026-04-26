@@ -1,48 +1,61 @@
-<div class="tabs-container">
-    <a href="{{ route('transaksi.index') }}" class="tab-item {{ request()->routeIs('transaksi.index') || request()->routeIs('transaksi.riwayat') ? 'active' : '' }}">
+<div class="tab-navigation">
+    <a href="{{ route('transaksi.index') }}" class="tab-pill {{ request()->routeIs('transaksi.index') || request()->routeIs('transaksi.riwayat') ? 'active' : '' }}">
         <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
-        Riwayat Transaksi
+        <span>Riwayat Transaksi</span>
     </a>
-    <a href="{{ route('transaksi.diskon') }}" class="tab-item {{ request()->routeIs('transaksi.diskon') ? 'active' : '' }}">
+    <a href="{{ route('transaksi.diskon') }}" class="tab-pill {{ request()->routeIs('transaksi.diskon') ? 'active' : '' }}">
         <iconify-icon icon="solar:sale-bold-duotone"></iconify-icon>
-        Manajemen Diskon
+        <span>Manajemen Diskon</span>
     </a>
 </div>
 
 <style>
-    .tabs-container {
-        display: flex;
-        gap: 10px;
-        background: #fff;
-        padding: 10px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        margin-bottom: 25px;
-        overflow-x: auto;
+    :root {
+        --primary-blue: #0081C9;
+        --light-blue: #EEF7FF;
+        --border-blue: #5EB7EB;
     }
-    .tab-item {
+
+    .tab-navigation {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .tab-pill {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 12px 24px;
-        border-radius: 10px;
+        gap: 10px;
+        padding: 10px 24px;
+        border-radius: 50px;
+        border: 2px solid var(--primary-blue);
+        background: white;
+        color: var(--primary-blue);
         text-decoration: none;
-        color: #64748b;
         font-weight: 500;
-        font-size: 14px;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-size: 15px;
     }
-    .tab-item:hover {
-        background: #f8fafc;
-        color: #334155;
+
+    .tab-pill.active {
+        background: var(--primary-blue);
+        color: white;
+        box-shadow: 0 4px 12px rgba(0, 129, 201, 0.2);
     }
-    .tab-item.active {
-        background: #e0f2fe;
-        color: #0ea5e9;
-        font-weight: 600;
-        box-shadow: 0 2px 4px rgba(14, 165, 233, 0.1);
+
+    .tab-pill iconify-icon {
+        font-size: 24px;
     }
-    .tab-item iconify-icon {
-        font-size: 20px;
+    
+    @media (max-width: 768px) {
+        .tab-navigation {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .tab-pill {
+            justify-content: center;
+        }
     }
 </style>

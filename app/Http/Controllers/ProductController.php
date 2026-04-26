@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Http\Controllers\LandingController;
 
 class ProductController extends Controller
 {
@@ -265,17 +266,21 @@ class ProductController extends Controller
             'harga_jual' => 'nullable|numeric',
         ]);
 
-        $imageUrl = null;
         if ($request->filled('cropped_image')) {
             $base64Image = $request->input('cropped_image');
-            @list(, $fileData) = explode(';', $base64Image);
-            @list(, $fileData)      = explode(',', $fileData);
+            $cloudinaryUrl = LandingController::uploadToCloudinary($base64Image, 'products');
             
-            $imageBinary = base64_decode($fileData);
-            $fileName = \Illuminate\Support\Str::uuid() . '.png';
-            
-            \Illuminate\Support\Facades\Storage::disk('public')->put('products/' . $fileName, $imageBinary);
-            $imageUrl = '/storage/products/' . $fileName;
+            if ($cloudinaryUrl) {
+                $imageUrl = $cloudinaryUrl;
+            } else {
+                // Fallback to local
+                @list(, $fileData) = explode(';', $base64Image);
+                @list(, $fileData) = explode(',', $fileData);
+                $imageBinary = base64_decode($fileData);
+                $fileName = \Illuminate\Support\Str::uuid() . '.png';
+                \Illuminate\Support\Facades\Storage::disk('public')->put('products/' . $fileName, $imageBinary);
+                $imageUrl = 'products/' . $fileName;
+            }
         }
 
         $product = Product::create([
@@ -330,20 +335,38 @@ class ProductController extends Controller
 
         if ($request->filled('cropped_image')) {
             $base64Image = $request->input('cropped_image');
-            @list(, $fileData) = explode(';', $base64Image);
-            @list(, $fileData) = explode(',', $fileData);
+            \Illuminate\Support\Facades\Log::info('Updating product image for: ' . $product->uuid);
             
-            if ($fileData) {
-                $imageBinary = base64_decode($fileData);
-                $fileName = \Illuminate\Support\Str::uuid() . '.png';
-                
-                // Delete old image if exists
-                if ($product->image_url && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image_url)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image_url);
-                }
+            $cloudinaryUrl = LandingController::uploadToCloudinary($base64Image, 'products');
 
-                \Illuminate\Support\Facades\Storage::disk('public')->put('products/' . $fileName, $imageBinary);
-                $updateData['image_url'] = 'products/' . $fileName;
+            if ($cloudinaryUrl) {
+                $updateData['image_url'] = $cloudinaryUrl;
+                \Illuminate\Support\Facades\Log::info('Cloudinary upload success: ' . $cloudinaryUrl);
+            } else {
+                \Illuminate\Support\Facades\Log::info('Falling back to local storage for product image');
+                @list(, $fileData) = explode(';', $base64Image);
+                @list(, $fileData) = explode(',', $fileData);
+                
+                if ($fileData) {
+                    $imageBinary = base64_decode($fileData);
+                    $fileName = \Illuminate\Support\Str::uuid() . '.png';
+                    $newPath = 'products/' . $fileName;
+                    
+                    // Deletion logic with path normalization
+                    if ($product->image_url && !str_starts_with($product->image_url, 'http')) {
+                        $oldPath = ltrim(str_replace(['storage/', '/storage/'], '', $product->image_url), '/');
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                            \Illuminate\Support\Facades\Log::info('Old local image deleted: ' . $oldPath);
+                        }
+                    }
+
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($newPath, $imageBinary);
+                    $updateData['image_url'] = '/storage/' . $newPath;
+                    \Illuminate\Support\Facades\Log::info('New local image saved: /storage/' . $newPath);
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Invalid base64 image data received for product: ' . $product->uuid);
+                }
             }
         }
 

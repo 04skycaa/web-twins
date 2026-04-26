@@ -162,22 +162,23 @@
     </section>
 
     <section id="promo-outlet" class="promo-section">
-        <div class="promo-header">
-            <h2 data-split-text>PROMO <span>PRODUK</span></h2>
+        <div class="promo-header" style="margin-bottom: 5px;">
+            <h2 data-split-text style="font-size: 18px; letter-spacing: 1px;">PROMO <span>PRODUK</span></h2>
         </div>
 
-        <div class="promo-slider-container" id="promoSlider" style="max-width: 800px; margin: 0 auto; padding: 20px 0;">
+        <div class="promo-slider-container" id="promoSlider" style="max-width: 550px; margin: 0 auto; padding: 5px 0;">
             @forelse($promoProducts as $index => $promo)
-            <div class="promo-banner-card" data-index="{{ $index }}" style="width: 100%; min-width: 100%; aspect-ratio: 2 / 1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.15); transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1); cursor: pointer; animation: floatBanner 6s ease-in-out infinite;">
-                <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease;">
+            <div class="promo-banner-card" data-index="{{ $index }}" style="width: 100%; min-width: 100%; aspect-ratio: 4 / 2; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15); transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1); cursor: pointer; position: relative;">
+                <img src="{{ $promo->image_banner }}" alt="{{ $promo->nama_promo }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s ease;">
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 15px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white; opacity: 0; transform: translateY(10px); transition: all 0.4s ease;" class="banner-info">
+                    <h3 style="margin: 0; font-size: 16px;">{{ $promo->nama_promo }}</h3>
+                    <p style="margin: 3px 0 0; font-size: 11px; opacity: 0.8;">📍 {{ $promo->outlet_name }} - {{ $promo->outlet_address }}</p>
+                </div>
             </div>
             <style>
-                .promo-banner-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
-                .promo-banner-card:hover img { transform: scale(1.05); }
-                @keyframes floatBanner {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-15px); }
-                }
+                .promo-banner-card:hover { transform: scale(1.02); box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+                .promo-banner-card:hover img { transform: scale(1.08); }
+                .promo-banner-card:hover .banner-info { opacity: 1; transform: translateY(0); }
             </style>
             @empty
             <div style="text-align: center; width: 100%; padding: 40px; background: rgba(255,255,255,0.05); border-radius: 24px; border: 2px dashed rgba(255,255,255,0.1);">
