@@ -82,11 +82,7 @@ class LandingController extends Controller
             ->join('product_store', 'products.uuid', '=', 'product_store.product_id')
             ->where('product_store.store_id', $outlet->uuid)
             ->select(
-                'products.uuid as id',
-                'products.nama_produk as name',
-                'products.harga_jual as price',
-                'products.image_url as img',
-                'products.kategori_id as category_id',
+                'products.*',
                 'product_store.stok as stok'
             )
             ->get()
@@ -96,8 +92,8 @@ class LandingController extends Controller
                 $isDiscount = false;
                 $discountLabel = '';
 
-                if (isset($productDiscounts[$p->id])) {
-                    $d = $productDiscounts[$p->id];
+                if (isset($productDiscounts[$p->uuid])) {
+                    $d = $productDiscounts[$p->uuid];
                     $isDiscount = true;
                     if ($d['tipe'] === 'persen') {
                         $discountPrice = $originalPrice - ($originalPrice * ($d['nilai'] / 100));
@@ -109,16 +105,17 @@ class LandingController extends Controller
                 }
 
                 return [
-                    'id' => $p->id,
-                    'name' => $p->name,
+                    'id' => $p->uuid,
+                    'name' => $p->nama_produk,
                     'price' => (int) $discountPrice,
                     'original_price' => $originalPrice,
                     'is_discount' => $isDiscount,
                     'discount_label' => $discountLabel,
                     'stok' => (int) $p->stok,
-                    'category_id' => $p->category_id,
-                    'category' => $p->category_id,
-                    'img' => \App\Http\Controllers\LandingController::resolveImageUrl($p->img),
+                    'category_id' => $p->kategori_id,
+                    'category' => $p->kategori_id,
+                    'img' => \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url),
+                    'price_levels' => $p->priceLevels,
                     'rating' => 4.8
                 ];
             })->values()->all();

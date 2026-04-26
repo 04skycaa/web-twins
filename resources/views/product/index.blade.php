@@ -98,6 +98,24 @@
                         </div>
                     </div>
                 @endif
+                @if(Auth::user()->isOwner() && $active_tab == 'produk')
+                    <input type="hidden" name="store_id" id="hiddenStoreId" value="{{ request('store_id') }}">
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Toko: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Toko' }}" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="javascript:void(0)" onclick="setStore('')" class="{{ !request('store_id') || request('store_id') == 'all' ? 'active-dropdown-item' : '' }}">
+                                Semua Toko
+                            </a>
+                            @foreach($stores as $store)
+                                <a href="javascript:void(0)" onclick="setStore('{{ $store->uuid }}')" class="{{ request('store_id') == $store->uuid ? 'active-dropdown-item' : '' }}">
+                                    {{ $store->nama }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </form>
 
@@ -168,6 +186,7 @@
                             <th>KATEGORI</th>
                             <th>HARGA MODAL</th>
                             <th>HARGA JUAL</th>
+                            <th>STOK</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
@@ -189,6 +208,31 @@
                                 <td>{{ $product->category->nama_category ?? '-' }}</td>
                                 <td class="price-text">Rp {{ number_format($product->harga_modal, 0, ',', '.') }}</td>
                                 <td class="price-text">Rp {{ number_format($product->harga_jual, 0, ',', '.') }}</td>
+                                <td style="min-width: 120px;">
+                                    @if(Auth::user()->isOwner())
+                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                            @foreach($product->stores as $ps)
+                                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #334155; background: #fdfdfd; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <iconify-icon icon="solar:shop-2-bold-duotone" style="color: var(--primary-blue); font-size: 14px;"></iconify-icon>
+                                                        <span style="font-weight: 600; line-height: 1.2;">
+                                                            {{ $ps->store->nama ?? '-' }}
+                                                        </span>
+                                                    </div>
+                                                    <span style="font-weight: 800; color: var(--primary-blue); background: #eff6ff; padding: 2px 6px; border-radius: 6px; min-width: 24px; text-align: center;">{{ $ps->stok }}</span>
+                                                </div>
+                                            @endforeach
+                                            @if($product->stores->isEmpty())
+                                                <span style="font-size: 10px; color: #999; font-style: italic;">Belum ada stok di cabang</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div style="font-weight: 800; color: var(--primary-blue); font-size: 16px;">
+                                            {{ $product->current_stok }}
+                                        </div>
+                                        <div style="font-size: 10px; color: #888;">Stok di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
+                                    @endif
+                                </td>
                                 <td>
                                     <div style="display: flex; gap: 8px;">
                                         <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($product)' onclick="openViewModal(JSON.parse(this.dataset.item))">
@@ -993,6 +1037,14 @@
         document.getElementById('filterForm').submit();
     }
 
+    function setStore(id) {
+        const storeInput = document.getElementById('hiddenStoreId');
+        if (storeInput) {
+            storeInput.value = id;
+            document.getElementById('filterForm').submit();
+        }
+    }
+
     // --- Product Actions ---
     function openViewModal(product) {
         const content = document.getElementById('viewDetailContent');
@@ -1002,7 +1054,7 @@
         content.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 16px;">
                 <div style="display: flex; gap: 20px; align-items: start;">
-                    <img src="${product.image_url || '/images/placeholder-product.png'}" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; background: #f0f0f0;">
+                    <img src="${product.resolved_image_url || '/images/placeholder-product.png'}" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; background: #f0f0f0;">
                     <div style="flex: 1;">
                         <div style="font-size: 14px; color: #888; margin-bottom: 4px;">Nama Produk</div>
                         <div style="font-size: 18px; font-weight: 700; color: var(--primary-blue);">${product.nama_produk}</div>
@@ -1026,6 +1078,7 @@
                         <div style="font-weight: 700; color: var(--primary-blue);">${priceJual}</div>
                     </div>
                 </div>
+                ${ !{{ Auth::user()->isOwner() ? 'true' : 'false' }} ? `
                 <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Stok Saat Ini</div>
@@ -1033,6 +1086,35 @@
                     </div>
                     <iconify-icon icon="solar:box-bold-duotone" style="font-size: 32px; color: #cbd5e1;"></iconify-icon>
                 </div>
+                ` : ''}
+
+                ${ {{ Auth::user()->isOwner() ? 'true' : 'false' }} && product.stores && product.stores.length > 0 ? `
+                <div style="margin-top: 8px;">
+                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                        <iconify-icon icon="solar:globus-bold-duotone" style="font-size: 18px; color: var(--primary-blue);"></iconify-icon>
+                        Rincian Stok per Cabang
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                        ${product.stores.map(ps => `
+                            <div style="background: linear-gradient(to right, #ffffff, #f8fbff); padding: 14px 18px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); transition: all 0.2s ease;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="width: 36px; height: 36px; background: #eff6ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary-blue);">
+                                        <iconify-icon icon="solar:shop-2-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span style="font-size: 14px; font-weight: 700; color: #1e293b;">${ps.store ? ps.store.nama : 'Cabang'}</span>
+                                        <span style="font-size: 11px; color: #64748b;">Tersedia di Toko</span>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 22px; font-weight: 900; color: var(--primary-blue);">${ps.stok}</span>
+                                    <div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Unit</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
                 
                 ${product.price_levels && product.price_levels.length > 0 ? `
                 <div style="margin-top: 8px;">
@@ -1112,6 +1194,10 @@
         tbody.innerHTML = '';
         if (product.price_levels && product.price_levels.length > 0) {
             product.price_levels.forEach(level => addPriceLevelRow('editPriceLevelBody', level));
+        }
+
+        if (product.resolved_image_url) {
+            document.getElementById('editImagePreviewContainer').innerHTML = `<img src="${product.resolved_image_url}" style="width:100%; height:100%; object-fit:cover;">`;
         }
 
         openModal('editModal');
@@ -1432,8 +1518,88 @@
     function debounceSearch() {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
-            document.getElementById('filterForm').submit();
+            updateTableContent();
         }, 500);
+    }
+
+    async function updateTableContent(url = null) {
+        const form = document.getElementById('filterForm');
+        if (!url) {
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            url = form.action + '?' + params.toString();
+        }
+
+        // Show a subtle loading indicator
+        const tableContainer = document.querySelector('.table-container');
+        tableContainer.style.opacity = '0.5';
+        tableContainer.style.pointerEvents = 'none';
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await response.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Update table content
+            const newTable = doc.querySelector('.table-container');
+            if (newTable && tableContainer) {
+                tableContainer.innerHTML = newTable.innerHTML;
+            }
+
+            // Update action bar filters if they changed (for active states)
+            const newActionBar = doc.querySelector('.left-actions-group');
+            const currentActionBar = document.querySelector('.left-actions-group');
+            if (newActionBar && currentActionBar) {
+                // We only want to update the dropdown labels and active classes, not the input itself
+                const newDropdowns = newActionBar.querySelectorAll('.dropdown');
+                const currentDropdowns = currentActionBar.querySelectorAll('.dropdown');
+                newDropdowns.forEach((nd, i) => {
+                    if (currentDropdowns[i]) {
+                        currentDropdowns[i].innerHTML = nd.innerHTML;
+                    }
+                });
+            }
+
+            // Update URL without reload
+            window.history.pushState({ path: url }, '', url);
+
+            // Re-attach pagination listeners if necessary (though onclick should work)
+            // If there's any summary or count that needs updating
+            const newSummaries = doc.querySelectorAll('.discounts-container, .main-content-box .summary-box, [style*="margin-bottom: 20px"]');
+            // ... apply if needed
+            
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally {
+            tableContainer.style.opacity = '1';
+            tableContainer.style.pointerEvents = 'auto';
+        }
+    }
+
+    // Intercept pagination clicks
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('.pagination a');
+        if (link) {
+            e.preventDefault();
+            updateTableContent(link.href);
+        }
+    });
+
+    // Handle filter dropdown changes without reload
+    function setCategory(id) {
+        document.getElementById('hiddenCategoryId').value = id;
+        updateTableContent();
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+    }
+
+    function setStore(id) {
+        document.getElementById('hiddenStoreId').value = id;
+        updateTableContent();
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
     }
     async function scanFromProductImage() {
         const b64 = document.getElementById('croppedImageResult').value;
