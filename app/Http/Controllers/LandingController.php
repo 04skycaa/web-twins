@@ -78,7 +78,7 @@ class LandingController extends Controller
             }
         }
 
-        $products = DB::table('products')
+        $products = Product::with('priceLevels')
             ->join('product_store', 'products.uuid', '=', 'product_store.product_id')
             ->where('product_store.store_id', $outlet->uuid)
             ->select(
@@ -87,7 +87,7 @@ class LandingController extends Controller
             )
             ->get()
             ->map(function ($p) use ($productDiscounts) {
-                $originalPrice = (int) $p->price;
+                $originalPrice = (int) $p->harga_jual;
                 $discountPrice = $originalPrice;
                 $isDiscount = false;
                 $discountLabel = '';
@@ -115,7 +115,14 @@ class LandingController extends Controller
                     'category_id' => $p->kategori_id,
                     'category' => $p->kategori_id,
                     'img' => \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url),
-                    'price_levels' => $p->priceLevels,
+                    'price_levels' => $p->priceLevels->map(function ($level) {
+                        return [
+                            'uuid' => $level->uuid,
+                            'product_id' => $level->product_id,
+                            'jmlh' => (int) $level->jmlh,
+                            'harga' => (int) $level->harga,
+                        ];
+                    })->values()->all(),
                     'rating' => 4.8
                 ];
             })->values()->all();
