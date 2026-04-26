@@ -8,8 +8,12 @@
     <meta name="session-error" content="{{ session('error') ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
@@ -230,15 +234,19 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="font-size: 0.95rem;">Delivery Address</h4>
-                        <a href="#"
+                        <a href="#" onclick="openAddressPopup(event)"
                             style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 10px;">
                         <span style="font-size: 1.2rem;">📍</span>
                         <div>
-                            <p style="font-size: 0.85rem; font-weight: 600;">Elm Street, 23</p>
-                            <p style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman
+                            <p class="delivery-address-value" style="font-size: 0.85rem; font-weight: 600;">-</p>
+                            <p class="delivery-address-note"
+                                style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman
                                 default Anda.</p>
+                            <p class="delivery-contact-note"
+                                style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; margin-top: 4px;">
+                                Penerima: - | No HP: -</p>
                         </div>
                     </div>
                 </div>
@@ -362,6 +370,430 @@
         let discountPercent = 0;
         const isAuthenticated = @json(auth()->check());
         const loginUrl = @json(route('login'));
+        const outletAddress = @json($outlet->alamat ?? 'Alamat outlet belum tersedia');
+        let deliveryAddress = @json($outlet->alamat ?? '');
+        let deliveryCoordinates = null;
+        let deliveryContactName = @json(optional(auth()->user())->name ?? '');
+        let deliveryPhone = '';
+        let outletCoordinates = null;
+        let outletGeocodeTried = false;
+
+        function updateDeliveryAddressUI() {
+            const safeAddress = (deliveryAddress || '').trim() || 'Alamat belum diisi';
+            const hasCoordinates = !!(deliveryCoordinates && Number.isFinite(deliveryCoordinates.lat) && Number.isFinite(
+                deliveryCoordinates.lng));
+
+            document.querySelectorAll('.delivery-address-value').forEach(el => {
+                el.textContent = safeAddress;
+            });
+
+            document.querySelectorAll('.delivery-address-note').forEach(el => {
+                el.textContent = hasCoordinates ?
+                    `Dipilih dari peta (${deliveryCoordinates.lat.toFixed(6)}, ${deliveryCoordinates.lng.toFixed(6)}).` :
+                    'Alamat pengiriman default Anda.';
+            });
+
+            document.querySelectorAll('.delivery-contact-note').forEach(el => {
+                const nameText = (deliveryContactName || '').trim() || '-';
+                const phoneText = (deliveryPhone || '').trim() || '-';
+                el.textContent = `Penerima: ${nameText} | No HP: ${phoneText}`;
+            });
+        }
+
+        function openAddressPopup(event) {
+            if (event) event.preventDefault();
+
+            let popupMap = null;
+            let popupMarker = null;
+            let outletMarker = null;
+            let routeLine = null;
+            let selectedLatLng = deliveryCoordinates ? {
+                lat: deliveryCoordinates.lat,
+                lng: deliveryCoordinates.lng
+            } : null;
+            let geocodeDebounceTimer = null;
+            let geocodeRequestToken = 0;
+
+            const popupHtml = `
+                <div style="text-align:left;">
+                    <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:10px;">
+                        <p style="font-size:11px; letter-spacing:0.02em; color:#9ca3af; margin:0 0 6px 0; font-weight:700;">ROUTE TRACKING</p>
+                        <p style="font-size:12px; color:#f3f4f6; margin:0; line-height:1.45;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
+                    </div>
+
+                    <label style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Saat Ini (Outlet)</label>
+                    <div style="border:1px solid #374151; border-radius:10px; padding:10px; background:#1f2937; color:#f3f4f6; font-size:13px; margin-bottom:10px; line-height:1.4;">${outletAddress}</div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                        <div>
+                            <label for="recipientNameInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Nama Penerima</label>
+                            <input id="recipientNameInput" type="text" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; background:#111827; color:#f9fafb; font-size:13px;" placeholder="Contoh: Budi Santoso">
+                        </div>
+                        <div>
+                            <label for="recipientPhoneInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">No HP</label>
+                            <input id="recipientPhoneInput" type="text" inputmode="tel" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; background:#111827; color:#f9fafb; font-size:13px;" placeholder="08xxxxxxxxxx">
+                        </div>
+                    </div>
+
+                    <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Lengkap</label>
+                    <textarea id="manualAddressInput" rows="4" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:vertical; background:#111827; color:#f9fafb; font-size:13px; margin-bottom:10px;"></textarea>
+                    <p style="font-size:12px; margin:0 0 8px 0; color:#9ca3af;">Input alamat akan menggeser peta, dan klik peta akan memperbarui teks alamat.</p>
+                    <div id="addressMapCanvas" style="height:260px; border-radius:12px; overflow:hidden;"></div>
+                    <div id="mapAddressResult" style="margin-top:8px; font-size:12px; color:#d1d5db; line-height:1.4;"></div>
+                </div>
+            `;
+
+            Swal.fire({
+                title: 'Ubah Alamat Pengiriman',
+                html: popupHtml,
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                showCancelButton: true,
+                confirmButtonText: 'Simpan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: 'var(--orange-brand)',
+                width: 650,
+                didOpen: () => {
+                    const popup = Swal.getPopup();
+                    const htmlContainer = Swal.getHtmlContainer();
+                    const recipientNameInput = popup.querySelector('#recipientNameInput');
+                    const recipientPhoneInput = popup.querySelector('#recipientPhoneInput');
+                    const manualAddressInput = popup.querySelector('#manualAddressInput');
+                    const mapAddressResult = popup.querySelector('#mapAddressResult');
+                    const routeTrackingSummary = popup.querySelector('#routeTrackingSummary');
+
+                    if (htmlContainer) {
+                        htmlContainer.style.maxHeight = '62vh';
+                        htmlContainer.style.overflowY = 'auto';
+                        htmlContainer.style.paddingRight = '4px';
+                    }
+                    if (popup) {
+                        popup.style.maxHeight = '92vh';
+                    }
+
+                    recipientNameInput.value = (deliveryContactName || '').trim();
+                    recipientPhoneInput.value = (deliveryPhone || '').trim();
+                    manualAddressInput.value = (deliveryAddress || '').trim();
+
+                    function renderMapResultText(text) {
+                        mapAddressResult.textContent = text || '';
+                    }
+
+                    function renderRouteTrackingText(text) {
+                        routeTrackingSummary.textContent = text || '';
+                    }
+
+                    function calculateDistanceKm(from, to) {
+                        const earthRadiusKm = 6371;
+                        const dLat = (to.lat - from.lat) * (Math.PI / 180);
+                        const dLng = (to.lng - from.lng) * (Math.PI / 180);
+                        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                            Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) *
+                            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                        return earthRadiusKm * c;
+                    }
+
+                    function resolveOutletCoordinates() {
+                        if (outletCoordinates) return Promise.resolve(outletCoordinates);
+                        if (outletGeocodeTried) return Promise.resolve(null);
+
+                        outletGeocodeTried = true;
+
+                        return fetch(
+                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(outletAddress)}`
+                            )
+                            .then(response => response.ok ? response.json() : [])
+                            .then(results => {
+                                if (!Array.isArray(results) || results.length === 0) return null;
+                                const first = results[0];
+                                const lat = Number(first.lat);
+                                const lng = Number(first.lon);
+                                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                                outletCoordinates = {
+                                    lat,
+                                    lng
+                                };
+                                return outletCoordinates;
+                            })
+                            .catch(() => null);
+                    }
+
+                    function updateRouteTracking() {
+                        if (!popupMap) return;
+
+                        if (routeLine) {
+                            popupMap.removeLayer(routeLine);
+                            routeLine = null;
+                        }
+
+                        resolveOutletCoordinates().then(outletLatLng => {
+                            if (!outletLatLng) {
+                                renderRouteTrackingText(
+                                    'Lokasi outlet belum ditemukan. Rute tidak dapat ditampilkan.');
+                                return;
+                            }
+
+                            if (!outletMarker) {
+                                outletMarker = L.circleMarker([outletLatLng.lat, outletLatLng.lng], {
+                                    radius: 6,
+                                    color: '#2563eb',
+                                    fillColor: '#60a5fa',
+                                    fillOpacity: 0.9,
+                                    weight: 2
+                                }).addTo(popupMap);
+                                outletMarker.bindTooltip('Lokasi Outlet', {
+                                    permanent: false
+                                });
+                            } else {
+                                outletMarker.setLatLng([outletLatLng.lat, outletLatLng.lng]);
+                            }
+
+                            if (!selectedLatLng) {
+                                renderRouteTrackingText(
+                                    'Pilih alamat tujuan untuk menampilkan rute dari outlet.');
+                                return;
+                            }
+
+                            renderRouteTrackingText('Menghitung rute dari outlet ke tujuan...');
+
+                            fetch(
+                                    `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${selectedLatLng.lng},${selectedLatLng.lat}?overview=full&geometries=geojson`
+                                )
+                                .then(response => response.ok ? response.json() : null)
+                                .then(data => {
+                                    if (!data || !Array.isArray(data.routes) || data.routes
+                                        .length === 0) {
+                                        throw new Error('route_not_found');
+                                    }
+
+                                    const route = data.routes[0];
+                                    const coords = route.geometry && Array.isArray(route.geometry
+                                            .coordinates) ?
+                                        route.geometry.coordinates : [];
+                                    const latLngs = coords.map(point => [point[1], point[0]]);
+
+                                    if (latLngs.length > 0) {
+                                        routeLine = L.polyline(latLngs, {
+                                            color: '#f97316',
+                                            weight: 4,
+                                            opacity: 0.9
+                                        }).addTo(popupMap);
+                                        popupMap.fitBounds(routeLine.getBounds(), {
+                                            padding: [30, 30]
+                                        });
+                                    }
+
+                                    const distanceKm = Number(route.distance || 0) / 1000;
+                                    const durationMin = Number(route.duration || 0) / 60;
+                                    renderRouteTrackingText(
+                                        `Rute outlet -> tujuan sekitar ${distanceKm.toFixed(2)} km (${durationMin.toFixed(0)} menit).`
+                                    );
+                                })
+                                .catch(() => {
+                                    routeLine = L.polyline([
+                                        [outletLatLng.lat, outletLatLng.lng],
+                                        [selectedLatLng.lat, selectedLatLng.lng]
+                                    ], {
+                                        color: '#f97316',
+                                        weight: 3,
+                                        dashArray: '8, 8',
+                                        opacity: 0.75
+                                    }).addTo(popupMap);
+                                    popupMap.fitBounds(routeLine.getBounds(), {
+                                        padding: [30, 30]
+                                    });
+
+                                    const straightDistance = calculateDistanceKm(outletLatLng,
+                                        selectedLatLng);
+                                    renderRouteTrackingText(
+                                        `Rute detail belum tersedia. Jarak garis lurus outlet -> tujuan sekitar ${straightDistance.toFixed(2)} km.`
+                                    );
+                                });
+                        });
+                    }
+
+                    function setMarker(latlng, shouldCenter = false) {
+                        selectedLatLng = {
+                            lat: latlng.lat,
+                            lng: latlng.lng
+                        };
+                        if (!popupMarker) {
+                            popupMarker = L.marker(latlng).addTo(popupMap);
+                        } else {
+                            popupMarker.setLatLng(latlng);
+                        }
+
+                        if (shouldCenter && popupMap) {
+                            popupMap.setView([latlng.lat, latlng.lng], 16);
+                        }
+
+                        renderMapResultText(
+                            `Koordinat dipilih: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`);
+
+                        fetch(
+                                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`
+                            )
+                            .then(response => response.ok ? response.json() : null)
+                            .then(data => {
+                                if (data && data.display_name) {
+                                    manualAddressInput.value = data.display_name;
+                                    renderMapResultText(data.display_name);
+                                }
+                                updateRouteTracking();
+                            })
+                            .catch(() => {
+                                // Keep coordinate fallback when reverse geocoding fails.
+                                updateRouteTracking();
+                            });
+
+                        updateRouteTracking();
+                    }
+
+                    function geocodeAddressToMap(addressText) {
+                        const query = (addressText || '').trim();
+                        if (!query || query.length < 5) {
+                            return;
+                        }
+
+                        geocodeRequestToken += 1;
+                        const currentToken = geocodeRequestToken;
+
+                        fetch(
+                                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`
+                            )
+                            .then(response => response.ok ? response.json() : [])
+                            .then(results => {
+                                if (currentToken !== geocodeRequestToken) return;
+                                if (!Array.isArray(results) || results.length === 0) {
+                                    renderMapResultText(
+                                        'Alamat belum ditemukan di peta. Coba detailkan alamat.');
+                                    return;
+                                }
+
+                                const first = results[0];
+                                const lat = Number(first.lat);
+                                const lng = Number(first.lon);
+                                if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                                    renderMapResultText(
+                                        'Koordinat alamat tidak valid dari hasil pencarian.');
+                                    return;
+                                }
+
+                                setMarker({
+                                    lat,
+                                    lng
+                                }, true);
+                                if (first.display_name) {
+                                    renderMapResultText(first.display_name);
+                                }
+                            })
+                            .catch(() => {
+                                renderMapResultText('Gagal mencari alamat. Periksa koneksi internet Anda.');
+                            });
+                    }
+
+                    function initMap() {
+                        if (popupMap || typeof L === 'undefined') return;
+
+                        const initialLatLng = selectedLatLng ? [selectedLatLng.lat, selectedLatLng.lng] : [-
+                            6.200000, 106.816666
+                        ];
+                        const initialZoom = selectedLatLng ? 16 : 12;
+
+                        popupMap = L.map('addressMapCanvas', {
+                            zoomControl: true,
+                            attributionControl: true
+                        }).setView(initialLatLng, initialZoom);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(popupMap);
+
+                        if (selectedLatLng) {
+                            setMarker(selectedLatLng, true);
+                        } else if ((manualAddressInput.value || '').trim()) {
+                            geocodeAddressToMap(manualAddressInput.value);
+                        }
+
+                        popupMap.on('click', e => setMarker(e.latlng));
+
+                        updateRouteTracking();
+                    }
+
+                    manualAddressInput.addEventListener('input', () => {
+                        if (geocodeDebounceTimer) {
+                            clearTimeout(geocodeDebounceTimer);
+                        }
+                        geocodeDebounceTimer = setTimeout(() => {
+                            geocodeAddressToMap(manualAddressInput.value);
+                        }, 700);
+                    });
+
+                    initMap();
+                    if (popupMap) {
+                        setTimeout(() => popupMap.invalidateSize(), 100);
+                    }
+                },
+                preConfirm: () => {
+                    const popup = Swal.getPopup();
+                    const recipientNameInput = popup.querySelector('#recipientNameInput');
+                    const recipientPhoneInput = popup.querySelector('#recipientPhoneInput');
+                    const manualAddressInput = popup.querySelector('#manualAddressInput');
+                    const recipientName = (recipientNameInput.value || '').trim();
+                    const recipientPhone = (recipientPhoneInput.value || '').trim();
+                    const manualAddress = (manualAddressInput.value || '').trim();
+
+                    if (!recipientName) {
+                        Swal.showValidationMessage('Nama penerima wajib diisi.');
+                        return false;
+                    }
+
+                    if (!recipientPhone) {
+                        Swal.showValidationMessage('No HP wajib diisi.');
+                        return false;
+                    }
+
+                    if (!/^\+?[0-9\s-]{8,20}$/.test(recipientPhone)) {
+                        Swal.showValidationMessage('Format No HP tidak valid.');
+                        return false;
+                    }
+
+                    if (!manualAddress) {
+                        Swal.showValidationMessage('Alamat wajib diisi.');
+                        return false;
+                    }
+
+                    return {
+                        recipientName,
+                        recipientPhone,
+                        address: manualAddress,
+                        coordinates: selectedLatLng ? {
+                            lat: selectedLatLng.lat,
+                            lng: selectedLatLng.lng
+                        } : null
+                    };
+                }
+            }).then((result) => {
+                if (!result.isConfirmed || !result.value) return;
+
+                deliveryContactName = result.value.recipientName;
+                deliveryPhone = result.value.recipientPhone;
+                deliveryAddress = result.value.address;
+                deliveryCoordinates = result.value.coordinates;
+                updateDeliveryAddressUI();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Alamat berhasil diperbarui',
+                    timer: 1400,
+                    showConfirmButton: false,
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)'
+                });
+            });
+        }
 
         function renderProducts() {
             productGrid.innerHTML = '';
@@ -507,6 +939,8 @@
                     sheetContent.innerHTML = sidebarContent.innerHTML;
                 }
             }
+
+            updateDeliveryAddressUI();
         }
 
         function toggleBottomSheet(force) {
@@ -618,7 +1052,14 @@
                 id: Date.now(),
                 date: new Date().toLocaleString('id-ID'),
                 items: [...cart],
-                total: total
+                total: total,
+                recipient_name: deliveryContactName,
+                recipient_phone: deliveryPhone,
+                address: deliveryAddress,
+                coordinates: deliveryCoordinates ? {
+                    lat: deliveryCoordinates.lat,
+                    lng: deliveryCoordinates.lng
+                } : null
             });
             cart = [];
             discountPercent = 0;
@@ -638,6 +1079,8 @@
                         <p style="font-weight: 700;">ID: #${trx.id.toString().slice(-6)}</p>
                         <p style="font-size: 0.75rem; color: var(--sub-text);">${trx.date}</p>
                         <p style="font-size: 0.85rem; margin-top: 8px;">${trx.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</p>
+                        <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">👤 ${trx.recipient_name || '-'} | 📞 ${trx.recipient_phone || '-'}</p>
+                        <p style="font-size: 0.75rem; color: var(--sub-text); margin-top: 6px;">📍 ${trx.address || '-'}</p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>
@@ -808,7 +1251,10 @@
         // --- DASHBOARD PREMIUM HEADER ANIMATION ---
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof gsap !== 'undefined') {
-                gsap.set("#mainHeader", { y: -100, opacity: 0 });
+                gsap.set("#mainHeader", {
+                    y: -100,
+                    opacity: 0
+                });
                 gsap.to("#mainHeader", {
                     y: 0,
                     opacity: 1,
