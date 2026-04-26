@@ -19,28 +19,23 @@ class LandingController extends Controller
     {
         $outlets = Outlet::where('status_aktif', true)->get();
         $now = Carbon::now();
-        $promos = Promo::with(['products.category', 'products.stores'])
+        $promos = Promo::with('stores')
             ->where('status', true)
-            ->where('tanggal_mulai', '<=', $now)
-            ->where('tanggal_selesai', '>=', $now)
+            ->where('tipe', 'Promo')
+            ->orderBy('tanggal_mulai', 'desc')
             ->get();
 
         $promoProducts = [];
         foreach ($promos as $promo) {
-            foreach ($promo->products as $product) {
-                $store = $promo->stores->first();
-                $promoProducts[] = (object) [
-                    'nama_promo' => $promo->nama_promo,
-                    'tipe' => $promo->tipe,
-                    'nilai' => $promo->nilai,
-                    'product_name' => $product->nama_produk,
-                    'image_url' => $this->resolveImageUrl($product->image_url),
-                    'category' => $product->category ? $product->category->nama_category : 'Bahan Kue',
-                    'price' => $product->harga_jual,
-                    'outlet_name' => $store ? $store->nama : 'Tersedia di berbagai cabang',
-                    'outlet_address' => $store ? $store->alamat : 'Silakan pilih outlet terdekat'
-                ];
-            }
+            $store = $promo->stores->first();
+            
+            $promoProducts[] = (object) [
+                'nama_promo' => $promo->nama_promo,
+                'image_banner' => self::resolveImageUrl($promo->image_banner),
+                'deskripsi' => $promo->deskripsi,
+                'outlet_name' => $store ? $store->nama : 'TWINS Bakery',
+                'outlet_address' => $store ? $store->alamat : 'Semua Cabang'
+            ];
         }
 
         $testimonials = StoreReview::with(['user', 'store'])
@@ -55,25 +50,80 @@ class LandingController extends Controller
     public function showOutlet($id)
     {
         $outlet = Outlet::findOrFail($id);
-        $productStores = ProductStore::with(['product.category'])
-            ->where('store_id', $outlet->uuid)
-            ->where('status_aktif', true)
+        // 1. Ambil promo aktif untuk store ini
+        $activePromos = Promo::where('status', true)
+            ->whereHas('stores', function($q) use ($outlet) {
+                $q->where('store_id', $outlet->uuid);
+            })
+            ->with(['products' => function($q) {
+                // Jangan hanya select uuid, tapi ambil semua data yang dibutuhkan View
+                $q->select('products.uuid', 'products.nama_produk', 'products.harga_jual', 'products.image_url', 'products.kategori_id');
+            }])
             ->get();
 
-        $products = $productStores->map(function ($ps) {
-            return [
-                'id' => $ps->product->uuid,
-                'name' => $ps->product->nama_produk,
-                'price' => (int) $ps->product->harga_jual,
-                'category' => $ps->product->category ? str_replace([' ', '&'], ['_', ''], strtolower($ps->product->category->nama_category)) : 'olahan',
-                'img' => $this->resolveImageUrl($ps->product->image_url),
-                'rating' => 4.8 
-            ];
-        });
+        // 2. Map produk ke diskon (Ambil diskon terbesar jika ada multiple)
+        $productDiscounts = [];
+        foreach ($activePromos as $promo) {
+            foreach ($promo->products as $p) {
+                $tipe = strtolower($p->pivot->tipe_diskon); // Paksa huruf kecil sesuai skema
+                $nilai = (int) $p->pivot->nilai_diskon;
+                
+                $productDiscounts[$p->uuid] = [
+                    'tipe' => $tipe,
+                    'nilai' => $nilai,
+                    'nama' => $promo->nama_promo
+                ];
+            }
+        }
+
+        $products = \DB::table('products')
+            ->join('product_store', 'products.uuid', '=', 'product_store.product_id')
+            ->where('product_store.store_id', $outlet->uuid)
+            ->select(
+                'products.uuid as id',
+                'products.nama_produk as name',
+                'products.harga_jual as price',
+                'products.image_url as img',
+                'products.kategori_id as category_id',
+                'product_store.stok as stok'
+            )
+            ->get()
+            ->map(function($p) use ($productDiscounts) {
+                $originalPrice = (int) $p->price;
+                $discountPrice = $originalPrice;
+                $isDiscount = false;
+                $discountLabel = '';
+
+                if (isset($productDiscounts[$p->id])) {
+                    $d = $productDiscounts[$p->id];
+                    $isDiscount = true;
+                    if ($d['tipe'] === 'persen') {
+                        $discountPrice = $originalPrice - ($originalPrice * ($d['nilai'] / 100));
+                        $discountLabel = $d['nilai'] . '%';
+                    } else {
+                        $discountPrice = $originalPrice - $d['nilai'];
+                        $discountLabel = 'Rp ' . number_format($d['nilai'], 0, ',', '.');
+                    }
+                }
+
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'price' => (int) $discountPrice,
+                    'original_price' => $originalPrice,
+                    'is_discount' => $isDiscount,
+                    'discount_label' => $discountLabel,
+                    'stok' => (int) $p->stok,
+                    'category_id' => $p->category_id,
+                    'category' => $p->category_id,
+                    'img' => \App\Http\Controllers\LandingController::resolveImageUrl($p->img),
+                    'rating' => 4.8
+                ];
+            })->values()->all();
 
         $categories = Category::all()->map(function($cat) {
             return [
-                'id' => str_replace([' ', '&'], ['_', ''], strtolower($cat->nama_category)),
+                'id' => $cat->uuid,
                 'name' => $cat->nama_category
             ];
         });
@@ -83,7 +133,15 @@ class LandingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('user', compact('outlet', 'products', 'categories', 'reviews'));
+        $stockMap = [];
+        foreach ($products as $p) {
+            $stockMap[$p['id']] = $p['stok'];
+        }
+
+        // Ambil promo untuk banner (Sama seperti activePromos tapi dengan relasi lengkap)
+        $discounts = $activePromos;
+
+        return view('user', compact('outlet', 'products', 'categories', 'reviews', 'discounts', 'stockMap'));
     }
 
     public function storeReview(Request $request, $id)
@@ -151,20 +209,37 @@ class LandingController extends Controller
         return back()->with('success', 'Terima kasih atas ulasan Anda!');
     }
 
-    private function resolveImageUrl($path)
+    public static function resolveImageUrl($path)
     {
         if (!$path) {
-            return asset('images/terigu.jpg');
+            return asset('images/placeholder.jpg');
         }
 
+        // Jika path adalah URL lengkap, langsung kembalikan
         if (filter_var($path, FILTER_VALIDATE_URL)) {
             return $path;
         }
 
-        if (file_exists(public_path('images/' . $path))) {
-            return asset('images/' . $path);
+        // Bersihkan path dari awalan yang sering dobel
+        $cleanPath = ltrim($path, '/');
+        $cleanPath = str_replace(['storage/', 'public/'], '', $cleanPath);
+
+        // 1. Cek di public/storage/ (Hasil upload)
+        if (file_exists(public_path('storage/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
         }
 
-        return asset('storage/' . $path);
+        // 2. Cek di public/images/
+        if (file_exists(public_path('images/' . $cleanPath))) {
+            return asset('images/' . $cleanPath);
+        }
+
+        // 3. Cek langsung di public/
+        if (file_exists(public_path($cleanPath))) {
+            return asset($cleanPath);
+        }
+
+        // Fallback terakhir: asumsikan di storage
+        return asset('storage/' . $cleanPath);
     }
 }

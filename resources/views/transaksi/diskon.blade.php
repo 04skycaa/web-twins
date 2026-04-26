@@ -25,6 +25,7 @@
                 <table class="custom-table">
                     <thead>
                         <tr>
+                            <th>Banner</th>
                             <th>Nama Diskon</th>
                             <th>Kode Promo</th>
                             <th>Tipe</th>
@@ -37,18 +38,28 @@
                     <tbody>
                         @forelse($diskons as $diskon)
                         <tr>
-                            <td class="text-bold">{{ $diskon['nama'] }}</td>
-                            <td>{{ $diskon['kode'] }}</td>
-                            <td>{{ $diskon['tipe'] }}</td>
-                            <td class="text-bold text-success">{{ $diskon['nilai'] }}</td>
-                            <td>{{ $diskon['periode'] }}</td>
-                            <td><span class="badge {{ strtolower($diskon['status']) == 'aktif' ? 'success' : 'warning' }}">{{ $diskon['status'] }}</span></td>
+                            <td>
+                                @if($diskon->image_banner)
+                                    <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($diskon->image_banner) }}" 
+                                         style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                                @else
+                                    <span style="font-size: 10px; color: #999; font-style: italic;">No Banner</span>
+                                @endif
+                            </td>
+                            <td class="text-bold">{{ $diskon->nama_promo }}</td>
+                            <td>{{ $diskon->kode_promo ?? '-' }}</td>
+                            <td>{{ $diskon->tipe }}</td>
+                            <td class="text-bold text-success">{{ $diskon->tipe == 'persen' ? $diskon->nilai.'%' : 'Rp'.number_format($diskon->nilai, 0, ',', '.') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($diskon->tanggal_mulai)->format('d M') }} - {{ \Carbon\Carbon::parse($diskon->tanggal_selesai)->format('d M') }}</td>
+                            <td><span class="badge {{ $diskon->status ? 'success' : 'warning' }}">{{ $diskon->status ? 'Aktif' : 'Nonaktif' }}</span></td>
                             <td>
                                 <div class="action-buttons-table">
-                                    <button class="btn-icon" onclick="openEditModalDiskon({{ json_encode($diskon) }})">
+                                    <button class="btn-icon" 
+                                            data-diskon='{{ json_encode($diskon) }}'
+                                            onclick="openEditModalDiskon(this)">
                                         <iconify-icon icon="solar:pen-2-bold-duotone"></iconify-icon>
                                     </button>
-                                    <button class="btn-icon text-danger" onclick="openDeleteModalDiskon({{ $diskon['id'] }})">
+                                    <button class="btn-icon text-danger" onclick="openDeleteModalDiskon('{{ $diskon->uuid }}')">
                                         <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                     </button>
                                 </div>
@@ -72,31 +83,44 @@
                 <h5>Tambah Diskon Baru</h5>
                 <button class="close-btn" onclick="closeModal('addModalDiskon')">&times;</button>
             </div>
-            <form action="{{ route('transaksi.diskon.store') }}" method="POST">
+            <form action="{{ route('transaksi.diskon.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 450px; overflow-y: auto;">
                     <div class="form-group">
-                        <label>Nama Diskon</label>
-                        <input type="text" name="nama" class="form-control" required placeholder="Contoh: Promo Lebaran">
+                        <label>Banner Promo</label>
+                        <input type="file" name="image_banner" class="form-control" accept="image/*">
+                        <small style="color: #888;">Format: JPG, PNG. Maks: 2MB</small>
                     </div>
                     <div class="form-group">
-                        <label>Kode Promo</label>
-                        <input type="text" name="kode" class="form-control" required placeholder="LBRN2024">
+                        <label>Nama Promo</label>
+                        <input type="text" name="nama_promo" class="form-control" required placeholder="Contoh: Promo Lebaran">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Tipe</label>
+                            <select name="tipe" class="form-control" required>
+                                <option value="persen">Persentase (%)</option>
+                                <option value="nominal">Nominal (Rp)</option>
+                            </select>
+                        </div>
+                        <div class="form-group half">
+                            <label>Nilai</label>
+                            <input type="number" name="nilai" class="form-control" required placeholder="Contoh: 10 atau 15000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Tanggal Mulai</label>
+                            <input type="date" name="tanggal_mulai" class="form-control" required>
+                        </div>
+                        <div class="form-group half">
+                            <label>Tanggal Selesai</label>
+                            <input type="date" name="tanggal_selesai" class="form-control" required>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Tipe Diskon</label>
-                        <select name="tipe" class="form-control" required>
-                            <option value="Potongan Harga">Potongan Harga</option>
-                            <option value="Persentase">Persentase</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Nilai Diskon</label>
-                        <input type="text" name="nilai" class="form-control" required placeholder="Contoh: Rp 15.000 / 10%">
-                    </div>
-                    <div class="form-group">
-                        <label>Periode Waktu</label>
-                        <input type="text" name="periode" class="form-control" required placeholder="Contoh: 1 Apr - 30 Apr">
+                        <label>Deskripsi</label>
+                        <textarea name="deskripsi" class="form-control" rows="2" placeholder="Keterangan promo..."></textarea>
                     </div>
                     <div class="form-group">
                         <label>Status</label>
@@ -108,7 +132,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeModal('addModalDiskon')">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
+                    <button type="submit" class="btn-primary">Simpan Promo</button>
                 </div>
             </form>
         </div>
@@ -121,32 +145,44 @@
                 <h5>Edit Diskon</h5>
                 <button class="close-btn" onclick="closeModal('editModalDiskon')">&times;</button>
             </div>
-            <form id="editDiskonForm" method="POST">
+            <form id="editDiskonForm" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 450px; overflow-y: auto;">
                     <div class="form-group">
-                        <label>Nama Diskon</label>
-                        <input type="text" name="nama" id="edit_nama" class="form-control" required>
+                        <label>Ganti Banner Promo (Opsional)</label>
+                        <input type="file" name="image_banner" class="form-control" accept="image/*">
                     </div>
                     <div class="form-group">
-                        <label>Kode Promo</label>
-                        <input type="text" name="kode" id="edit_kode" class="form-control" required>
+                        <label>Nama Promo</label>
+                        <input type="text" name="nama_promo" id="edit_nama" class="form-control" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Tipe</label>
+                            <select name="tipe" id="edit_tipe" class="form-control" required>
+                                <option value="persen">Persentase (%)</option>
+                                <option value="nominal">Nominal (Rp)</option>
+                            </select>
+                        </div>
+                        <div class="form-group half">
+                            <label>Nilai</label>
+                            <input type="number" name="nilai" id="edit_nilai" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label>Tanggal Mulai</label>
+                            <input type="date" name="tanggal_mulai" id="edit_tgl_mulai" class="form-control" required>
+                        </div>
+                        <div class="form-group half">
+                            <label>Tanggal Selesai</label>
+                            <input type="date" name="tanggal_selesai" id="edit_tgl_selesai" class="form-control" required>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Tipe Diskon</label>
-                        <select name="tipe" id="edit_tipe" class="form-control" required>
-                            <option value="Potongan Harga">Potongan Harga</option>
-                            <option value="Persentase">Persentase</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Nilai Diskon</label>
-                        <input type="text" name="nilai" id="edit_nilai" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Periode Waktu</label>
-                        <input type="text" name="periode" id="edit_periode" class="form-control" required>
+                        <label>Deskripsi</label>
+                        <textarea name="deskripsi" id="edit_deskripsi" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Status</label>
@@ -190,19 +226,21 @@
         function openModal(id) { document.getElementById(id).classList.add('show'); }
         function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
-        function openEditModalDiskon(data) {
-            document.getElementById('editDiskonForm').action = `/transaksi/diskon/${data.id}`;
-            document.getElementById('edit_nama').value = data.nama;
-            document.getElementById('edit_kode').value = data.kode;
+        function openEditModalDiskon(el) {
+            const data = JSON.parse(el.getAttribute('data-diskon'));
+            document.getElementById('editDiskonForm').action = `/transaksi/diskon/${data.uuid}`;
+            document.getElementById('edit_nama').value = data.nama_promo;
             document.getElementById('edit_tipe').value = data.tipe;
             document.getElementById('edit_nilai').value = data.nilai;
-            document.getElementById('edit_periode').value = data.periode;
-            document.getElementById('edit_status').value = data.status;
+            document.getElementById('edit_tgl_mulai').value = data.tanggal_mulai.split(' ')[0];
+            document.getElementById('edit_tgl_selesai').value = data.tanggal_selesai.split(' ')[0];
+            document.getElementById('edit_deskripsi').value = data.deskripsi || '';
+            document.getElementById('edit_status').value = data.status ? 'Aktif' : 'Nonaktif';
             openModal('editModalDiskon');
         }
 
-        function openDeleteModalDiskon(id) {
-            document.getElementById('deleteDiskonForm').action = `/transaksi/diskon/${id}`;
+        function openDeleteModalDiskon(uuid) {
+            document.getElementById('deleteDiskonForm').action = `/transaksi/diskon/${uuid}`;
             openModal('deleteModalDiskon');
         }
     </script>

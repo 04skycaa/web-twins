@@ -33,9 +33,10 @@
             <div class="left-actions-group">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" name="search" class="search-input" 
+                    <input type="text" name="search" id="searchInput" class="search-input" 
                         placeholder="{{ $active_tab == 'request' ? 'Cari produk atau status request...' : 'cari data' }}" 
-                        value="{{ request('search') }}">
+                        value="{{ request('search') }}"
+                        oninput="debounceSearch()">
                 </div>
 
                 <input type="hidden" name="category_id" id="hiddenCategoryId" value="{{ request('category_id') }}">
@@ -178,7 +179,7 @@
                                 </td>
                                 <td>
                                     <div class="product-info">
-                                        <img src="{{ $product->image_url ?? asset('images/placeholder-product.png') }}" class="product-img">
+                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url) }}?t={{ time() }}" class="product-img">
                                         <div>
                                             <div style="font-weight: 600;">{{ $product->nama_produk }}</div>
                                             <div style="font-size: 12px; color: #888;">{{ $product->barcode ?? '-' }}</div>
@@ -354,19 +355,25 @@
                         @forelse($requests as $req)
                             <tr class="{{ $req->prioritas == 'Tinggi' ? 'row-high-prio' : '' }} {{ $req->status == 'Dikirim' && !Auth::user()->isOwner() ? 'row-shipped' : '' }}">
                                 <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
                                         @if($req->prioritas == 'Tinggi')
                                             <iconify-icon icon="solar:danger-bold" style="color: #C62828; font-size: 18px;" title="Prioritas Tinggi"></iconify-icon>
                                         @endif
+                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl(optional($req->product)->image_url) }}" 
+                                             style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;">
                                         <div>
-                                            <div style="font-weight: 600;">{{ $req->product->nama_produk ?? 'Produk Terhapus' }}</div>
+                                            <div style="font-weight: 600;">{{ optional($req->product)->nama_produk ?? 'Produk Terhapus' }}</div>
                                             <div style="display: flex; gap: 8px; align-items: center; margin-top: 2px;">
-                                                <span style="font-size: 11px; color: #888;">{{ $req->product->barcode ?? '-' }}</span>
+                                                <span style="font-size: 11px; color: #888;">{{ optional($req->product)->barcode ?? '-' }}</span>
                                                 @php
-                                                    $localStock = $req->product->stores->where('store_id', $req->store_id)->first()->stok ?? 0;
+                                                    $localStock = 0;
+                                                    if ($req->product && $req->product->stores) {
+                                                        $storeRel = $req->product->stores->where('store_id', $req->store_id)->first();
+                                                        $localStock = $storeRel ? $storeRel->stok : 0;
+                                                    }
                                                 @endphp
-                                                <span style="background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;" title="Stok saat ini di outlet Anda">
-                                                    Stok Anda: {{ $localStock }}
+                                                <span style="background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">
+                                                    Stok: {{ $localStock }}
                                                 </span>
                                             </div>
                                         </div>
@@ -465,17 +472,17 @@
         </div>
         <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="form-group" style="text-align: center;">
-                <label style="display: block; text-align: left;">Foto Produk (Opsional)</label>
-                <input type="file" id="productImageInput" accept="image/*" style="display: none;">
-                <input type="hidden" name="cropped_image" id="croppedImageResult">
-                <div id="imagePreviewContainer" style="position: relative; width: 150px; height: 150px; border: 2px dashed #ddd; border-radius: 12px; margin: 0 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden;" onclick="document.getElementById('productImageInput').click()">
-                    <span style="color: #999; font-size: 12px;">+ Pilih/Foto</span>
-                    <button type="button" id="smartScanBtn" onclick="event.stopPropagation(); scanFromProductImage();" style="display: none; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #2E7D32; color: white; border: none; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.2); align-items: center; gap: 4px; z-index: 10;">
-                        <iconify-icon icon="solar:camera-shine-bold-duotone"></iconify-icon> Pindai Barcode
-                    </button>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+                <div class="form-group" style="text-align: center;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
+                    <input type="file" id="productImageInput" accept="image/*" style="display: none;">
+                    <input type="hidden" name="cropped_image" id="croppedImageResult">
+                    <div id="imagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('productImageInput').click()">
+                        <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px; color: var(--primary-blue); margin-bottom: 4px;"></iconify-icon>
+                        <span style="color: var(--primary-blue); font-size: 11px; font-weight: 600;">Tambah Foto</span>
+                    </div>
+                    <small style="display: block; color: #888; font-size: 11px; margin-top: 6px;">Klik kotak di atas untuk memilih gambar</small>
                 </div>
-            </div>
             <div class="form-group">
                 <label>Nama Produk</label>
                 <input type="text" name="nama_produk" id="addNamaProduk" class="form-control" required placeholder="Contoh: Coca Cola">
@@ -528,6 +535,8 @@
                     </tbody>
                 </table>
             </div>
+
+            </div> {{-- End modal-body --}}
 
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('addModal')">Batal</button>
@@ -607,6 +616,15 @@
         <form id="editForm" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+                <div class="form-group" style="text-align: center;">
+                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
+                    <input type="file" id="editProductImageInput" accept="image/*" style="display: none;">
+                    <input type="hidden" name="cropped_image" id="editCroppedImageResult">
+                    <div id="editImagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('editProductImageInput').click()">
+                        <span style="color: #999; font-size: 12px;">+ Pilih/Foto</span>
+                    </div>
+                </div>
             <div class="form-group">
                 <label>Nama Produk</label>
                 <input type="text" name="nama_produk" id="edit_nama" class="form-control" required>
@@ -655,6 +673,8 @@
                 </table>
             </div>
 
+            </div> {{-- End modal-body --}}
+
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('editModal')">Batal</button>
                 <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Update</button>
@@ -691,14 +711,21 @@
             <div id="opnameMethod"></div>
             <div class="form-group">
                 <label>Pilih Toko / Outlet</label>
-                <select name="store_id" class="form-control" required @if(!Auth::user()->isOwner()) style="background-color: #f8f9fa; pointer-events: none;" @endif>
-                    @if(Auth::user()->isOwner())
+                @if(Auth::user()->isOwner())
+                    <select name="store_id" class="form-control" required>
                         <option value="">-- Pilih Toko --</option>
-                    @endif
-                    @foreach($stores ?? [] as $store)
-                        <option value="{{ $store->uuid }}" selected>{{ $store->nama }}</option>
-                    @endforeach
-                </select>
+                        @foreach($stores ?? [] as $store)
+                            <option value="{{ $store->uuid }}">{{ $store->nama }}</option>
+                        @endforeach
+                    </select>
+                @else
+                    <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
+                    <select class="form-control" disabled style="background-color: #f8f9fa;">
+                        @foreach($stores ?? [] as $store)
+                            <option value="{{ $store->uuid }}" selected>{{ $store->nama }}</option>
+                        @endforeach
+                    </select>
+                @endif
             </div>
             
             <div style="margin-top: 20px;">
@@ -1265,44 +1292,148 @@
         document.getElementById('camera-placeholder').style.display = 'block';
     }
 
-    function onScanSuccess(text) {
-        closeScannerModal();
-        document.getElementById('addBarcode').value = text;
-        Swal.fire({ title: 'Mencari Data...', html: `Barcode: <b>${text}</b>`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        fetch(`https://world.openfoodfacts.org/api/v0/product/${text}.json`)
-            .then(r => r.json()).then(d => {
+    function lookupProductByBarcode(barcode) {
+        if (!barcode) return;
+        
+        Swal.fire({ 
+            title: 'Mencari Data...', 
+            html: `Barcode: <b>${barcode}</b>`, 
+            allowOutsideClick: false, 
+            didOpen: () => Swal.showLoading() 
+        });
+
+        fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
+            .then(r => r.json())
+            .then(d => {
                 if (d.status === 1 && d.product) {
                     const p = d.product;
                     const fullName = `${p.brands || ''} ${p.product_name || ''} ${p.quantity || ''}`.trim().replace(/\s+/g, ' ');
                     document.getElementById('addNamaProduk').value = fullName;
-                    Swal.fire({ title: 'Ditemukan!', html: `<b>${fullName}</b>`, icon: 'success' });
-                } else Swal.fire({ title: 'Disalin!', text: 'Data tidak ditemukan di database global.', icon: 'success' });
-            }).catch(() => Swal.fire({ title: 'Berhasil!', text: 'Barcode berhasil terbaca.', icon: 'success' }));
+                    Swal.fire({ 
+                        title: 'Ditemukan!', 
+                        html: `<b>${fullName}</b>`, 
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({ 
+                        title: 'Info', 
+                        text: 'Data tidak ditemukan di database global, silakan isi manual.', 
+                        icon: 'info',
+                        timer: 2500
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire({ 
+                    title: 'Selesai', 
+                    text: 'Pencarian selesai, silakan lengkapi data.', 
+                    icon: 'success',
+                    timer: 1500
+                });
+            });
     }
 
-    // --- Cropper Logic ---
-    let cropper = null;
-    const imgInput = document.getElementById('productImageInput');
-    const cropImg = document.getElementById('cropperImage');
-    imgInput.addEventListener('change', e => {
-        const f = e.target.files[0]; if (!f) return;
-        const reader = new FileReader();
-        reader.onload = ev => {
-            cropImg.src = ev.target.result; document.getElementById('cropperModal').style.display = 'flex';
-            if (cropper) cropper.destroy();
-            cropper = new Cropper(cropImg, { aspectRatio: 1, viewMode: 1 });
-        };
-        reader.readAsDataURL(f);
+    function onScanSuccess(text) {
+        closeScannerModal();
+        document.getElementById('addBarcode').value = text;
+        lookupProductByBarcode(text);
+    }
+
+    // Add listener for manual barcode entry (Enter key)
+    document.addEventListener('DOMContentLoaded', function() {
+        const barcodeInput = document.getElementById('addBarcode');
+        if (barcodeInput) {
+            barcodeInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    lookupProductByBarcode(this.value);
+                }
+            });
+        }
     });
-    function closeCropperModal() { document.getElementById('cropperModal').style.display='none'; if (cropper) cropper.destroy(); }
+
+    // --- Generic Cropper Logic ---
+    let cropper = null;
+    let currentActiveInput = null;
+
+    function initCropper(inputElement, previewContainer, resultInput) {
+        inputElement.addEventListener('change', e => {
+            const f = e.target.files[0]; if (!f) return;
+            currentActiveInput = { preview: previewContainer, result: resultInput };
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const cropImg = document.getElementById('cropperImage');
+                cropImg.src = ev.target.result; 
+                document.getElementById('cropperModal').style.display = 'flex';
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(cropImg, { aspectRatio: 1, viewMode: 1 });
+            };
+            reader.readAsDataURL(f);
+        });
+    }
+
+    // untuk tambah produk
+    initCropper(
+        document.getElementById('productImageInput'), 
+        document.getElementById('imagePreviewContainer'), 
+        document.getElementById('croppedImageResult')
+    );
+
+    // untuk edit produk
+    if (document.getElementById('editProductImageInput')) {
+        initCropper(
+            document.getElementById('editProductImageInput'), 
+            document.getElementById('editImagePreviewContainer'), 
+            document.getElementById('editCroppedImageResult')
+        );
+    }
+
+    function closeCropperModal() { 
+        document.getElementById('cropperModal').style.display='none'; 
+        if (cropper) cropper.destroy(); 
+    }
+
     function applyCrop() {
+        if (!cropper || !currentActiveInput) {
+            Swal.fire('Gagal', 'Sesi pemotong foto tidak aktif.', 'error');
+            return;
+        }
+        
         const canvas = cropper.getCroppedCanvas({ width: 500, height: 500 });
-        const b64 = canvas.toDataURL('image/png');
-        document.getElementById('croppedImageResult').value = b64;
-        document.getElementById('imagePreviewContainer').innerHTML = `<img src="${b64}" style="width:100%; height:100%; object-fit:cover;">`;
-        document.getElementById('smartScanBtn').style.display = 'flex';
-        document.getElementById('imagePreviewContainer').appendChild(document.getElementById('smartScanBtn'));
+        const b64 = canvas.toDataURL('image/jpeg', 0.8);
+        
+        currentActiveInput.result.value = b64;
+        currentActiveInput.preview.innerHTML = `<img src="${b64}" style="width:100%; height:100%; object-fit:cover;">`;
+        
         closeCropperModal();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (form.id === 'filterForm') return;
+                
+                Swal.fire({
+                    title: 'Memproses Data...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            });
+        });
+    });
+
+    let searchTimer;
+    function debounceSearch() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            document.getElementById('filterForm').submit();
+        }, 500);
     }
     async function scanFromProductImage() {
         const b64 = document.getElementById('croppedImageResult').value;
@@ -1316,8 +1447,7 @@
         } catch(e) { Swal.fire('Gagal', 'Barcode tidak terdeteksi.', 'warning'); }
     }
 
-    // --- Opname Helpers ---
-    let productsList = JSON.parse('@json($products ?? [])');
+    let productsList = JSON.parse('@json($all_products ?? [])');
     function openAddOpnameModal() {
         const form = document.getElementById('opnameForm');
         form.action = "{{ route('products.opname.store') }}";
@@ -1358,7 +1488,6 @@
         });
     }
 
-    // --- Request Helpers ---
     function openAddRequestModal() {
         const form = document.getElementById('requestForm');
         form.action = "{{ route('products.request.store') }}";
