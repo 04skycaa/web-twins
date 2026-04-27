@@ -86,9 +86,9 @@
                     @csrf
                     
                     <div class="grup-input">
-                        <label class="label-input">Nomor Telepon</label>
-                        <input type="tel" name="no_hp" id="inputTel" class="field-input" 
-                            placeholder="0812xxxxxxx" value="{{ old('no_hp') }}" required autofocus>
+                        <label class="label-input">Email</label>
+                        <input type="email" name="email" id="inputEmail" class="field-input" 
+                            placeholder="email@example.com" value="{{ old('email') }}" required autofocus>
                     </div>
 
                     <div class="grup-input">
