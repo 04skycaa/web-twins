@@ -111,6 +111,9 @@ Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user
 Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDeliveryAddress'])
     ->middleware(['auth'])
     ->name('user.delivery-address.store');
+Route::post('/outlet/{id}/checkout-token', [LandingController::class, 'createCheckoutToken'])
+    ->middleware(['auth'])
+    ->name('user.checkout.token');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');
