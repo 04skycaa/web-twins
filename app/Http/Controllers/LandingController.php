@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class LandingController extends Controller
 {
@@ -201,6 +202,138 @@ class LandingController extends Controller
             'message' => 'Alamat pengiriman tersimpan aman di sesi server.',
             'delivery' => $deliveryData,
         ]);
+    }
+
+    public function createCheckoutToken(Request $request, $id)
+    {
+        $outlet = Outlet::findOrFail($id);
+
+        $validated = $request->validate([
+            'recipient_name' => ['required', 'string', 'max:150'],
+            'recipient_phone' => ['required', 'string', 'max:50'],
+            'address' => ['required', 'string', 'max:1000'],
+            'coordinates' => ['nullable', 'array'],
+            'coordinates.lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'coordinates.lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'distance_km' => ['nullable', 'numeric', 'min:0'],
+            'discount_percent' => ['nullable', 'numeric', 'min:0', 'max:1'],
+            'shipping_fee' => ['required', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['nullable', 'string', 'max:100'],
+            'items.*.name' => ['required', 'string', 'max:255'],
+            'items.*.qty' => ['required', 'integer', 'min:1'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:1'],
+        ]);
+
+        $serverKey = (string) config('services.midtrans.server_key', '');
+        if ($serverKey === '') {
+            return response()->json([
+                'message' => 'Midtrans belum dikonfigurasi (server key kosong).',
+            ], 422);
+        }
+
+        $discountPercent = (float) ($validated['discount_percent'] ?? 0);
+        $shippingFee = (int) ceil((float) $validated['shipping_fee']);
+        $distanceKm = (float) ($validated['distance_km'] ?? 0);
+
+        $itemDetails = [];
+        $subTotal = 0;
+
+        foreach ($validated['items'] as $idx => $item) {
+            $qty = (int) $item['qty'];
+            $unitPrice = (int) ceil((float) $item['unit_price']);
+            $lineSubtotal = $unitPrice * $qty;
+            $subTotal += $lineSubtotal;
+
+            $safeName = Str::limit(trim((string) $item['name']), 50, '');
+            if ($safeName === '') {
+                $safeName = 'Item ' . ($idx + 1);
+            }
+
+            $itemDetails[] = [
+                'id' => trim((string) ($item['product_id'] ?? 'ITEM-' . ($idx + 1))),
+                'price' => $unitPrice,
+                'quantity' => $qty,
+                'name' => $safeName,
+            ];
+        }
+
+        if ($subTotal <= 0) {
+            return response()->json([
+                'message' => 'Subtotal transaksi tidak valid.',
+            ], 422);
+        }
+
+        $discountedSubtotal = (int) round($subTotal * (1 - $discountPercent));
+        $grossAmount = max(1, $discountedSubtotal + $shippingFee);
+
+        if ($shippingFee > 0) {
+            $itemDetails[] = [
+                'id' => 'ONGKIR',
+                'price' => $shippingFee,
+                'quantity' => 1,
+                'name' => 'Biaya Pengiriman',
+            ];
+        }
+
+        $orderId = 'TWINS-' . strtoupper(Str::random(6)) . '-' . now()->format('YmdHis');
+        $isProduction = (bool) config('services.midtrans.is_production', false);
+        $snapUrl = $isProduction
+            ? 'https://app.midtrans.com/snap/v1/transactions'
+            : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+        $payload = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => $grossAmount,
+            ],
+            'item_details' => $itemDetails,
+            'customer_details' => [
+                'first_name' => $validated['recipient_name'],
+                'phone' => $validated['recipient_phone'],
+                'billing_address' => [
+                    'address' => $validated['address'],
+                ],
+                'shipping_address' => [
+                    'address' => $validated['address'],
+                ],
+            ],
+            'custom_field1' => $outlet->nama,
+            'custom_field2' => 'Jarak: ' . number_format($distanceKm, 2, '.', '') . ' km',
+        ];
+
+        try {
+            $response = Http::withBasicAuth($serverKey, '')
+                ->acceptJson()
+                ->post($snapUrl, $payload);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'message' => 'Gagal membuat transaksi Midtrans.',
+                    'midtrans_error' => $response->json() ?: $response->body(),
+                ], 422);
+            }
+
+            $json = $response->json();
+            if (!is_array($json) || empty($json['token'])) {
+                return response()->json([
+                    'message' => 'Token Midtrans tidak ditemukan pada response.',
+                ], 422);
+            }
+
+            return response()->json([
+                'message' => 'Snap token berhasil dibuat.',
+                'order_id' => $orderId,
+                'snap_token' => $json['token'],
+                'redirect_url' => $json['redirect_url'] ?? null,
+                'gross_amount' => $grossAmount,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menghubungi Midtrans.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function storeReview(Request $request, $id)

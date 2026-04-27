@@ -13,6 +13,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="delivery-address-store-url"
         content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
+    <meta name="checkout-token-url" content="{{ route('user.checkout.token', ['id' => $outlet->uuid]) }}">
+    <meta name="midtrans-enabled"
+        content="{{ config('services.midtrans.client_key') && config('services.midtrans.server_key') ? 'true' : 'false' }}">
     <meta name="persisted-delivery-preference" content="{{ json_encode($deliveryPreference ?? null) }}">
     <meta name="user-name" content="{{ optional(auth()->user())->name ?? '' }}">
     <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
@@ -24,6 +27,11 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    @if (config('services.midtrans.client_key'))
+        <script
+            src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
+            data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+    @endif
 
 </head>
 <script type="application/json" id="products-data">
@@ -548,16 +556,20 @@
             return "Rp " + Math.floor(amount).toLocaleString('id-ID');
         }
 
-        // Rumus sementara ongkir sampai ketentuan final tersedia.
-        function calculateTemporaryShippingFee(subtotal, totalQty) {
-            if (subtotal <= 0 || totalQty <= 0) return 0;
+        function escapeHtml(text) {
+            const safeText = String(text ?? '');
+            return safeText
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-            const baseFee = 5000;
-            const perExtraItemFee = 1000;
-            const smallOrderSurcharge = subtotal < 50000 ? 3000 : 0;
-            const qtySurcharge = Math.max(0, totalQty - 1) * perExtraItemFee;
-
-            return baseFee + qtySurcharge + smallOrderSurcharge;
+        // Sementara: ongkir dihitung dari jarak pengantaran (500 rupiah per km).
+        function calculateTemporaryShippingFee(distanceKm) {
+            const safeDistanceKm = Number.isFinite(distanceKm) ? Math.max(0, distanceKm) : 0;
+            return Math.ceil(safeDistanceKm * 500);
         }
 
         const products = JSON.parse(document.getElementById('products-data').textContent);
@@ -570,6 +582,8 @@
         const storeHours = document.querySelector('meta[name="store-hours"]').content || '';
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         const deliveryAddressStoreUrl = document.querySelector('meta[name="delivery-address-store-url"]').content;
+        const checkoutTokenUrl = document.querySelector('meta[name="checkout-token-url"]').content;
+        const midtransEnabled = document.querySelector('meta[name="midtrans-enabled"]').content === 'true';
         const persistedDeliveryPreference = JSON.parse(document.querySelector('meta[name="persisted-delivery-preference"]')
             .content);
 
@@ -841,6 +855,7 @@
         } : null;
         let deliveryContactName = document.querySelector('meta[name="user-name"]').content;
         let deliveryPhone = document.querySelector('meta[name="user-phone"]').content;
+        let deliveryDistanceKm = 0;
         let outletCoordinates = null;
         let outletGeocodeTried = false;
 
@@ -868,6 +883,89 @@
             });
         }
 
+        function calculateDistanceKmBetweenPoints(from, to) {
+            const earthRadiusKm = 6371;
+            const dLat = (to.lat - from.lat) * (Math.PI / 180);
+            const dLng = (to.lng - from.lng) * (Math.PI / 180);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return earthRadiusKm * c;
+        }
+
+        function resolveOutletCoordinatesFromAddress() {
+            if (outletCoordinates) return Promise.resolve(outletCoordinates);
+            if (outletGeocodeTried) return Promise.resolve(null);
+
+            outletGeocodeTried = true;
+
+            return fetch(
+                    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(outletAddress)}`
+                )
+                .then(response => response.ok ? response.json() : [])
+                .then(results => {
+                    if (!Array.isArray(results) || results.length === 0) return null;
+                    const first = results[0];
+                    const lat = Number(first.lat);
+                    const lng = Number(first.lon);
+                    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                    outletCoordinates = {
+                        lat,
+                        lng
+                    };
+                    return outletCoordinates;
+                })
+                .catch(() => null);
+        }
+
+        function syncPersistedDeliveryDistance() {
+            const hasDeliveryCoordinates = !!(deliveryCoordinates && Number.isFinite(deliveryCoordinates.lat) && Number
+                .isFinite(deliveryCoordinates.lng));
+
+            if (!hasDeliveryCoordinates) {
+                deliveryDistanceKm = 0;
+                renderCart();
+                return;
+            }
+
+            resolveOutletCoordinatesFromAddress().then(outletLatLng => {
+                if (!outletLatLng) {
+                    deliveryDistanceKm = 0;
+                    renderCart();
+                    return;
+                }
+
+                fetch(
+                        `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${deliveryCoordinates.lng},${deliveryCoordinates.lat}?overview=false`
+                    )
+                    .then(response => response.ok ? response.json() : null)
+                    .then(data => {
+                        const route = data && Array.isArray(data.routes) && data.routes.length > 0 ? data
+                            .routes[0] : null;
+                        const routeDistanceKm = route ? Number(route.distance || 0) / 1000 : NaN;
+
+                        if (Number.isFinite(routeDistanceKm) && routeDistanceKm > 0) {
+                            deliveryDistanceKm = routeDistanceKm;
+                        } else {
+                            const straightDistance = calculateDistanceKmBetweenPoints(outletLatLng,
+                                deliveryCoordinates);
+                            deliveryDistanceKm = Number.isFinite(straightDistance) ? Math.max(0,
+                                straightDistance) : 0;
+                        }
+
+                        renderCart();
+                    })
+                    .catch(() => {
+                        const straightDistance = calculateDistanceKmBetweenPoints(outletLatLng,
+                            deliveryCoordinates);
+                        deliveryDistanceKm = Number.isFinite(straightDistance) ? Math.max(0,
+                            straightDistance) : 0;
+                        renderCart();
+                    });
+            });
+        }
+
         function openAddressPopup(event) {
             if (event) event.preventDefault();
 
@@ -879,6 +977,7 @@
                 lat: deliveryCoordinates.lat,
                 lng: deliveryCoordinates.lng
             } : null;
+            let selectedDistanceKm = Number.isFinite(deliveryDistanceKm) ? Math.max(0, deliveryDistanceKm) : 0;
             let geocodeDebounceTimer = null;
             let geocodeRequestToken = 0;
 
@@ -1010,6 +1109,7 @@
 
                         resolveOutletCoordinates().then(outletLatLng => {
                             if (!outletLatLng) {
+                                selectedDistanceKm = 0;
                                 renderRouteTrackingText(
                                     'Lokasi outlet belum ditemukan. Rute tidak dapat ditampilkan.');
                                 return;
@@ -1031,6 +1131,7 @@
                             }
 
                             if (!selectedLatLng) {
+                                selectedDistanceKm = 0;
                                 renderRouteTrackingText(
                                     'Pilih alamat tujuan untuk menampilkan rute dari outlet.');
                                 return;
@@ -1067,6 +1168,8 @@
 
                                     const distanceKm = Number(route.distance || 0) / 1000;
                                     const durationMin = Number(route.duration || 0) / 60;
+                                    selectedDistanceKm = Number.isFinite(distanceKm) ? Math.max(0,
+                                        distanceKm) : 0;
                                     renderRouteTrackingText(
                                         `Rute outlet -> tujuan sekitar ${distanceKm.toFixed(2)} km (${durationMin.toFixed(0)} menit).`
                                     );
@@ -1087,6 +1190,9 @@
 
                                     const straightDistance = calculateDistanceKm(outletLatLng,
                                         selectedLatLng);
+                                    selectedDistanceKm = Number.isFinite(straightDistance) ? Math
+                                        .max(0,
+                                            straightDistance) : 0;
                                     renderRouteTrackingText(
                                         `Rute detail belum tersedia. Jarak garis lurus outlet -> tujuan sekitar ${straightDistance.toFixed(2)} km.`
                                     );
@@ -1294,6 +1400,7 @@
                         recipientPhone,
                         address: manualAddress,
                         detail: detailAddress,
+                        distanceKm: selectedDistanceKm,
                         coordinates: selectedLatLng ? {
                             lat: selectedLatLng.lat,
                             lng: selectedLatLng.lng
@@ -1307,10 +1414,13 @@
                 deliveryPhone = result.value.recipientPhone;
                 deliveryAddress = result.value.address;
                 window.deliveryDetailAddress = result.value
-                .detail; // Simpan di window agar persisten selama sesi
+                    .detail; // Simpan di window agar persisten selama sesi
+                deliveryDistanceKm = Number.isFinite(result.value.distanceKm) ? Math.max(0, result.value
+                    .distanceKm) : 0;
                 deliveryCoordinates = result.value.coordinates;
                 const persisted = await savePersistedDeliveryAddress();
                 updateDeliveryAddressUI();
+                renderCart();
 
                 if (!persisted && isAuthenticated) {
                     Swal.fire({
@@ -1378,28 +1488,28 @@
                         <img src="${product.img}" class="food-img" style="filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
 
                         ${product.is_discount && !isOutOfStock ? `
-                                                                <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
-                                                                    -${product.discount_label}
-                                                                </div>
-                                                            ` : ''}
+                                                                                    <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
+                                                                                        -${product.discount_label}
+                                                                                    </div>
+                                                                                ` : ''}
 
                         ${isOutOfStock ? `
-                                                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
-                                                            ` : ''}
+                                                                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
+                                                                                ` : ''}
                     </div>
                     <h4 style="font-size: 0.9rem; color: var(--text-color); font-weight: 700; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; height: 2.4em;">${product.name}</h4>
 
                     ${!isOutOfStock ? `
-                                                            <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
-                                                        ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
+                                                                                <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
+                                                                            ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
 
                     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
                         <div>
                             ${product.is_discount && !isOutOfStock ? `
-                                                                    <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
-                                                                        ${formatRupiah(product.original_price)}
-                                                                    </span>
-                                                                ` : ''}
+                                                                                        <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
+                                                                                            ${formatRupiah(product.original_price)}
+                                                                                        </span>
+                                                                                    ` : ''}
                             <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 0.95rem;">
                                 ${formatRupiah(product.price).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}
                             </span>
@@ -1422,6 +1532,42 @@
             renderProducts();
         }
 
+        function getCartPricedItems() {
+            return cart.map((item) => {
+                const pInfo = products.find(p => p.name === item.name);
+                let displayPrice = item.price;
+                if (pInfo && pInfo.price_levels && pInfo.price_levels.length > 0) {
+                    const levels = [...pInfo.price_levels].sort((a, b) => b.jmlh - a.jmlh);
+                    const appliedLevel = levels.find(l => item.qty >= l.jmlh);
+                    if (appliedLevel) displayPrice = appliedLevel.harga;
+                }
+
+                return {
+                    ...item,
+                    product_id: pInfo ? pInfo.id : (item.product_id || null),
+                    image: pInfo ? pInfo.img : '',
+                    displayPrice,
+                    subtotal: displayPrice * item.qty,
+                };
+            });
+        }
+
+        function calculateCartSummary() {
+            const pricedItems = getCartPricedItems();
+            const subtotal = pricedItems.reduce((acc, item) => acc + item.subtotal, 0);
+            const shippingFee = calculateTemporaryShippingFee(deliveryDistanceKm);
+            const discountedSubtotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
+            const total = discountedSubtotal + shippingFee;
+
+            return {
+                subtotal,
+                discountedSubtotal,
+                shippingFee,
+                total,
+                pricedItems,
+            };
+        }
+
         function addToCartFromEl(el) {
             const name = el.getAttribute('data-name');
             const price = parseFloat(el.getAttribute('data-price'));
@@ -1431,10 +1577,12 @@
                 Swal.fire('Opps!', 'Stok produk ini sedang habis.', 'error');
                 return;
             }
-            addToCart(name, price);
+
+            const productInfo = products.find(p => p.name === name);
+            addToCart(name, price, productInfo ? productInfo.id : null);
         }
 
-        function addToCart(name, price) {
+        function addToCart(name, price, productId = null) {
             // Temukan info stok asli dari array products
             const productInfo = products.find(p => p.name === name);
             if (productInfo && productInfo.stok <= 0) {
@@ -1442,7 +1590,7 @@
                 return;
             }
 
-            const existingItem = cart.find(item => item.name === name);
+            const existingItem = cart.find(item => item.product_id === productId || item.name === name);
             if (existingItem) {
                 // Cek jika jumlah di keranjang sudah melebihi stok
                 if (existingItem.qty >= productInfo.stok) {
@@ -1453,6 +1601,7 @@
             } else {
                 cart.push({
                     name,
+                    product_id: productId,
                     price,
                     qty: 1
                 });
@@ -1505,16 +1654,11 @@
             }
 
             // Calculate totals
-            let subtotal = 0;
-            const cartHtmlItems = cart.map((item, index) => {
-                const pInfo = products.find(p => p.name === item.name);
-                let displayPrice = item.price;
-                if (pInfo && pInfo.price_levels && pInfo.price_levels.length > 0) {
-                    const levels = [...pInfo.price_levels].sort((a, b) => b.jmlh - a.jmlh);
-                    const appliedLevel = levels.find(l => item.qty >= l.jmlh);
-                    if (appliedLevel) displayPrice = appliedLevel.harga;
-                }
-                subtotal += (displayPrice * item.qty);
+            const summary = calculateCartSummary();
+            const cartHtmlItems = summary.pricedItems.map((item, index) => {
+                const pInfo = {
+                    img: item.image,
+                };
 
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1532,21 +1676,18 @@
                             </div>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right;">
-                            <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.75rem;">${formatRupiah(displayPrice * item.qty).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}</span>
-                            ${displayPrice < item.price ? `<span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">Hemat Grosir!</span>` : ''}
+                            <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.75rem;">${formatRupiah(item.subtotal).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}</span>
+                            ${item.displayPrice < item.price ? `<span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">Hemat Grosir!</span>` : ''}
                             <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            const shippingFee = calculateTemporaryShippingFee(subtotal, totalCount);
-            const discountedSubtotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
-            const finalTotal = discountedSubtotal + shippingFee;
-            const formattedTotal = formatRupiah(finalTotal);
+            const formattedTotal = formatRupiah(summary.total);
 
             document.querySelectorAll('.shippingFeeDisplay').forEach(el => {
-                el.innerText = formatRupiah(shippingFee);
+                el.innerText = formatRupiah(summary.shippingFee);
             });
 
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
@@ -1717,30 +1858,240 @@
                 return;
             }
 
-            const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-            const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
-            const shippingFee = calculateTemporaryShippingFee(subtotal, totalQty);
-            const total = (subtotal * (1 - discountPercent)) + shippingFee;
+            if (!midtransEnabled || typeof window.snap === 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Pembayaran Belum Tersedia',
+                    text: 'Konfigurasi Midtrans belum aktif. Hubungi admin untuk mengaktifkan pembayaran.',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--orange-brand)'
+                });
+                return;
+            }
 
-            historyData.unshift({
-                id: Date.now(),
-                date: new Date().toLocaleString('id-ID'),
-                items: [...cart],
-                total: total,
-                shipping_fee: shippingFee,
-                recipient_name: deliveryContactName,
-                recipient_phone: deliveryPhone,
-                address: deliveryAddress,
-                coordinates: deliveryCoordinates ? {
-                    lat: deliveryCoordinates.lat,
-                    lng: deliveryCoordinates.lng
-                } : null
+            const recipientName = (deliveryContactName || '').trim();
+            const recipientPhone = (deliveryPhone || '').trim();
+            const address = (deliveryAddress || '').trim();
+
+            if (!recipientName || !recipientPhone || !address) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Lengkapi Data Pengiriman',
+                    text: 'Isi dulu nama penerima, no HP, dan alamat pengiriman sebelum checkout.',
+                    background: 'var(--bg-color)',
+                    color: 'var(--text-color)',
+                    confirmButtonColor: 'var(--orange-brand)'
+                });
+                return;
+            }
+
+            const summary = calculateCartSummary();
+            if (summary.total <= 0) {
+                Swal.fire('Oops', 'Total pembayaran tidak valid.', 'error');
+                return;
+            }
+
+            const visibleItems = summary.pricedItems.slice(0, 5);
+            const hiddenItemCount = Math.max(0, summary.pricedItems.length - visibleItems.length);
+            const itemListHtml = visibleItems.map(i => `
+                <div style="display:flex; justify-content:space-between; gap:10px; font-size:0.82rem; padding:6px 0; border-bottom:1px dashed rgba(148,163,184,0.25);">
+                    <span style="color:var(--text-color); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(i.qty)}x ${escapeHtml(i.name)}</span>
+                    <span style="color:var(--orange-brand); font-weight:700; white-space:nowrap;">${escapeHtml(formatRupiah(i.subtotal))}</span>
+                </div>
+            `).join('');
+
+            const discountLabel = discountPercent > 0 ? `-${(discountPercent * 100).toFixed(0)}%` : '0%';
+            const estimatedArrivalMinutes = Math.max(10, Math.round(Number(deliveryDistanceKm || 0) * 4));
+
+            Swal.fire({
+                title: 'Konfirmasi Pembayaran',
+                html: `
+                    <div style="text-align:left; font-size:0.9rem; line-height:1.45; display:grid; gap:12px;">
+                        <div style="border:1px solid var(--card-border); border-radius:12px; padding:12px; background:rgba(15,23,42,0.18);">
+                            <p style="margin:0 0 8px 0; font-size:0.75rem; letter-spacing:0.04em; color:var(--sub-text);">DETAIL PENGIRIMAN</p>
+                            <div style="display:grid; gap:6px; font-size:0.82rem;">
+                                <div><span style="color:var(--sub-text);">Penerima:</span> <strong>${escapeHtml(recipientName)}</strong></div>
+                                <div><span style="color:var(--sub-text);">No HP:</span> <strong>${escapeHtml(recipientPhone)}</strong></div>
+                                <div><span style="color:var(--sub-text);">Jarak:</span> <strong>${escapeHtml(Number(deliveryDistanceKm || 0).toFixed(2))} km</strong></div>
+                                <div><span style="color:var(--sub-text);">Estimasi:</span> <strong>${escapeHtml(estimatedArrivalMinutes)} menit</strong></div>
+                                <div style="display:flex; gap:6px;"><span style="color:var(--sub-text); white-space:nowrap;">Alamat:</span><span style="word-break:break-word;">${escapeHtml(address)}</span></div>
+                            </div>
+                        </div>
+
+                        <div style="border:1px solid var(--card-border); border-radius:12px; padding:12px; background:rgba(2,132,199,0.06);">
+                            <p style="margin:0 0 8px 0; font-size:0.75rem; letter-spacing:0.04em; color:var(--sub-text);">RINGKASAN ITEM (${escapeHtml(summary.pricedItems.length)})</p>
+                            <div style="max-height:168px; overflow:auto; padding-right:4px;">${itemListHtml}</div>
+                            ${hiddenItemCount > 0 ? `<p style="margin:8px 0 0 0; font-size:0.75rem; color:var(--sub-text);">+${escapeHtml(hiddenItemCount)} item lainnya</p>` : ''}
+                        </div>
+
+                        <div style="border:1px solid rgba(249,115,22,0.35); border-radius:14px; padding:12px; background:linear-gradient(135deg, rgba(249,115,22,0.14), rgba(249,115,22,0.04));">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                                <div>
+                                    <p style="margin:0; font-size:0.75rem; letter-spacing:0.04em; color:var(--sub-text);">TOTAL PEMBAYARAN</p>
+                                    <p style="margin:4px 0 0 0; font-size:1.22rem; font-weight:800; color:var(--orange-brand);">${escapeHtml(formatRupiah(summary.total))}</p>
+                                </div>
+                                <span style="font-size:0.68rem; padding:4px 8px; border-radius:999px; border:1px solid rgba(16,185,129,0.4); color:#10b981; font-weight:700;">MIDTRANS</span>
+                            </div>
+                            <div style="display:grid; gap:5px; font-size:0.8rem;">
+                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Subtotal</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.subtotal))}</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Diskon</span><span style="font-weight:700; color:#10b981;">${escapeHtml(discountLabel)}</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span style="color:var(--sub-text);">Ongkir</span><span style="font-weight:700;">${escapeHtml(formatRupiah(summary.shippingFee))}</span></div>
+                            </div>
+                        </div>
+
+                        <p style="margin:0; font-size:0.76rem; color:var(--sub-text);">Setelah klik Lanjut ke Pembayaran, Anda akan diarahkan ke popup Midtrans untuk memilih metode pembayaran.</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Lanjut ke Pembayaran',
+                cancelButtonText: 'Kembali',
+                confirmButtonColor: 'var(--orange-brand)',
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                width: 'min(760px, 96vw)',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: () => !Swal.isLoading(),
+                didOpen: () => {
+                    const popup = Swal.getPopup();
+                    if (popup) {
+                        popup.style.borderRadius = '20px';
+                    }
+                },
+                preConfirm: () => {
+                    return fetch(checkoutTokenUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                recipient_name: recipientName,
+                                recipient_phone: recipientPhone,
+                                address,
+                                coordinates: deliveryCoordinates ? {
+                                    lat: deliveryCoordinates.lat,
+                                    lng: deliveryCoordinates.lng
+                                } : null,
+                                distance_km: deliveryDistanceKm,
+                                discount_percent: discountPercent,
+                                shipping_fee: summary.shippingFee,
+                                items: summary.pricedItems.map(i => ({
+                                    product_id: i.product_id,
+                                    name: i.name,
+                                    qty: i.qty,
+                                    unit_price: i.displayPrice
+                                }))
+                            })
+                        })
+                        .then(async (response) => {
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                const errorMessage = data.message || 'Gagal membuat token pembayaran.';
+                                throw new Error(errorMessage);
+                            }
+                            return data;
+                        })
+                        .catch((error) => {
+                            Swal.showValidationMessage(error.message || 'Gagal memproses pembayaran.');
+                        });
+                }
+            }).then((result) => {
+                if (!result.isConfirmed || !result.value || !result.value.snap_token) return;
+
+                const paymentData = result.value;
+
+                const finalizeOrder = (paymentStatus, paymentResult) => {
+                    historyData.unshift({
+                        id: paymentData.order_id || Date.now(),
+                        date: new Date().toLocaleString('id-ID'),
+                        items: summary.pricedItems.map(i => ({
+                            name: i.name,
+                            qty: i.qty,
+                            price: i.displayPrice,
+                            product_id: i.product_id
+                        })),
+                        total: summary.total,
+                        shipping_fee: summary.shippingFee,
+                        recipient_name: recipientName,
+                        recipient_phone: recipientPhone,
+                        address,
+                        coordinates: deliveryCoordinates ? {
+                            lat: deliveryCoordinates.lat,
+                            lng: deliveryCoordinates.lng
+                        } : null,
+                        payment_status: paymentStatus,
+                        midtrans_result: paymentResult || null,
+                    });
+
+                    cart = [];
+                    discountPercent = 0;
+                    savePersistence();
+                    renderCart();
+                    switchPage('history');
+                };
+
+                window.snap.pay(paymentData.snap_token, {
+                    onSuccess: function(resultSnap) {
+                        finalizeOrder('success', resultSnap);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pembayaran Berhasil',
+                            text: 'Pesanan Anda sedang diproses.',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    },
+                    onPending: function(resultSnap) {
+                        finalizeOrder('pending', resultSnap);
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Pembayaran Menunggu',
+                            text: 'Silakan selesaikan pembayaran Anda di kanal yang dipilih.',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    },
+                    onError: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Pembayaran Gagal',
+                            text: 'Transaksi gagal diproses. Silakan coba lagi.',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    },
+                    onClose: function() {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Pembayaran Dibatalkan',
+                            text: 'Anda menutup popup pembayaran sebelum menyelesaikan transaksi.',
+                            background: 'var(--bg-color)',
+                            color: 'var(--text-color)',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    }
+                });
             });
-            cart = [];
-            discountPercent = 0;
-            savePersistence();
-            renderCart();
-            switchPage('history');
+        }
+
+        function getPaymentStatusLabel(status) {
+            const normalized = (status || 'success').toLowerCase();
+            if (normalized === 'pending') return 'MENUNGGU PEMBAYARAN';
+            if (normalized === 'failed' || normalized === 'error') return 'GAGAL';
+            return 'BERHASIL';
+        }
+
+        function getPaymentStatusColor(status) {
+            const normalized = (status || 'success').toLowerCase();
+            if (normalized === 'pending') return '#f59e0b';
+            if (normalized === 'failed' || normalized === 'error') return '#ef4444';
+            return '#10b981';
         }
 
         function renderHistory() {
@@ -1761,7 +2112,7 @@
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>
-                        <p style="color: #10b981; font-size: 0.7rem; font-weight: bold; margin-top: 5px;">BERHASIL</p>
+                        <p style="color: ${getPaymentStatusColor(trx.payment_status)}; font-size: 0.7rem; font-weight: bold; margin-top: 5px;">${getPaymentStatusLabel(trx.payment_status)}</p>
                     </div>
                 </div>
             `).join('');
@@ -1822,6 +2173,7 @@
         window.addEventListener('resize', renderCart);
         renderProducts();
         renderCart();
+        syncPersistedDeliveryDistance();
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
