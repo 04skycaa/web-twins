@@ -31,7 +31,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password', 
         'operator_id', 
         'store_id',   
-        'status_aktif'
+        'status_aktif',
+        'last_login_at'
     ];
 
     protected $hidden = [
@@ -42,7 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'status_aktif' => 'boolean'
+        'status_aktif' => 'boolean',
+        'last_login_at' => 'datetime'
     ];
 
     public function getNameAttribute()

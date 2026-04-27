@@ -33,6 +33,120 @@
             data-client-key="{{ config('services.midtrans.client_key') }}"></script>
     @endif
 
+    <style>
+        /* Address Popup Premium Styling */
+        .address-popup-wrap {
+            text-align: left;
+            padding: 5px;
+        }
+
+        .address-popup-layout {
+            display: flex;
+            gap: 24px;
+            flex-direction: row;
+        }
+
+        .address-popup-left {
+            flex: 1;
+            min-width: 360px;
+        }
+
+        .address-popup-right {
+            flex: 1.2;
+            min-width: 0;
+        }
+
+        .address-popup-left label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--sub-text);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .address-popup-left input,
+        .address-popup-left textarea {
+            width: 100%;
+            border: 1px solid var(--card-border) !important;
+            border-radius: 12px !important;
+            padding: 12px 15px !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--text-color) !important;
+            font-size: 14px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .address-popup-left input:focus,
+        .address-popup-left textarea:focus {
+            border-color: var(--accent-purple) !important;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            background: rgba(255, 255, 255, 0.07) !important;
+            transform: translateY(-1px);
+        }
+
+        .route-tracking-card {
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.03));
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            border-left: 5px solid var(--accent-purple);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #addressMapCanvas {
+            width: 100%;
+            height: 380px;
+            border-radius: 18px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--glow);
+            overflow: hidden;
+        }
+
+        .swal2-popup.address-modal-custom {
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+            border-radius: 32px !important;
+            background: rgba(15, 23, 42, 0.6) !important;
+        }
+
+        /* Global SweetAlert2 Glassmorphism */
+        .swal2-popup {
+            backdrop-filter: blur(15px) !important;
+            -webkit-backdrop-filter: blur(15px) !important;
+            border-radius: 32px !important;
+            background: rgba(15, 23, 42, 0.75) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        [data-theme="light"] .swal2-popup {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border: 1px solid rgba(0, 0, 0, 0.05) !important;
+            color: #1e293b !important;
+        }
+
+        .swal2-title, .swal2-html-container {
+            color: var(--text-color) !important;
+        }
+
+        @media (max-width: 850px) {
+            .address-popup-layout {
+                flex-direction: column;
+            }
+            .address-popup-left {
+                min-width: 100%;
+            }
+        }
+    </style>
 </head>
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
@@ -987,36 +1101,40 @@
                 <div class="address-popup-wrap">
                     <div class="address-popup-layout">
                         <div class="address-popup-left">
-                            <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:15px;">
-                                <p style="font-size:11px; letter-spacing:0.02em; color:#9ca3af; margin:0 0 6px 0; font-weight:700;">ROUTE TRACKING</p>
-                                <p style="font-size:12px; color:#f3f4f6; margin:0; line-height:1.45;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
+                            <div class="route-tracking-card">
+                                <p style="font-size:11px; letter-spacing:0.05em; color:var(--accent-purple); margin:0 0 6px 0; font-weight:800;">🛰️ LIVE ROUTE TRACKING</p>
+                                <p style="font-size:13px; color:var(--text-color); margin:0; line-height:1.5; font-weight:500;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px;">
                                 <div>
-                                    <label for="recipientNameInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Nama Penerima</label>
-                                    <input type="text" id="recipientNameInput" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
+                                    <label for="recipientNameInput">Nama Penerima</label>
+                                    <input type="text" id="recipientNameInput" placeholder="Contoh: Budi">
                                 </div>
                                 <div>
-                                    <label for="recipientPhoneInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">No HP</label>
-                                    <input type="text" id="recipientPhoneInput" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
+                                    <label for="recipientPhoneInput">No HP / WhatsApp</label>
+                                    <input type="text" id="recipientPhoneInput" placeholder="0812...">
                                 </div>
                             </div>
 
-                            <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Utama (Geser Peta)</label>
-                            <textarea id="manualAddressInput" rows="4" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:none; background:#111827; color:#f9fafb; font-size:13px; margin-bottom:12px;"></textarea>
+                            <div style="margin-bottom: 18px;">
+                                <label for="manualAddressInput">Alamat Utama (Pencarian/Geser Peta)</label>
+                                <textarea id="manualAddressInput" rows="3" placeholder="Nama jalan, kecamatan, kota..."></textarea>
+                            </div>
 
-                            <label for="detailAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Detail Alamat (No Rumah / Gedung / Catatan)</label>
-                            <input type="text" id="detailAddressInput" placeholder="Contoh: Blok A No. 12, Samping Masjid" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
+                            <div>
+                                <label for="detailAddressInput">Detail / Catatan (Opsional)</label>
+                                <input type="text" id="detailAddressInput" placeholder="Nomor rumah, warna pagar, atau instruksi khusus">
+                            </div>
                         </div>
 
                         <div class="address-popup-right">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <p style="font-size:12px; margin:0; color:#9ca3af;">Pilih titik lokasi tepat pada peta.</p>
-                                <button type="button" id="useCurrentLocationBtn" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">📍 Gunakan Lokasi Saat Ini</button>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <p style="font-size:12px; margin:0; color:var(--sub-text); font-weight:500;">📍 Pilih titik lokasi tepat pada peta.</p>
+                                <button type="button" id="useCurrentLocationBtn" style="background: var(--accent-purple); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 11px; cursor: pointer; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);">📍 Lokasi Saya</button>
                             </div>
                             <div id="addressMapCanvas"></div>
-                            <div id="mapAddressResult" style="margin-top:8px; font-size:11px; color:#9ca3af; line-height:1.4;"></div>
+                            <div id="mapAddressResult" style="margin-top:10px; font-size:11px; color:var(--sub-text); line-height:1.5; font-style: italic;"></div>
                         </div>
                     </div>
                 </div>
@@ -1025,13 +1143,14 @@
             Swal.fire({
                 title: 'Ubah Alamat Pengiriman',
                 html: popupHtml,
-                background: 'var(--bg-color)',
-                color: 'var(--text-color)',
                 showCancelButton: true,
-                confirmButtonText: 'Simpan',
+                confirmButtonText: 'Simpan Lokasi',
                 cancelButtonText: 'Batal',
                 confirmButtonColor: 'var(--orange-brand)',
                 width: 'min(980px, 96vw)',
+                customClass: {
+                    popup: 'address-modal-custom'
+                },
                 didOpen: () => {
                     const popup = Swal.getPopup();
                     const htmlContainer = Swal.getHtmlContainer();
@@ -1949,8 +2068,6 @@
                 confirmButtonText: 'Lanjut ke Pembayaran',
                 cancelButtonText: 'Kembali',
                 confirmButtonColor: 'var(--orange-brand)',
-                background: 'var(--bg-color)',
-                color: 'var(--text-color)',
                 width: 'min(760px, 96vw)',
                 showLoaderOnConfirm: true,
                 allowOutsideClick: () => !Swal.isLoading(),

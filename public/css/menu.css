@@ -134,9 +134,12 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    z-index: 50;
+    z-index: 2;
     position: relative;
     color: white !important;
+    --iconify-color: white !important;
+    --iconify-secondary-color: rgba(255, 255, 255, 0.6) !important;
+    pointer-events: none;
 }
 
 .menu-item.active iconify-icon {
@@ -148,6 +151,7 @@ body {
     flex-direction: column;
     width: 100%;
     padding-top: 10px;
+    position: relative;
 }
 
 .menu-item {
@@ -159,10 +163,25 @@ body {
     cursor: pointer;
     width: 100%;
     position: relative;
-    color: var(--content-area-bg);
+    color: #ffffff !important;
     padding-left: 28px;
-    text-decoration: none;
+    text-decoration: none !important;
     transition: color 0.3s;
+    user-select: none;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    z-index: 1;
+}
+
+.sidebar a:active,
+.sidebar a:focus,
+.menu-item:hover,
+.menu-item:active,
+.menu-item:focus {
+    background-color: transparent !important;
+    outline: none !important;
+    text-decoration: none !important;
+    color: inherit;
 }
 
 .menu-item i,
@@ -183,8 +202,9 @@ body {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s;
-    z-index: 50;
+    z-index: 2;
     position: relative;
+    pointer-events: none;
 }
 
 .sidebar:hover .menu-item span {
@@ -195,6 +215,8 @@ body {
 
 .menu-item.active {
     color: var(--dark-green) !important;
+    position: relative;
+    z-index: 10 !important;
 }
 
 .menu-item.active::before {
@@ -213,24 +235,26 @@ body {
 .menu-item.active::after {
     content: "";
     position: absolute;
-    top: -30px;
+    top: -40px;
     right: 0;
-    width: 30px;
-    height: 30px;
-    border-bottom-right-radius: 25px;
-    box-shadow: 10px 10px 0 10px var(--content-area-bg);
-    z-index: 0;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    box-shadow: 20px 20px 0 0 var(--content-area-bg);
+    z-index: 1;
 }
 
 .menu-item.active .curve-helper {
     position: absolute;
-    bottom: -30px;
+    bottom: -40px;
     right: 0;
-    width: 30px;
-    height: 30px;
-    border-top-right-radius: 25px;
-    box-shadow: 10px -10px 0 10px var(--content-area-bg);
-    z-index: 0;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    box-shadow: 20px -20px 0 0 var(--content-area-bg);
+    z-index: 1;
 }
 
 .page-container {

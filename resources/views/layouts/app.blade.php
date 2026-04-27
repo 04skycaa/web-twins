@@ -30,7 +30,7 @@
             @endif
 
             @if(Auth::user()->operator->hasFeature(2))
-                <a href="{{ url('/products') }}" class="menu-item {{ request()->is('products*') ? 'active' : '' }}">
+                <a href="{{ url('/products') }}" class="menu-item {{ (request()->routeIs('products.*') || request()->is('products*')) ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
                     <span>Manajemen Produk</span>
@@ -219,6 +219,29 @@
                 lucide.createIcons();
             }
         }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(session('success'))
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: "{{ session('success') }}",
+                    icon: 'success',
+                    confirmButtonColor: '#0477bf',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            @endif
+
+            @if(session('error'))
+                Swal.fire({
+                    title: 'Oops!',
+                    text: "{{ session('error') }}",
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+            @endif
+        });
     </script>
     @stack('scripts')
 </body>

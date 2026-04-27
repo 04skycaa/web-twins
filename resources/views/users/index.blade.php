@@ -4,30 +4,43 @@
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 
 <div class="fitur-container">
-    @if(session('success'))
-    <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px 15px; border-radius: 12px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 13px;">
-        {{ session('success') }}
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="alert alert-danger" style="margin-bottom: 20px; padding: 12px 15px; border-radius: 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; font-size: 13px;">
-        {{ session('error') }}
-    </div>
-    @endif
-    @if($errors->any())
-    <div class="alert alert-danger" style="margin-bottom: 20px; padding: 12px 15px; border-radius: 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; font-size: 13px;">
-        <ul style="margin:0; padding-left:15px;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
+    {{-- Alerts are now handled by SweetAlert2 at the bottom --}}
+
 
     {{-- ACTION BAR --}}
     <div class="action-bar">
         <div class="left-actions-group">
-            
+            <div class="search-wrapper">
+                <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." onkeyup="filterUsers()">
+            </div>
+
+            <!-- Role Filter Dropdown -->
+            <div class="dropdown">
+                <button class="btn-filter" onclick="toggleFilterDropdown('roleDropdown', this)" title="Filter Role">
+                    <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                </button>
+                <div id="roleDropdown" class="dropdown-content">
+                    <a href="javascript:void(0)" onclick="setFilter('role', '', 'Semua Role', this)" class="active-dropdown-item">Semua Role</a>
+                    @foreach($operators as $op)
+                        <a href="javascript:void(0)" onclick="setFilter('role', '{{ $op->nama }}', '{{ $op->nama }}', this)">{{ $op->nama }}</a>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Outlet Filter Dropdown -->
+            <div class="dropdown">
+                <button class="btn-filter" onclick="toggleFilterDropdown('outletDropdown', this)" title="Filter Outlet">
+                    <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                </button>
+                <div id="outletDropdown" class="dropdown-content">
+                    <a href="javascript:void(0)" onclick="setFilter('outlet', '', 'Semua Outlet', this)" class="active-dropdown-item">Semua Outlet</a>
+                    <a href="javascript:void(0)" onclick="setFilter('outlet', '-', 'Pusat', this)">Pusat</a>
+                    @foreach($outlets as $out)
+                        <a href="javascript:void(0)" onclick="setFilter('outlet', '{{ $out->nama }}', '{{ $out->nama }}', this)">{{ $out->nama }}</a>
+                    @endforeach
+                </div>
+            </div>
         </div>
         <div class="right-actions">
             <button class="btn-action" onclick="openModal('addModal')">
@@ -47,12 +60,18 @@
                         <th>EMAIL</th>
                         <th>ROLE</th>
                         <th>OUTLET</th>
+                        <th>STATUS</th>
+                        <th>LAST LOGIN</th>
                         <th>AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($users as $user)
-                    <tr>
+                    <tr class="user-row" 
+                        data-name="{{ strtolower($user->username) }}" 
+                        data-email="{{ strtolower($user->email) }}"
+                        data-role="{{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}"
+                        data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}">
                         <td style="font-weight: 600;">{{ $user->username }}</td>
                         <td>{{ $user->email }}</td>
                         <td>
@@ -62,14 +81,27 @@
                         </td>
                         <td>{{ $user->outlet ? $user->outlet->nama : '-' }}</td>
                         <td>
+                            @if($user->status_aktif)
+                                <span class="status-badge status-active">Aktif</span>
+                            @else
+                                <span class="status-badge status-inactive">Nonaktif</span>
+                            @endif
+                        </td>
+                        <td style="color: #64748b; font-size: 12px;">
+                            {{ $user->last_login_at ? $user->last_login_at->translatedFormat('d M Y, H:i') : 'Belum pernah' }}
+                        </td>
+                        <td>
                             <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($user)' data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}" onclick="openViewModal(JSON.parse(this.dataset.item), this.dataset.outlet)">
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($user)' data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}" onclick="openViewModal(JSON.parse(this.dataset.item), this.dataset.outlet)" title="View Detail">
                                     <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                 </button>
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($user)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($user)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit User">
                                     <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                 </button>
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="openDeleteModal('{{ $user->uuid }}')">
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: {{ $user->status_aktif ? '#ef4444' : '#10b981' }};" onclick="toggleStatus('{{ $user->uuid }}', {{ $user->status_aktif ? 'true' : 'false' }})" title="{{ $user->status_aktif ? 'Suspend User' : 'Aktifkan User' }}">
+                                    <iconify-icon icon="{{ $user->status_aktif ? 'solar:user-block-bold-duotone' : 'solar:user-check-bold-duotone' }}"></iconify-icon>
+                                </button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="openDeleteModal('{{ $user->uuid }}')" title="Hapus User">
                                     <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                 </button>
                             </div>
@@ -191,6 +223,12 @@
                             <iconify-icon id="edit_eye" icon="solar:eye-closed-bold"></iconify-icon>
                         </button>
                     </div>
+                    <div style="margin-top: 8px; text-align: right;">
+                        <a href="{{ route('password.request') }}" style="color: #f59e0b; font-size: 12px; text-decoration: none; display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-weight: 600;">
+                            <iconify-icon icon="solar:key-minimalistic-bold-duotone"></iconify-icon>
+                            Gunakan Fitur Reset Password
+                        </a>
+                    </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                     <div class="form-group">
@@ -270,27 +308,7 @@
     </div>
 </div>
 
-<!-- Modal Delete -->
-<div id="deleteModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 400px;">
-        <div class="modal-header">
-            <h3>Hapus User</h3>
-            <button class="close-modal" onclick="closeModal('deleteModal')">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 20px; text-align: center;">
-            <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size: 50px; color: #ef4444; margin-bottom: 10px;"></iconify-icon>
-            <p style="color: #334155; font-size: 14px; margin-bottom: 0;">Apakah Anda yakin ingin menghapus user ini?</p>
-        </div>
-        <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
-            <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #f1f5f9; color: #475569;" onclick="closeModal('deleteModal')">Batal</button>
-            <form id="deleteForm" method="POST" style="flex: 1; display: flex;">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn-action btn-danger" style="flex: 1; justify-content: center;">Ya, Hapus</button>
-            </form>
-        </div>
-    </div>
-</div>
+
 
 <script>
     function openModal(id) { 
@@ -325,6 +343,7 @@
     }
 
     function openEditModal(data) {
+        window.currentEditingUuid = data.uuid;
         document.getElementById('editForm').reset();
         document.getElementById('edit_password').type = 'password';
         document.getElementById('edit_eye').setAttribute('icon', 'solar:eye-closed-bold');
@@ -333,27 +352,171 @@
         document.getElementById('edit_email').value = data.email;
         document.getElementById('edit_no_hp').value = data.no_hp || '';
         document.getElementById('edit_role').value = data.operator_id || '';
-        document.getElementById('edit_outlet').value = data.outlet_id || '';
+        document.getElementById('edit_outlet').value = data.store_id || ''; // Using store_id directly from JSON
         
         // Reset checkboxes
         document.querySelectorAll('.edit-fitur-checkbox').forEach(cb => cb.checked = false);
+        
         // Check checkboxes if the user's operator has them
         if (data.operator && data.operator.fitur) {
-            try {
-                let userFeatures = JSON.parse(data.operator.fitur);
+            let userFeatures = data.operator.fitur;
+            
+            // If it's a string, try to parse it
+            if (typeof userFeatures === 'string') {
+                try {
+                    userFeatures = JSON.parse(userFeatures);
+                } catch(e) {
+                    userFeatures = [];
+                }
+            }
+
+            if (Array.isArray(userFeatures)) {
                 userFeatures.forEach(fiturId => {
                     let cb = document.getElementById('edit_fitur_' + fiturId);
                     if(cb) cb.checked = true;
                 });
-            } catch(e) {}
+            }
         }
 
         openModal('editModal');
     }
 
     function openDeleteModal(id) {
-        document.getElementById('deleteForm').action = `/users/${id}`;
-        openModal('deleteModal');
+        Swal.fire({
+            title: 'Hapus User?',
+            text: "Data yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/users/${id}`;
+                form.innerHTML = `@csrf @method('DELETE')`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
+
+    function toggleStatus(id, isAktif) {
+        const action = isAktif ? 'Suspend' : 'Aktifkan';
+        Swal.fire({
+            title: `${action} User?`,
+            text: `Apakah Anda yakin ingin ${action.toLowerCase()} user ini?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: isAktif ? '#ef4444' : '#10b981',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, ${action}!`,
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/users/${id}/toggle-status`;
+                form.innerHTML = `@csrf`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    let currentRoleFilter = "";
+    let currentOutletFilter = "";
+
+    function toggleFilterDropdown(id, btn) {
+        // Close all other dropdowns
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            if (el.id !== id) el.classList.remove('show');
+        });
+        document.getElementById(id).classList.toggle('show');
+        
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+            }
+        }
+    }
+
+    function setFilter(type, value, label, el) {
+        if (type === 'role') currentRoleFilter = value;
+        if (type === 'outlet') currentOutletFilter = value;
+
+        // Update active state in dropdown
+        el.closest('.dropdown-content').querySelectorAll('a').forEach(a => a.classList.remove('active-dropdown-item'));
+        el.classList.add('active-dropdown-item');
+
+        // Close dropdown
+        el.closest('.dropdown-content').classList.remove('show');
+
+        // Execute filtering
+        filterUsers();
+    }
+
+    function filterUsers() {
+        const search = document.getElementById('userSearch').value.toLowerCase();
+        const role = currentRoleFilter;
+        const outlet = currentOutletFilter;
+
+        const rows = document.querySelectorAll('.user-row');
+        
+        rows.forEach(row => {
+            const name = row.dataset.name;
+            const email = row.dataset.email;
+            const rowRole = row.dataset.role;
+            const rowOutlet = row.dataset.outlet;
+
+            const matchesSearch = name.includes(search) || email.includes(search);
+            const matchesRole = role === "" || rowRole === role;
+            const matchesOutlet = outlet === "" || rowOutlet === outlet;
+
+            if (matchesSearch && matchesRole && matchesOutlet) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+
+    // SweetAlert2 Notifications
+
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                timer: 3000,
+                showConfirmButton: false
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: "{{ session('error') }}",
+            });
+        @endif
+
+        @if($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal',
+                html: `<ul style="text-align: left; font-size: 14px;">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                       </ul>`,
+            });
+        @endif
+    });
 </script>
 @endsection

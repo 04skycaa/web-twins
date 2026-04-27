@@ -29,11 +29,12 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         
         $user = Auth::user();
+        $user->update(['last_login_at' => now()]);
 
         if ($user->role === 'owner' || $user->role === 'kepala_toko') {
-            return redirect()->intended(route('dashboard'));
+            return redirect()->route('dashboard')->with('success', 'Login Berhasil! Selamat datang kembali, ' . $user->name);
         }
-        return redirect('/');
+        return redirect('/')->with('success', 'Login Berhasil! Selamat belanja di TWINS.');
     }
 
     /**

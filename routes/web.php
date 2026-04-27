@@ -59,6 +59,8 @@ Route::prefix('users')->middleware(['auth', 'verified', 'role:owner,kepala_toko'
     Route::post('/', [UserController::class, 'store'])->name('users.store');
     Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::post('/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 });
 
 Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(function () {

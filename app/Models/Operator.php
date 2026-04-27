@@ -30,13 +30,20 @@ class Operator extends Model
      */
     public function hasFeature($feature): bool
     {
-        if (!$this->fitur) {
+        $fitur = $this->fitur;
+
+        // Ensure $fitur is an array even if casting failed or data is raw string
+        if (is_string($fitur)) {
+            $fitur = json_decode($fitur, true) ?: [];
+        }
+
+        if (!$fitur || !is_array($fitur)) {
             return false;
         }
 
-        if (in_array('all_access', $this->fitur) || $this->nama === 'Owner') {
+        if (in_array('all_access', $fitur) || strtolower($this->nama) === 'owner') {
             return true;
         }
-        return in_array($feature, $this->fitur);
+        return in_array((string)$feature, $fitur);
     }
 }

@@ -50,7 +50,7 @@ class UserController extends Controller
         if ($request->has('fitur')) {
             $operator = \App\Models\Operator::find($request->role);
             if ($operator) {
-                $operator->fitur = json_encode($request->fitur);
+                $operator->fitur = $request->fitur;
                 $operator->save();
             }
         }
@@ -80,7 +80,7 @@ class UserController extends Controller
         if ($request->has('fitur')) {
             $operator = \App\Models\Operator::find($request->role);
             if ($operator) {
-                $operator->fitur = json_encode($request->fitur);
+                $operator->fitur = $request->fitur;
                 $operator->save();
             }
         }
@@ -103,6 +103,32 @@ class UserController extends Controller
         }
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User berhasil dihapus');
+    }
+
+    public function toggleStatus($id)
+    {
+        $user = User::findOrFail($id);
+        if(Auth::user()->uuid == $user->uuid) {
+            return redirect()->route('users.index')->with('error', 'Tidak dapat mengubah status akun sendiri!');
+        }
+        $user->status_aktif = !$user->status_aktif;
+        $user->save();
+        
+        $status = $user->status_aktif ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->route('users.index')->with('success', "User berhasil $status");
+    }
+
+    public function resetPassword(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $request->validate([
+            'password' => ['required', Rules\Password::defaults()],
+        ]);
+        
+        $user->password = Hash::make($request->password);
+        $user->save();
+        
+        return redirect()->route('users.index')->with('success', 'Password user berhasil direset');
     }
 
 }

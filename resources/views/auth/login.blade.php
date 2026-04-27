@@ -31,36 +31,7 @@
             </div>
         </div>
 
-        @if ($errors->any())
-        <div id="overlayGagal" class="overlay-status overlay-gagal" style="display: flex; opacity: 1;">
-            <div class="kartu-status">
-                <div class="container-ikon">
-                    <div class="ring ring-1"></div>
-                    <div class="ring ring-2"></div>
-                    <div class="pusat-ikon">
-                        <svg class="ikon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </div>
-                </div>
-                <h2 class="judul-status">Login Gagal</h2>
-                <p class="teks-status">
-                    @foreach ($errors->all() as $error)
-                        {{ $error }}
-                    @endforeach
-                </p>
-                <button class="tombol-ulang" onclick="tutupOverlay('overlayGagal')">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M23 4v6h-6"></path>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                    </svg>
-                    Coba Lagi
-                </button>
-            </div>
-        </div>
-        @endif
+        {{-- Error overlay removed to use inline validation instead --}}
 
         <div class="panel-visual">
             <div class="nama-brand">TWINS</div>
@@ -82,13 +53,16 @@
                 <h2 class="judul-form">Login</h2>
                 <p class="subjudul-form">Masuk ke akun Twins kamu dan mulai belanja bahan kue dengan mudah.</p>
                 
-                <form method="POST" action="{{ route('login') }}" id="loginForm">
+                <form method="POST" action="{{ route('login') }}" id="loginForm" novalidate>
                     @csrf
                     
                     <div class="grup-input">
                         <label class="label-input">Email</label>
-                        <input type="email" name="email" id="inputEmail" class="field-input" 
-                            placeholder="email@example.com" value="{{ old('email') }}" required autofocus>
+                        <input type="text" name="email" id="inputEmail" class="field-input @error('email') is-invalid @enderror" 
+                            placeholder="nama@email.com" value="{{ old('email') }}" autofocus>
+                        @error('email')
+                            <span class="pesan-error">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div class="grup-input">
@@ -100,13 +74,16 @@
                         </div>
 
                         <div style="position: relative;">
-                            <input type="password" name="password" id="inputConfirm" class="field-input" placeholder="••••••••" required style="padding-right: 45px;">
+                            <input type="password" name="password" id="inputConfirm" class="field-input @error('password') is-invalid @enderror" placeholder="••••••••" style="padding-right: 45px;">
                             
                             <div class="toggle-password" onclick="togglePassword('inputConfirm', 'eyeIconConfirm')" 
                                 style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center;">
                                 <i id="eyeIconConfirm" data-lucide="eye" style="width: 20px; color: #666;"></i>
                             </div>
                         </div>
+                        @error('password')
+                            <span class="pesan-error">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div class="opsi-tambahan">
@@ -171,8 +148,21 @@
 
         function mulaiAnimasi(e) {
             const form = document.getElementById('loginForm');
+            const email = document.getElementById('inputEmail').value;
+            const password = document.getElementById('inputConfirm').value;
             
-            if (form.checkValidity()) {
+            // Regex sederhana untuk validasi format email di client-side
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            // Hanya jalankan animasi jika:
+            // 1. Email & Password tidak kosong
+            // 2. Format email benar
+            // 3. Password minimal 6 karakter
+            if (email.trim() !== '' && 
+                password.trim() !== '' && 
+                emailPattern.test(email) && 
+                password.length >= 6) {
+                
                 e.preventDefault();
 
                 const wrapperDua = document.getElementById('wrapperGambarDua');
@@ -183,7 +173,7 @@
 
                 setTimeout(() => {
                     overlaySukses.style.display = 'flex';
-                    overlaySukses.style.opacity = '1'; // Pastikan opacity terlihat
+                    overlaySukses.style.opacity = '1';
 
                     setTimeout(() => {
                         bar.style.width = '100%';
@@ -191,10 +181,11 @@
 
                     setTimeout(() => {
                         form.submit();
-                    }, 2500);
+                    }, 2000);
 
                 }, 600);
             }
+            // Jika tidak memenuhi syarat, biarkan submit langsung untuk memicu error merah dari Laravel
         }
 
         function tutupOverlay(id) {

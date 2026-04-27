@@ -29,7 +29,20 @@ class LoginRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6'],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'Enter your email',
+            'email.email' => 'Please enter a valid email address',
+            'password.required' => 'Enter your password',
+            'password.min' => 'Password must be at least 6 characters',
         ];
     }
 
