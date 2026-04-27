@@ -306,7 +306,7 @@ class LandingController extends Controller
                     'upload_preset' => $uploadPreset,
                     'folder' => $folder
                 ]);
-            } 
+            }
             // Jika file adalah UploadedFile object
             else {
                 $response = Http::attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())

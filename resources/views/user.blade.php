@@ -9,8 +9,10 @@
     <meta name="auth-check" content="{{ auth()->check() ? 'true' : 'false' }}">
     <meta name="login-url" content="{{ route('login') }}">
     <meta name="outlet-address" content="{{ $outlet->alamat ?? 'Alamat outlet belum tersedia' }}">
+    <meta name="store-hours" content="{{ $outlet->jam_buka ?? '' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="delivery-address-store-url" content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
+    <meta name="delivery-address-store-url"
+        content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
     <meta name="persisted-delivery-preference" content="{{ json_encode($deliveryPreference ?? null) }}">
     <meta name="user-name" content="{{ optional(auth()->user())->name ?? '' }}">
     <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
@@ -118,14 +120,19 @@
                 style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h4 style="font-size: 0.95rem;">Delivery Address</h4>
-                    <a href="#" onclick="openAddressPopup(event)" style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
+                    <a href="#" onclick="openAddressPopup(event)"
+                        style="color: var(--orange-brand); font-size: 0.75rem; text-decoration: none;">Change</a>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 10px;">
                     <span style="font-size: 1.2rem;">📍</span>
                     <div style="flex: 1;">
                         <p class="delivery-address-value" style="font-size: 0.85rem; font-weight: 600;">-</p>
-                        <p class="delivery-address-note" style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman default Anda.</p>
-                        <p class="delivery-contact-note" style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; margin-top: 4px;">Penerima: - | No HP: -</p>
+                        <p class="delivery-address-note"
+                            style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4;">Alamat pengiriman
+                            default Anda.</p>
+                        <p class="delivery-contact-note"
+                            style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; margin-top: 4px;">
+                            Penerima: - | No HP: -</p>
                     </div>
                 </div>
             </div>
@@ -150,10 +157,13 @@
                 <div style="display: flex; flex-direction: column; gap: 6px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; font-size: 0.8rem;">Total</span>
-                        <span class="totalPriceDisplay" style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span style="font-size: 0.8em;">Rp</span> 0</span>
+                        <span class="totalPriceDisplay"
+                            style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span
+                                style="font-size: 0.8em;">Rp</span> 0</span>
                     </div>
                 </div>
-                <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 0.9rem;">Checkout</button>
+                <button class="btn-fill checkout-btn" onclick="checkout()"
+                    style="width: 100%; margin-top: 12px; padding: 10px; font-size: 0.9rem;">Checkout</button>
             </div>
         </div>
     </div>
@@ -447,10 +457,11 @@
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600; font-size: 0.8rem;">Total</span>
                             <span class="totalPriceDisplay"
-                                style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span style="font-size: 0.8em;">Rp</span> 0</span>
+                                style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span
+                                    style="font-size: 0.8em;">Rp</span> 0</span>
                         </div>
                     </div>
-                    <button class="btn-fill" onclick="checkout()"
+                    <button class="btn-fill checkout-btn" onclick="checkout()"
                         style="width: 100%; margin-top: 12px; padding: 10px; font-size: 0.9rem;">Checkout</button>
                 </div>
             </div>
@@ -556,9 +567,96 @@
         let discountPercent = 0;
         const isAuthenticated = document.querySelector('meta[name="auth-check"]').content === 'true';
         const loginUrl = document.querySelector('meta[name="login-url"]').content;
+        const storeHours = document.querySelector('meta[name="store-hours"]').content || '';
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         const deliveryAddressStoreUrl = document.querySelector('meta[name="delivery-address-store-url"]').content;
-        const persistedDeliveryPreference = JSON.parse(document.querySelector('meta[name="persisted-delivery-preference"]').content);
+        const persistedDeliveryPreference = JSON.parse(document.querySelector('meta[name="persisted-delivery-preference"]')
+            .content);
+
+        function parseStoreHours(hoursText) {
+            const match = (hoursText || '').match(/(\d{1,2})[.:](\d{2})\s*-\s*(\d{1,2})[.:](\d{2})/);
+            if (!match) return null;
+
+            const openHour = Number(match[1]);
+            const openMinute = Number(match[2]);
+            const closeHour = Number(match[3]);
+            const closeMinute = Number(match[4]);
+
+            const validOpen = Number.isInteger(openHour) && Number.isInteger(openMinute) && openHour >= 0 && openHour <=
+                23 && openMinute >= 0 && openMinute <= 59;
+            const validClose = Number.isInteger(closeHour) && Number.isInteger(closeMinute) && closeHour >= 0 &&
+                closeHour <= 23 && closeMinute >= 0 && closeMinute <= 59;
+
+            if (!validOpen || !validClose) return null;
+
+            return {
+                openMinutes: (openHour * 60) + openMinute,
+                closeMinutes: (closeHour * 60) + closeMinute,
+            };
+        }
+
+        function isStoreClosedNow() {
+            const parsed = parseStoreHours(storeHours);
+            if (!parsed) return false;
+
+            const now = new Date();
+            const nowMinutes = (now.getHours() * 60) + now.getMinutes();
+            const {
+                openMinutes,
+                closeMinutes
+            } = parsed;
+
+            let isOpen = false;
+            if (openMinutes === closeMinutes) {
+                isOpen = true;
+            } else if (openMinutes < closeMinutes) {
+                isOpen = nowMinutes >= openMinutes && nowMinutes < closeMinutes;
+            } else {
+                // Jadwal lintas tengah malam, contoh: 20.00 - 02.00
+                isOpen = nowMinutes >= openMinutes || nowMinutes < closeMinutes;
+            }
+
+            return !isOpen;
+        }
+
+        function showStoreClosedNotification() {
+            const scheduleText = storeHours ? `Jam operasional: ${storeHours}` :
+                'Silakan cek kembali jam operasional outlet.';
+            Swal.fire({
+                title: 'Toko Sedang Tutup',
+                text: `Checkout belum tersedia saat toko tutup. ${scheduleText}`,
+                icon: 'info',
+                background: 'var(--bg-color)',
+                color: 'var(--text-color)',
+                confirmButtonColor: 'var(--orange-brand)',
+                confirmButtonText: 'Mengerti'
+            });
+        }
+
+        function applyCheckoutAvailability() {
+            const closed = isStoreClosedNow();
+            const checkoutButtons = document.querySelectorAll('.checkout-btn');
+
+            checkoutButtons.forEach((btn) => {
+                if (!btn.dataset.originalBackground) btn.dataset.originalBackground = btn.style.background || '';
+                if (!btn.dataset.originalCursor) btn.dataset.originalCursor = btn.style.cursor || '';
+                if (!btn.dataset.originalOpacity) btn.dataset.originalOpacity = btn.style.opacity || '';
+
+                if (closed) {
+                    btn.style.background = '#9ca3af';
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.opacity = '0.85';
+                    btn.setAttribute('aria-disabled', 'true');
+                    btn.setAttribute('title', 'Toko sedang tutup');
+                } else {
+                    btn.style.background = btn.dataset.originalBackground;
+                    btn.style.cursor = btn.dataset.originalCursor;
+                    btn.style.opacity = btn.dataset.originalOpacity;
+                    btn.setAttribute('aria-disabled', 'false');
+                    btn.removeAttribute('title');
+                }
+            });
+        }
 
         function savePersistence() {
             if (!isAuthenticated) return;
@@ -765,7 +863,8 @@
                 const nameText = (deliveryContactName || '').trim() || '-';
                 const phoneText = (deliveryPhone || '').trim() || '-';
                 const detailText = (window.deliveryDetailAddress || '').trim();
-                el.innerHTML = `Penerima: ${nameText} | No HP: ${phoneText}${detailText ? '<br><span style="color:var(--orange-brand); font-style:italic;">Detail: ' + detailText + '</span>' : ''}`;
+                el.innerHTML =
+                    `Penerima: ${nameText} | No HP: ${phoneText}${detailText ? '<br><span style="color:var(--orange-brand); font-style:italic;">Detail: ' + detailText + '</span>' : ''}`;
             });
         }
 
@@ -1134,11 +1233,16 @@
                             },
                             (error) => {
                                 let msg = 'Gagal mendapatkan lokasi.';
-                                if (error.code === 1) msg = 'Izin lokasi ditolak. Harap aktifkan izin lokasi di browser.';
-                                else if (error.code === 2) msg = 'Lokasi tidak tersedia (Pastikan GPS aktif).';
-                                else if (error.code === 3) msg = 'Waktu pencarian habis. Coba klik lagi.';
+                                if (error.code === 1) msg =
+                                    'Izin lokasi ditolak. Harap aktifkan izin lokasi di browser.';
+                                else if (error.code === 2) msg =
+                                    'Lokasi tidak tersedia (Pastikan GPS aktif).';
+                                else if (error.code === 3) msg =
+                                    'Waktu pencarian habis. Coba klik lagi.';
 
-                                if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                                if (window.location.protocol !== 'https:' && window.location
+                                    .hostname !== 'localhost' && window.location.hostname !==
+                                    '127.0.0.1') {
                                     msg += ' (GPS memerlukan HTTPS)';
                                 }
 
@@ -1202,7 +1306,8 @@
                 deliveryContactName = result.value.recipientName;
                 deliveryPhone = result.value.recipientPhone;
                 deliveryAddress = result.value.address;
-                window.deliveryDetailAddress = result.value.detail; // Simpan di window agar persisten selama sesi
+                window.deliveryDetailAddress = result.value
+                .detail; // Simpan di window agar persisten selama sesi
                 deliveryCoordinates = result.value.coordinates;
                 const persisted = await savePersistedDeliveryAddress();
                 updateDeliveryAddressUI();
@@ -1273,28 +1378,28 @@
                         <img src="${product.img}" class="food-img" style="filter: ${isOutOfStock ? 'grayscale(1) opacity(0.6)' : 'none'}">
 
                         ${product.is_discount && !isOutOfStock ? `
-                                                            <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
-                                                                -${product.discount_label}
-                                                            </div>
-                                                        ` : ''}
+                                                                <div style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 10px rgba(239,68,68,0.3);">
+                                                                    -${product.discount_label}
+                                                                </div>
+                                                            ` : ''}
 
                         ${isOutOfStock ? `
-                                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
-                                                        ` : ''}
+                                                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 800; z-index: 2; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">HABIS</div>
+                                                            ` : ''}
                     </div>
                     <h4 style="font-size: 0.9rem; color: var(--text-color); font-weight: 700; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; height: 2.4em;">${product.name}</h4>
 
                     ${!isOutOfStock ? `
-                                                        <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
-                                                    ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
+                                                            <p style="color: #10b981; font-size: 0.85rem; font-weight: 600; margin-bottom: 12px;">Stok: ${product.stok}</p>
+                                                        ` : '<div style="height: 12px; margin-bottom: 12px;"></div>'}
 
                     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto;">
                         <div>
                             ${product.is_discount && !isOutOfStock ? `
-                                                                <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
-                                                                    ${formatRupiah(product.original_price)}
-                                                                </span>
-                                                            ` : ''}
+                                                                    <span style="display: block; color: var(--sub-text); text-decoration: line-through; font-size: 0.8rem; margin-bottom: -2px;">
+                                                                        ${formatRupiah(product.original_price)}
+                                                                    </span>
+                                                                ` : ''}
                             <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 0.95rem;">
                                 ${formatRupiah(product.price).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}
                             </span>
@@ -1374,6 +1479,8 @@
         }
 
         function renderCart() {
+            applyCheckoutAvailability();
+
             const isMobile = window.innerWidth <= 992;
             const badge = document.getElementById('cartBadge');
             const totalCount = cart.reduce((acc, item) => acc + item.qty, 0);
@@ -1451,7 +1558,8 @@
             if (isMobile) {
                 const sheetContent = document.getElementById('mobileSheetContent');
                 if (sheetContent) {
-                    sheetContent.querySelectorAll('.totalPriceDisplay').forEach(el => el.innerHTML = formattedTotal.replace('Rp', '<span style="font-size: 0.8em;">Rp</span>'));
+                    sheetContent.querySelectorAll('.totalPriceDisplay').forEach(el => el.innerHTML = formattedTotal.replace(
+                        'Rp', '<span style="font-size: 0.8em;">Rp</span>'));
                 }
             }
 
@@ -1583,6 +1691,11 @@
         }
 
         function checkout() {
+            if (isStoreClosedNow()) {
+                showStoreClosedNotification();
+                return;
+            }
+
             if (cart.length === 0) return;
 
             if (!isAuthenticated) {
