@@ -9,7 +9,11 @@
     <meta name="auth-check" content="{{ auth()->check() ? 'true' : 'false' }}">
     <meta name="login-url" content="{{ route('login') }}">
     <meta name="outlet-address" content="{{ $outlet->alamat ?? 'Alamat outlet belum tersedia' }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="delivery-address-store-url" content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
+    <meta name="persisted-delivery-preference" content="{{ json_encode($deliveryPreference ?? null) }}">
     <meta name="user-name" content="{{ optional(auth()->user())->name ?? '' }}">
+    <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -18,96 +22,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <style>
-        /* CSS to replace inline hover logic and satisfy IDE */
-        .discounted-item-vertical {
-            min-width: 135px;
-            width: 135px;
-            background: #1a1625;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
 
-        .discounted-item-vertical:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-pink);
-        }
-
-        .img-out-of-stock {
-            filter: grayscale(1) opacity(0.5);
-        }
-
-        .text-muted-stock {
-            color: #777 !important;
-        }
-
-        .product-name-discount {
-            font-size: 0.75rem;
-            margin: 0;
-            color: white;
-            line-height: 1.2;
-            height: 2.4em;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            line-clamp: 2;
-            -webkit-box-orient: vertical;
-            font-weight: 600;
-        }
-
-        .btn-oos {
-            background: #ef4444 !important;
-        }
-
-        .btn-available {
-            background: #0ea5e9 !important;
-        }
-
-        .product-new-price-discount {
-            font-size: 0.95rem;
-            font-weight: 800;
-            color: #00c853;
-        }
-
-        .discount-add-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            color: white;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
-        }
-
-        .discount-add-btn:not(.out-of-stock):hover {
-            background: #0284c7 !important;
-            transform: scale(1.05);
-        }
-
-        /* Force visibility for main components to prevent blank page */
-        .main-content,
-        .discounts-container,
-        .food-card,
-        .promo-banner {
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: block !important;
-        }
-
-        .food-grid {
-            display: grid !important;
-        }
-    </style>
 </head>
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
@@ -215,22 +130,8 @@
                 </div>
             </div>
 
-            <div class="white-card hidden order-section"
-                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                <h4 style="margin-bottom: 15px; font-size: 0.95rem;">Order Menu</h4>
-                <div class="cart-items-container"></div>
-                <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 600;">Total</span>
-                        <span class="totalPriceDisplay" style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
-                    </div>
-                </div>
-                <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
-            </div>
-
             <div class="white-card hidden discount-section"
-                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
+                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                 <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="promoInputMobile" placeholder="TWINS20"
@@ -239,6 +140,20 @@
                         style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
                 </div>
                 <p class="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
+            </div>
+
+            <div class="white-card hidden order-section"
+                style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 12px; border-radius: 15px; margin-bottom: 15px;">
+                <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Order Menu</h4>
+                <div class="cart-items-container"></div>
+                <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 12px 0;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; font-size: 0.8rem;">Total</span>
+                        <span class="totalPriceDisplay" style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span style="font-size: 0.8em;">Rp</span> 0</span>
+                    </div>
+                </div>
+                <button class="btn-fill" onclick="checkout()" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 0.9rem;">Checkout</button>
             </div>
         </div>
     </div>
@@ -507,28 +422,8 @@
                     </div>
                 </div>
 
-                <div class="white-card hidden order-section"
-                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 15px; font-size: 0.95rem;">Order Menu</h4>
-                    <div class="cart-items-container"></div>
-                    <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 15px 0;">
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.85rem; color: var(--sub-text);">Ongkir (sementara)</span>
-                            <span class="shippingFeeDisplay" style="font-size: 0.9rem; font-weight: 700;">Rp 0</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 600;">Total</span>
-                            <span class="totalPriceDisplay"
-                                style="font-size: 1.2rem; font-weight: 800; color: var(--orange-brand);">Rp 0</span>
-                        </div>
-                    </div>
-                    <button class="btn-fill" onclick="checkout()"
-                        style="width: 100%; margin-top: 15px; padding: 12px;">Checkout</button>
-                </div>
-
                 <div class="white-card hidden discount-section"
-                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px;">
+                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 15px;">
                     <h4 style="margin-bottom: 12px; font-size: 0.9rem;">Promo Code</h4>
                     <div style="display: flex; gap: 8px;">
                         <input type="text" id="promoInput" placeholder="TWINS20"
@@ -537,6 +432,26 @@
                             style="background: var(--orange-brand); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Apply</button>
                     </div>
                     <p id="promoMessage" style="font-size: 0.7rem; margin-top: 8px; display: none;"></p>
+                </div>
+
+                <div class="white-card hidden order-section"
+                    style="background: var(--card-bg); border: 1px solid var(--card-border); padding: 12px; border-radius: 15px; margin-bottom: 15px;">
+                    <h4 style="margin-bottom: 12px; font-size: 0.85rem;">Order Menu</h4>
+                    <div class="cart-items-container"></div>
+                    <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 12px 0;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir (sementara)</span>
+                            <span class="shippingFeeDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; font-size: 0.8rem;">Total</span>
+                            <span class="totalPriceDisplay"
+                                style="font-size: 0.8rem; font-weight: 700; color: var(--orange-brand);"><span style="font-size: 0.8em;">Rp</span> 0</span>
+                        </div>
+                    </div>
+                    <button class="btn-fill" onclick="checkout()"
+                        style="width: 100%; margin-top: 12px; padding: 10px; font-size: 0.9rem;">Checkout</button>
                 </div>
             </div>
         </aside>
@@ -641,9 +556,44 @@
         let discountPercent = 0;
         const isAuthenticated = document.querySelector('meta[name="auth-check"]').content === 'true';
         const loginUrl = document.querySelector('meta[name="login-url"]').content;
-        const csrfToken = @json(csrf_token());
-        const deliveryAddressStoreUrl = @json(route('user.delivery-address.store', ['id' => $outlet->uuid]));
-        const persistedDeliveryPreference = @json($deliveryPreference ?? null);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const deliveryAddressStoreUrl = document.querySelector('meta[name="delivery-address-store-url"]').content;
+        const persistedDeliveryPreference = JSON.parse(document.querySelector('meta[name="persisted-delivery-preference"]').content);
+
+        function savePersistence() {
+            if (!isAuthenticated) return;
+            localStorage.setItem('twins_cart', JSON.stringify(cart));
+            localStorage.setItem('twins_history', JSON.stringify(historyData));
+            if (window.deliveryDetailAddress) {
+                localStorage.setItem('twins_delivery_detail', window.deliveryDetailAddress);
+            }
+        }
+
+        function loadPersistence() {
+            if (!isAuthenticated) {
+                // Bersihkan jika tidak login (untuk keamanan)
+                localStorage.removeItem('twins_cart');
+                localStorage.removeItem('twins_history');
+                localStorage.removeItem('twins_delivery_detail');
+                return;
+            }
+            const savedCart = localStorage.getItem('twins_cart');
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                } catch (e) {}
+            }
+            const savedHistory = localStorage.getItem('twins_history');
+            if (savedHistory) {
+                try {
+                    historyData = JSON.parse(savedHistory);
+                } catch (e) {}
+            }
+            const savedDetail = localStorage.getItem('twins_delivery_detail');
+            if (savedDetail) window.deliveryDetailAddress = savedDetail;
+        }
+
+        loadPersistence();
 
         function savePersistedDeliveryAddress() {
             if (!isAuthenticated) return Promise.resolve(true);
@@ -781,18 +731,18 @@
                 renderActiveFilters();
             }
         }
-        const outletAddress = @json($outlet->alamat ?? 'Alamat outlet belum tersedia');
+        const outletAddress = document.querySelector('meta[name="outlet-address"]').content;
         let deliveryAddress = (persistedDeliveryPreference && typeof persistedDeliveryPreference.address === 'string' &&
                 persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() :
-            @json($outlet->alamat ?? '');
+            document.querySelector('meta[name="outlet-address"]').content;
         let deliveryCoordinates = (persistedDeliveryPreference && persistedDeliveryPreference.coordinates && Number
             .isFinite(persistedDeliveryPreference.coordinates.lat) && Number.isFinite(persistedDeliveryPreference
                 .coordinates.lng)) ? {
             lat: Number(persistedDeliveryPreference.coordinates.lat),
             lng: Number(persistedDeliveryPreference.coordinates.lng)
         } : null;
-        let deliveryContactName = @json(optional(auth()->user())->name ?? '');
-        let deliveryPhone = @json(optional(auth()->user())->no_hp ?? '');
+        let deliveryContactName = document.querySelector('meta[name="user-name"]').content;
+        let deliveryPhone = document.querySelector('meta[name="user-phone"]').content;
         let outletCoordinates = null;
         let outletGeocodeTried = false;
 
@@ -814,7 +764,8 @@
             document.querySelectorAll('.delivery-contact-note').forEach(el => {
                 const nameText = (deliveryContactName || '').trim() || '-';
                 const phoneText = (deliveryPhone || '').trim() || '-';
-                el.textContent = `Penerima: ${nameText} | No HP: ${phoneText}`;
+                const detailText = (window.deliveryDetailAddress || '').trim();
+                el.innerHTML = `Penerima: ${nameText} | No HP: ${phoneText}${detailText ? '<br><span style="color:var(--orange-brand); font-style:italic;">Detail: ' + detailText + '</span>' : ''}`;
             });
         }
 
@@ -833,61 +784,39 @@
             let geocodeRequestToken = 0;
 
             const popupHtml = `
-                <style>
-                    .address-popup-wrap {
-                        text-align: left;
-                    }
-
-                    .address-popup-layout {
-                        display: grid;
-                        grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-                        gap: 12px;
-                        align-items: start;
-                    }
-
-                    .address-popup-left,
-                    .address-popup-right {
-                        min-width: 0;
-                    }
-
-                    .address-popup-right {
-                        display: flex;
-                        flex-direction: column;
-                    }
-
-                    #addressMapCanvas {
-                        height: 340px;
-                        border-radius: 12px;
-                        overflow: hidden;
-                    }
-
-                    @media (max-width: 920px) {
-                        .address-popup-layout {
-                            grid-template-columns: 1fr;
-                        }
-
-                        #addressMapCanvas {
-                            height: 260px;
-                        }
-                    }
-                </style>
-
                 <div class="address-popup-wrap">
                     <div class="address-popup-layout">
                         <div class="address-popup-left">
-                            <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:10px;">
+                            <div style="border:1px solid #374151; border-radius:12px; padding:10px; background:#111827; margin-bottom:15px;">
                                 <p style="font-size:11px; letter-spacing:0.02em; color:#9ca3af; margin:0 0 6px 0; font-weight:700;">ROUTE TRACKING</p>
                                 <p style="font-size:12px; color:#f3f4f6; margin:0; line-height:1.45;" id="routeTrackingSummary">Menyiapkan rute dari outlet ke alamat tujuan...</p>
                             </div>
 
-                            <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Lengkap</label>
-                            <textarea id="manualAddressInput" rows="8" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:vertical; background:#111827; color:#f9fafb; font-size:13px;"></textarea>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                                <div>
+                                    <label for="recipientNameInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Nama Penerima</label>
+                                    <input type="text" id="recipientNameInput" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
+                                </div>
+                                <div>
+                                    <label for="recipientPhoneInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">No HP</label>
+                                    <input type="text" id="recipientPhoneInput" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
+                                </div>
+                            </div>
+
+                            <label for="manualAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Alamat Utama (Geser Peta)</label>
+                            <textarea id="manualAddressInput" rows="4" style="width:100%; border:1px solid #374151; border-radius:10px; padding:10px; resize:none; background:#111827; color:#f9fafb; font-size:13px; margin-bottom:12px;"></textarea>
+
+                            <label for="detailAddressInput" style="display:block; margin-bottom:6px; font-size:12px; color:#9ca3af;">Detail Alamat (No Rumah / Gedung / Catatan)</label>
+                            <input type="text" id="detailAddressInput" placeholder="Contoh: Blok A No. 12, Samping Masjid" style="width:100%; border:1px solid #374151; border-radius:8px; padding:8px; background:#111827; color:#f9fafb; font-size:13px;">
                         </div>
 
                         <div class="address-popup-right">
-                            <p style="font-size:12px; margin:0 0 8px 0; color:#9ca3af;">Input alamat akan menggeser peta, dan klik peta akan memperbarui teks alamat.</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <p style="font-size:12px; margin:0; color:#9ca3af;">Pilih titik lokasi tepat pada peta.</p>
+                                <button type="button" id="useCurrentLocationBtn" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">📍 Gunakan Lokasi Saat Ini</button>
+                            </div>
                             <div id="addressMapCanvas"></div>
-                            <div id="mapAddressResult" style="margin-top:8px; font-size:12px; color:#d1d5db; line-height:1.4;"></div>
+                            <div id="mapAddressResult" style="margin-top:8px; font-size:11px; color:#9ca3af; line-height:1.4;"></div>
                         </div>
                     </div>
                 </div>
@@ -906,20 +835,27 @@
                 didOpen: () => {
                     const popup = Swal.getPopup();
                     const htmlContainer = Swal.getHtmlContainer();
+                    const recipientNameInput = popup.querySelector('#recipientNameInput');
+                    const recipientPhoneInput = popup.querySelector('#recipientPhoneInput');
                     const manualAddressInput = popup.querySelector('#manualAddressInput');
+                    const detailAddressInput = popup.querySelector('#detailAddressInput');
                     const mapAddressResult = popup.querySelector('#mapAddressResult');
                     const routeTrackingSummary = popup.querySelector('#routeTrackingSummary');
+                    const useCurrentLocationBtn = popup.querySelector('#useCurrentLocationBtn');
 
                     if (htmlContainer) {
-                        htmlContainer.style.maxHeight = '62vh';
+                        htmlContainer.style.maxHeight = '72vh';
                         htmlContainer.style.overflowY = 'auto';
                         htmlContainer.style.paddingRight = '4px';
                     }
                     if (popup) {
-                        popup.style.maxHeight = '92vh';
+                        popup.style.maxHeight = '95vh';
                     }
 
+                    recipientNameInput.value = (deliveryContactName || '').trim();
+                    recipientPhoneInput.value = (deliveryPhone || '').trim();
                     manualAddressInput.value = (deliveryAddress || '').trim();
+                    detailAddressInput.value = (window.deliveryDetailAddress || '').trim();
 
                     function renderMapResultText(text) {
                         mapAddressResult.textContent = text || '';
@@ -1177,6 +1113,46 @@
                         }, 700);
                     });
 
+                    useCurrentLocationBtn.addEventListener('click', () => {
+                        if (!navigator.geolocation) {
+                            Swal.showValidationMessage('Geolocation tidak didukung oleh browser Anda.');
+                            return;
+                        }
+
+                        useCurrentLocationBtn.innerText = '⌛ Mencari...';
+                        useCurrentLocationBtn.disabled = true;
+
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                const latlng = {
+                                    lat: position.coords.latitude,
+                                    lng: position.coords.longitude
+                                };
+                                setMarker(latlng, true);
+                                useCurrentLocationBtn.innerText = '📍 Gunakan Lokasi Saat Ini';
+                                useCurrentLocationBtn.disabled = false;
+                            },
+                            (error) => {
+                                let msg = 'Gagal mendapatkan lokasi.';
+                                if (error.code === 1) msg = 'Izin lokasi ditolak. Harap aktifkan izin lokasi di browser.';
+                                else if (error.code === 2) msg = 'Lokasi tidak tersedia (Pastikan GPS aktif).';
+                                else if (error.code === 3) msg = 'Waktu pencarian habis. Coba klik lagi.';
+
+                                if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                                    msg += ' (GPS memerlukan HTTPS)';
+                                }
+
+                                Swal.showValidationMessage(msg);
+                                useCurrentLocationBtn.innerText = '📍 Gunakan Lokasi Saat Ini';
+                                useCurrentLocationBtn.disabled = false;
+                            }, {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    });
+
                     initMap();
                     if (popupMap) {
                         setTimeout(() => popupMap.invalidateSize(), 100);
@@ -1184,23 +1160,28 @@
                 },
                 preConfirm: () => {
                     const popup = Swal.getPopup();
-                    const manualAddressInput = popup.querySelector('#manualAddressInput');
-                    const recipientName = (deliveryContactName || '').trim();
-                    const recipientPhone = (deliveryPhone || '').trim();
-                    const manualAddress = (manualAddressInput.value || '').trim();
+                    const nameIn = popup.querySelector('#recipientNameInput');
+                    const phoneIn = popup.querySelector('#recipientPhoneInput');
+                    const addressIn = popup.querySelector('#manualAddressInput');
+                    const detailIn = popup.querySelector('#detailAddressInput');
+
+                    const recipientName = (nameIn.value || '').trim();
+                    const recipientPhone = (phoneIn.value || '').trim();
+                    const manualAddress = (addressIn.value || '').trim();
+                    const detailAddress = (detailIn.value || '').trim();
 
                     if (!recipientName) {
-                        Swal.showValidationMessage('Nama penerima dari profil belum tersedia.');
+                        Swal.showValidationMessage('Nama penerima wajib diisi.');
                         return false;
                     }
 
                     if (!recipientPhone) {
-                        Swal.showValidationMessage('No HP dari profil belum tersedia.');
+                        Swal.showValidationMessage('No HP wajib diisi.');
                         return false;
                     }
 
                     if (!manualAddress) {
-                        Swal.showValidationMessage('Alamat wajib diisi.');
+                        Swal.showValidationMessage('Pilih alamat pada peta atau isi alamat utama.');
                         return false;
                     }
 
@@ -1208,6 +1189,7 @@
                         recipientName,
                         recipientPhone,
                         address: manualAddress,
+                        detail: detailAddress,
                         coordinates: selectedLatLng ? {
                             lat: selectedLatLng.lat,
                             lng: selectedLatLng.lng
@@ -1220,6 +1202,7 @@
                 deliveryContactName = result.value.recipientName;
                 deliveryPhone = result.value.recipientPhone;
                 deliveryAddress = result.value.address;
+                window.deliveryDetailAddress = result.value.detail; // Simpan di window agar persisten selama sesi
                 deliveryCoordinates = result.value.coordinates;
                 const persisted = await savePersistedDeliveryAddress();
                 updateDeliveryAddressUI();
@@ -1312,8 +1295,8 @@
                                                                     ${formatRupiah(product.original_price)}
                                                                 </span>
                                                             ` : ''}
-                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 1.15rem;">
-                                ${formatRupiah(product.price)}
+                            <span style="font-weight: 800; color: ${isOutOfStock ? 'var(--sub-text)' : 'var(--orange-brand)'}; font-size: 0.95rem;">
+                                ${formatRupiah(product.price).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}
                             </span>
                         </div>
                         <button class="add-btn"
@@ -1391,7 +1374,7 @@
         }
 
         function renderCart() {
-            const isMobile = window.innerWidth <= 1024;
+            const isMobile = window.innerWidth <= 992;
             const badge = document.getElementById('cartBadge');
             const totalCount = cart.reduce((acc, item) => acc + item.qty, 0);
             if (badge) badge.innerText = totalCount;
@@ -1429,7 +1412,9 @@
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-                            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;">📦</div>
+                            <div style="width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: white; flex-shrink: 0;">
+                                <img src="${pInfo ? pInfo.img : ''}" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
                             <div style="flex: 1;">
                                 <h5 style="font-size: 0.85rem;">${item.name}</h5>
                                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
@@ -1440,7 +1425,7 @@
                             </div>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right;">
-                            <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.85rem;">${formatRupiah(displayPrice * item.qty)}</span>
+                            <span style="color: var(--orange-brand); font-weight: 700; font-size: 0.75rem;">${formatRupiah(displayPrice * item.qty).replace('Rp', '<span style="font-size: 0.8em;">Rp</span>')}</span>
                             ${displayPrice < item.price ? `<span style="font-size: 0.65rem; color: #10b981; font-weight: 700;">Hemat Grosir!</span>` : ''}
                             <button class="delete-item-btn" onclick="removeFromCart(${index})">🗑️</button>
                         </div>
@@ -1451,24 +1436,27 @@
             const shippingFee = calculateTemporaryShippingFee(subtotal, totalCount);
             const discountedSubtotal = subtotal > 0 ? subtotal * (1 - discountPercent) : 0;
             const finalTotal = discountedSubtotal + shippingFee;
+            const formattedTotal = formatRupiah(finalTotal);
 
             document.querySelectorAll('.shippingFeeDisplay').forEach(el => {
                 el.innerText = formatRupiah(shippingFee);
             });
 
             document.querySelectorAll('.totalPriceDisplay').forEach(el => {
-                el.innerText = formattedTotal;
+                el.innerHTML = formattedTotal.replace('Rp', '<span style="font-size: 0.8em;">Rp</span>');
             });
+
+            document.querySelectorAll('.cart-items-container').forEach(c => c.innerHTML = cartHtmlItems);
 
             if (isMobile) {
                 const sheetContent = document.getElementById('mobileSheetContent');
                 if (sheetContent) {
-                    sheetContent.querySelectorAll('.cart-items-container').forEach(c => c.innerHTML = cartHtmlItems);
-                    sheetContent.querySelectorAll('.totalPriceDisplay').forEach(el => el.innerText = formattedTotal);
+                    sheetContent.querySelectorAll('.totalPriceDisplay').forEach(el => el.innerHTML = formattedTotal.replace('Rp', '<span style="font-size: 0.8em;">Rp</span>'));
                 }
             }
 
             updateDeliveryAddressUI();
+            savePersistence();
         }
 
         function toggleBottomSheet(force) {
@@ -1637,6 +1625,7 @@
             });
             cart = [];
             discountPercent = 0;
+            savePersistence();
             renderCart();
             switchPage('history');
         }

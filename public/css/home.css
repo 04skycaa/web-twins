@@ -1648,7 +1648,7 @@ body:not([data-theme='light']) .promo-content h4 {
 .food-card:hover {
     transform: translateY(-8px);
     border-color: var(--accent-purple);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar {
@@ -1943,10 +1943,12 @@ body:not([data-theme='light']) .promo-content h4 {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
     }
+
     .food-card {
         padding: 8px !important;
         border-radius: 10px !important;
     }
+
     .food-card h4 {
         font-size: 0.65rem !important;
         height: 2.6em !important;
@@ -1960,6 +1962,7 @@ body:not([data-theme='light']) .promo-content h4 {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 8px !important;
     }
+
     body {
         padding-bottom: 180px !important;
     }
@@ -2355,7 +2358,7 @@ header.scrolled {
     z-index: -1;
     pointer-events: none;
     overflow: hidden;
-    display: flex;
+    display: center;
     justify-content: center;
 }
 
@@ -3727,108 +3730,237 @@ body.show-content {
     }
 }
 
+/* --- untuk user.blade --- */
 
- / *   - - -   P r o m o   S e c t i o n   R e s p o n s i v e   - - -   * / 
- . p r o m o - s e c t i o n   { 
-         p a d d i n g :   3 0 p x   0 ; 
- } 
- 
- . p r o m o - h e a d e r   { 
-         t e x t - a l i g n :   c e n t e r ; 
-         m a r g i n - b o t t o m :   1 0 p x ; 
- } 
- 
- . p r o m o - h e a d e r   h 2   { 
-         f o n t - s i z e :   1 8 p x ; 
-         l e t t e r - s p a c i n g :   1 p x ; 
- } 
- 
- . p r o m o - s l i d e r - c o n t a i n e r   { 
-         m a x - w i d t h :   5 5 0 p x ; 
-         m a r g i n :   0   a u t o ; 
-         p a d d i n g :   5 p x   1 5 p x ; 
- } 
- 
- . p r o m o - b a n n e r - c a r d   { 
-         w i d t h :   1 0 0 % ; 
-         m i n - w i d t h :   1 0 0 % ; 
-         a s p e c t - r a t i o :   4   /   2 ; 
-         b o r d e r - r a d i u s :   1 6 p x ; 
-         o v e r f l o w :   h i d d e n ; 
-         b o x - s h a d o w :   0   1 0 p x   2 5 p x   r g b a ( 0 , 0 , 0 , 0 . 1 5 ) ; 
-         t r a n s i t i o n :   a l l   0 . 6 s   c u b i c - b e z i e r ( 0 . 2 3 ,   1 ,   0 . 3 2 ,   1 ) ; 
-         c u r s o r :   p o i n t e r ; 
-         p o s i t i o n :   r e l a t i v e ; 
- } 
- 
- . p r o m o - b a n n e r - i m g   { 
-         w i d t h :   1 0 0 % ; 
-         h e i g h t :   1 0 0 % ; 
-         o b j e c t - f i t :   c o v e r ; 
-         t r a n s i t i o n :   t r a n s f o r m   1 . 2 s   e a s e ; 
- } 
- 
- . b a n n e r - i n f o   { 
-         p o s i t i o n :   a b s o l u t e ; 
-         b o t t o m :   0 ; 
-         l e f t :   0 ; 
-         r i g h t :   0 ; 
-         p a d d i n g :   1 5 p x ; 
-         b a c k g r o u n d :   l i n e a r - g r a d i e n t ( t o   t o p ,   r g b a ( 0 , 0 , 0 , 0 . 8 ) ,   t r a n s p a r e n t ) ; 
-         c o l o r :   w h i t e ; 
-         o p a c i t y :   0 ; 
-         t r a n s f o r m :   t r a n s l a t e Y ( 1 0 p x ) ; 
-         t r a n s i t i o n :   a l l   0 . 4 s   e a s e ; 
- } 
- 
- . b a n n e r - i n f o   h 3   { 
-         m a r g i n :   0 ; 
-         f o n t - s i z e :   1 6 p x ; 
- } 
- 
- . b a n n e r - i n f o   p   { 
-         m a r g i n :   3 p x   0   0 ; 
-         f o n t - s i z e :   1 1 p x ; 
-         o p a c i t y :   0 . 8 ; 
- } 
- 
- . p r o m o - b a n n e r - c a r d : h o v e r   { 
-         t r a n s f o r m :   s c a l e ( 1 . 0 2 ) ; 
-         b o x - s h a d o w :   0   2 0 p x   4 0 p x   r g b a ( 0 , 0 , 0 , 0 . 2 ) ; 
- } 
- 
- . p r o m o - b a n n e r - c a r d : h o v e r   . p r o m o - b a n n e r - i m g   { 
-         t r a n s f o r m :   s c a l e ( 1 . 0 8 ) ; 
- } 
- 
- . p r o m o - b a n n e r - c a r d : h o v e r   . b a n n e r - i n f o   { 
-         o p a c i t y :   1 ; 
-         t r a n s f o r m :   t r a n s l a t e Y ( 0 ) ; 
- } 
- 
- / *   M o b i l e   S t y l e s   * / 
- @ m e d i a   ( m a x - w i d t h :   7 6 8 p x )   { 
-         . p r o m o - s l i d e r - c o n t a i n e r   { 
-                 m a x - w i d t h :   3 2 0 p x ;   / *   J a u h   l e b i h   k e c i l   d i   m o b i l e   * / 
-         } 
-         
-         . p r o m o - h e a d e r   h 2   { 
-                 f o n t - s i z e :   1 4 p x ; 
-         } 
-         
-         . b a n n e r - i n f o   { 
-                 p a d d i n g :   1 0 p x ; 
-                 o p a c i t y :   1 ;   / *   S e l a l u   m u n c u l   d i   m o b i l e   k a r e n a   t i d a k   a d a   h o v e r   * / 
-                 t r a n s f o r m :   t r a n s l a t e Y ( 0 ) ; 
-         } 
-         
-         . b a n n e r - i n f o   h 3   { 
-                 f o n t - s i z e :   1 2 p x ; 
-         } 
-         
-         . b a n n e r - i n f o   p   { 
-                 f o n t - s i z e :   9 p x ; 
-         } 
- } 
-  
- 
+.discounted-item-vertical {
+    min-width: 135px;
+    width: 135px;
+    background: #1a1625;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.discounted-item-vertical:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-pink);
+}
+
+.img-out-of-stock {
+    filter: grayscale(1) opacity(0.5);
+}
+
+.text-muted-stock {
+    color: #777 !important;
+}
+
+.product-name-discount {
+    font-size: 0.75rem;
+    margin: 0;
+    color: white;
+    line-height: 1.2;
+    height: 2.4em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-weight: 600;
+}
+
+.btn-oos {
+    background: #ef4444 !important;
+}
+
+.btn-available {
+    background: #0ea5e9 !important;
+}
+
+.product-new-price-discount {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #00c853;
+}
+
+.discount-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.discount-add-btn:not(.out-of-stock):hover {
+    background: #0284c7 !important;
+    transform: scale(1.05);
+}
+
+.main-content:not(.hidden),
+.discounts-container:not(.hidden),
+.food-card:not(.hidden),
+.promo-banner:not(.hidden) {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+.sidebar {
+    min-width: 0;
+    width: 100%;
+}
+
+.food-grid {
+    display: grid !important;
+}
+
+/* Address Popup Styles */
+.address-popup-wrap {
+    text-align: left;
+}
+
+.address-popup-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.address-popup-left,
+.address-popup-right {
+    min-width: 0;
+}
+
+.address-popup-right {
+    display: flex;
+    flex-direction: column;
+}
+
+#addressMapCanvas {
+    height: 340px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+@media (max-width: 920px) {
+    .address-popup-layout {
+        grid-template-columns: 1fr;
+    }
+
+    #addressMapCanvas {
+        height: 260px;
+    }
+}
+
+/* --- Promo Section Responsive --- */
+.promo-section {
+    padding: 30px 0;
+}
+
+.promo-header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.promo-header h2 {
+    font-size: 18px;
+    letter-spacing: 1px;
+}
+
+.promo-slider-container {
+    max-width: 550px;
+    margin: 0 auto;
+    padding: 5px 15px;
+}
+
+.promo-banner-card {
+    width: 100%;
+    min-width: 100%;
+    aspect-ratio: 4 / 2;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    cursor: pointer;
+    position: relative;
+}
+
+.promo-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s ease;
+}
+
+.banner-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    color: white;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease;
+}
+
+.banner-info h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.banner-info p {
+    margin: 3px 0 0;
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.promo-banner-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.promo-banner-card:hover .promo-banner-img {
+    transform: scale(1.08);
+}
+
+.promo-banner-card:hover .banner-info {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .promo-slider-container {
+        max-width: 320px; 
+    }
+
+    .promo-header h2 {
+        font-size: 14px;
+    }
+
+    .banner-info {
+        padding: 10px;
+        opacity: 1; /* Selalu muncul di mobile karena tidak ada hover */
+        transform: translateY(0);
+    }
+
+    .banner-info h3 {
+        font-size: 12px;
+    }
+
+    .banner-info p {
+        font-size: 9px;
+    }
+}
