@@ -726,6 +726,8 @@
                     },
                     body: JSON.stringify({
                         address: safeAddress,
+                        recipient_name: deliveryContactName,
+                        recipient_phone: deliveryPhone,
                         coordinates: hasCoordinates ? {
                             lat: deliveryCoordinates.lat,
                             lng: deliveryCoordinates.lng

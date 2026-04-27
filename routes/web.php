@@ -82,9 +82,12 @@ Route::get('/keuangan', [KeuanganController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('keuangan.index');
 
-Route::get('/kontak', [KontakController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
-    ->name('kontak.index');
+Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/', [KontakController::class, 'index'])->name('kontak.index');
+    Route::post('/', [KontakController::class, 'store'])->name('kontak.store');
+    Route::put('/{id}', [KontakController::class, 'update'])->name('kontak.update');
+    Route::delete('/{id}', [KontakController::class, 'destroy'])->name('kontak.destroy');
+});
 
 Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [BukuKasController::class, 'index'])->name('keuangan.transaksi');

@@ -8,15 +8,18 @@ use App\Models\Outlet;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules;
+use App\Models\Fitur;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('outlet')->latest()->get();
+        $users = User::with(['outlet', 'operator'])->latest()->get();
         $outlets = Outlet::all();
+        $fiturs = Fitur::all();
+        $operators = \App\Models\Operator::whereRaw('LOWER(nama) != ?', ['owner'])->get();
         
-        return view('users.index', compact('users', 'outlets'));
+        return view('users.index', compact('users', 'outlets', 'fiturs', 'operators'));
     }
 
     public function store(Request $request)
@@ -30,14 +33,27 @@ class UserController extends Controller
             'outlet_id' => ['nullable'], 
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'no_hp' => $request->no_hp,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'outlet_id' => $request->outlet_id,
-        ]);
+        $user = new User();
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->no_hp = $request->no_hp;
+        $user->password = Hash::make($request->password);
+        $user->outlet_id = $request->outlet_id;
+        $user->operator_id = $request->role;
+
+        if (Auth::user() && Auth::user()->isOwner()) {
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
+
+        if ($request->has('fitur')) {
+            $operator = \App\Models\Operator::find($request->role);
+            if ($operator) {
+                $operator->fitur = json_encode($request->fitur);
+                $operator->save();
+            }
+        }
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan');
     }
@@ -55,20 +71,26 @@ class UserController extends Controller
             'outlet_id' => ['nullable'],
         ]);
 
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'no_hp' => $request->no_hp,
-            'role' => $request->role,
-            'outlet_id' => $request->outlet_id,
-        ];
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->no_hp = $request->no_hp;
+        $user->outlet_id = $request->outlet_id;
+        $user->operator_id = $request->role;
+
+        if ($request->has('fitur')) {
+            $operator = \App\Models\Operator::find($request->role);
+            if ($operator) {
+                $operator->fitur = json_encode($request->fitur);
+                $operator->save();
+            }
+        }
 
         if ($request->filled('password')) {
             $request->validate(['password' => [Rules\Password::defaults()]]);
-            $data['password'] = Hash::make($request->password);
+            $user->password = Hash::make($request->password);
         }
 
-        $user->update($data);
+        $user->save();
 
         return redirect()->route('users.index')->with('success', 'User berhasil diperbarui');
     }

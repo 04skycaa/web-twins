@@ -177,6 +177,8 @@ class LandingController extends Controller
 
         $validated = $request->validate([
             'address' => ['required', 'string', 'max:1000'],
+            'recipient_name' => ['required', 'string', 'max:255'],
+            'recipient_phone' => ['required', 'string', 'max:20'],
             'coordinates' => ['nullable', 'array'],
             'coordinates.lat' => ['nullable', 'numeric', 'between:-90,90'],
             'coordinates.lng' => ['nullable', 'numeric', 'between:-180,180'],
@@ -192,14 +194,28 @@ class LandingController extends Controller
 
         $deliveryData = [
             'address' => trim($validated['address']),
+            'recipient_name' => $validated['recipient_name'],
+            'recipient_phone' => $validated['recipient_phone'],
             'coordinates' => $coordinates,
             'updated_at' => now()->toIso8601String(),
         ];
 
         session()->put('delivery_address.' . $outlet->uuid, $deliveryData);
 
+        // Otomatis simpan ke Kelola Kontak (Customer)
+        \App\Models\Contact::updateOrCreate(
+            [
+                'store_id' => $outlet->uuid,
+                'no_hp' => $validated['recipient_phone'],
+            ],
+            [
+                'nama' => $validated['recipient_name'],
+                'tipe' => 'customer'
+            ]
+        );
+
         return response()->json([
-            'message' => 'Alamat pengiriman tersimpan aman di sesi server.',
+            'message' => 'Alamat pengiriman dan kontak berhasil disimpan.',
             'delivery' => $deliveryData,
         ]);
     }
