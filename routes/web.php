@@ -5,11 +5,13 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\DashboardController; // Tambahkan ini
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\KontakController;
 use App\Http\Controllers\BukuKasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\AbsensiController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
 
@@ -120,11 +122,18 @@ Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDel
 Route::post('/outlet/{id}/checkout-token', [LandingController::class, 'createCheckoutToken'])
     ->middleware(['auth'])
     ->name('user.checkout.token');
+Route::get('/outlet/{id}/payment-order/{orderId}', [LandingController::class, 'showPaymentOrder'])
+    ->middleware(['auth'])
+    ->name('user.payment-order.show');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');
 Route::post('/submit-general-review', [LandingController::class, 'generalReview'])
     ->middleware(['auth', 'verified'])
     ->name('landing.review.store');
+
+Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('midtrans.webhook');
 
 require __DIR__ . '/auth.php';

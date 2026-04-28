@@ -11,6 +11,7 @@
     <meta name="outlet-address" content="{{ $outlet->alamat ?? 'Alamat outlet belum tersedia' }}">
     <meta name="store-hours" content="{{ $outlet->jam_buka ?? '' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="outlet-uuid" content="{{ $outlet->uuid }}">
     <meta name="delivery-address-store-url"
         content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
     <meta name="checkout-token-url" content="{{ route('user.checkout.token', ['id' => $outlet->uuid]) }}">
@@ -1953,10 +1954,12 @@
         }
 
         function checkout() {
+            /*
             if (isStoreClosedNow()) {
                 showStoreClosedNotification();
                 return;
             }
+                */
 
             if (cart.length === 0) return;
 
@@ -2125,6 +2128,7 @@
                 const finalizeOrder = (paymentStatus, paymentResult) => {
                     historyData.unshift({
                         id: paymentData.order_id || Date.now(),
+                        payment_order_db_id: paymentData.payment_order_id || null,
                         date: new Date().toLocaleString('id-ID'),
                         items: summary.pricedItems.map(i => ({
                             name: i.name,
@@ -2220,7 +2224,7 @@
                 return;
             }
             historyList.innerHTML = historyData.map(trx => `
-                <div class="history-item" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 10px;">
+                <div class="history-item" data-db-id="${trx.payment_order_db_id || ''}" onclick="showTransactionDetail('${trx.payment_order_db_id || ''}','${trx.id}')" style="display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 15px; margin-bottom: 10px; cursor: pointer;">
                     <div>
                         <p style="font-weight: 700;">ID: #${trx.id.toString().slice(-6)}</p>
                         <p style="font-size: 0.75rem; color: var(--sub-text);">${trx.date}</p>
@@ -2235,6 +2239,94 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Show transaction detail modal. Try DB lookup by numeric id first, fall back to minimal data in history.
+        function showTransactionDetail(dbId, legacyId) {
+            const outletUuid = document.querySelector('meta[name="outlet-uuid"]').content || '';
+            if (dbId) {
+                const url = `/outlet/${outletUuid}/payment-order/${encodeURIComponent(dbId)}`;
+                fetch(url, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(data => {
+                        const order = data.order;
+                        const items = order.items || [];
+                        const itemsHtml = items.map(it => `
+                            <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:700;">${escapeHtml(it.product_name || it.product_name)}</div>
+                                    <div style="font-size:0.8rem; color:var(--sub-text);">${it.quantity} × ${formatRupiah(it.unit_price)}</div>
+                                    ${it.discount_amount > 0 ? `<div style="font-size:0.8rem; color:#10b981;">Diskon: ${formatRupiah(it.discount_amount)}</div>` : ''}
+                                </div>
+                                <div style="text-align:right; font-weight:700;">${formatRupiah(it.final_price)}</div>
+                            </div>
+                        `).join('');
+
+                        const meta = order.meta || {};
+                        Swal.fire({
+                            title: `Detail Pesanan #${String(order.id).slice(-6)}`,
+                            html: `
+                                <div style="text-align:left; font-size:0.9rem; line-height:1.45;">
+                                    <p style="margin:0 0 6px 0; font-size:0.75rem; color:var(--sub-text);">Penerima: <strong>${escapeHtml(order.recipient_name)}</strong> | ${escapeHtml(order.recipient_phone)}</p>
+                                    <p style="margin:0 0 12px 0; font-size:0.8rem; color:var(--sub-text);">Alamat: ${escapeHtml(order.delivery_address || '')}</p>
+                                    <div style="border-top:1px solid rgba(148,163,184,0.06); padding-top:10px;">${itemsHtml}</div>
+                                    <div style="margin-top:10px; border-top:1px dashed rgba(148,163,184,0.08); padding-top:10px; font-size:0.9rem;">
+                                        <div style="display:flex; justify-content:space-between;"><span>Subtotal</span><strong>${formatRupiah(order.subtotal_amount)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between;"><span>Diskon Item</span><strong>${formatRupiah(meta.item_discount_total || 0)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between;"><span>Diskon Global</span><strong>${formatRupiah(meta.global_discount_amount || 0)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between;"><span>Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
+                                        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:1.1rem;"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
+                                    </div>
+                                </div>
+                            `,
+                            width: 'min(760px, 96vw)',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    })
+                    .catch(() => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal memuat detail pesanan',
+                            text: 'Silakan coba lagi nanti.',
+                            confirmButtonColor: 'var(--orange-brand)'
+                        });
+                    });
+                return;
+            }
+
+            // Fallback: cari di historyData berdasarkan legacy id
+            const found = historyData.find(h => String(h.id) === String(legacyId));
+            if (!found) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Detail tidak tersedia',
+                    text: 'Detail pesanan tidak ditemukan di riwayat lokal.',
+                    confirmButtonColor: 'var(--orange-brand)'
+                });
+                return;
+            }
+
+            const fallbackHtml = found.items.map(i => `
+                <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,0.08);">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700;">${escapeHtml(i.name)}</div>
+                        <div style="font-size:0.8rem; color:var(--sub-text);">${i.qty} × ${formatRupiah(i.price)}</div>
+                    </div>
+                    <div style="text-align:right; font-weight:700;">${formatRupiah(i.qty * i.price)}</div>
+                </div>
+            `).join('');
+
+            Swal.fire({
+                title: `Detail Pesanan #${String(found.id).slice(-6)}`,
+                html: `<div style="text-align:left;">${fallbackHtml}<div style="margin-top:8px; font-weight:700;">Total: ${formatRupiah(found.total)}</div></div>`,
+                width: 'min(720px, 96vw)',
+                confirmButtonColor: 'var(--orange-brand)'
+            });
         }
 
         // Intersection Observer for Animations
