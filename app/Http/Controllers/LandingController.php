@@ -645,4 +645,43 @@ class LandingController extends Controller
             return null;
         }
     }
+
+    public function getUserHistory($id)
+    {
+        $outlet = Outlet::findOrFail($id);
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['history' => []]);
+        }
+
+        $orders = PaymentOrder::with('items')
+            ->where('outlet_id', (string) $outlet->uuid)
+            ->where('user_id', (string) $user->getAuthIdentifier())
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->order_code,
+                    'payment_order_db_id' => $order->id,
+                    'date' => $order->created_at->format('d/m/Y H:i'),
+                    'items' => $order->items->map(function ($item) {
+                        return [
+                            'name' => $item->product_name,
+                            'qty' => $item->quantity,
+                            'price' => $item->unit_price,
+                            'product_id' => $item->product_id
+                        ];
+                    }),
+                    'total' => (float) $order->total_amount,
+                    'shipping_fee' => (float) $order->shipping_fee,
+                    'recipient_name' => $order->recipient_name,
+                    'recipient_phone' => $order->recipient_phone,
+                    'address' => $order->delivery_address,
+                    'payment_status' => $order->payment_status,
+                ];
+            });
+
+        return response()->json(['history' => $orders]);
+    }
 }

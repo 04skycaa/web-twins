@@ -15,6 +15,7 @@
     <meta name="delivery-address-store-url"
         content="{{ route('user.delivery-address.store', ['id' => $outlet->uuid]) }}">
     <meta name="checkout-token-url" content="{{ route('user.checkout.token', ['id' => $outlet->uuid]) }}">
+    <meta name="user-history-url" content="{{ route('user.history.api', ['id' => $outlet->uuid]) }}">
     <meta name="midtrans-enabled"
         content="{{ config('services.midtrans.client_key') && config('services.midtrans.server_key') ? 'true' : 'false' }}">
     <meta name="persisted-delivery-preference" content="{{ json_encode($deliveryPreference ?? null) }}">
@@ -1928,7 +1929,7 @@
                 const mobHistory = document.getElementById('mob-history');
                 if (mobHistory) mobHistory.classList.add('active');
                 mainContainer.classList.remove('has-sidebar');
-                renderHistory();
+                fetchHistoryFromServer().then(() => renderHistory());
             }
         }
 
@@ -2508,6 +2509,31 @@
         document.addEventListener('DOMContentLoaded', () => {
             renderProducts();
         });
+        async function fetchHistoryFromServer() {
+            const historyUrl = document.querySelector('meta[name="user-history-url"]').content;
+            try {
+                const response = await fetch(historyUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    historyData = data.history || [];
+                    savePersistence();
+                    renderHistory();
+                }
+            } catch (error) {
+                console.error('Failed to fetch history:', error);
+                const savedHistory = localStorage.getItem('twins_history');
+                if (savedHistory) {
+                    try {
+                        historyData = JSON.parse(savedHistory);
+                    } catch (e) {}
+                }
+            }
+        }
     </script>
 </body>
 

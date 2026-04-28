@@ -33,6 +33,16 @@
     --ray-color: rgba(255, 255, 255, 1);
 }
 
+[data-theme="light"] .btn-outline,
+[data-theme="light"] .user-dropdown-menu button,
+[data-theme="light"] .login-prompt-card a {
+    color: #000000 !important;
+}
+
+[data-theme="light"] .user-dropdown-menu button:hover {
+    color: #ffffff !important;
+}
+
 [data-theme="twins"] {
     --bg-color: #1a0505;
     --bg-gradient: linear-gradient(135deg, #1a0505 0%, #4a0404 50%, #800000 100%);
@@ -207,7 +217,7 @@ header {
 .btn-outline {
     background: transparent;
     border: 1px solid var(--accent-pink);
-    color: #ffffff !important;
+    color: var(--text-color) !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     padding: 8px 18px;
     border-radius: 10px;
@@ -3943,7 +3953,7 @@ body.show-content {
 /* Mobile Styles */
 @media (max-width: 768px) {
     .promo-slider-container {
-        max-width: 320px; 
+        max-width: 320px;   
     }
 
     .promo-header h2 {

@@ -31,23 +31,9 @@ class ProductController extends Controller
 
         $query = Product::with(['category', 'stores.store', 'priceLevels']);
 
+        // We show all products, context-based stock is calculated in transform below
         if (!$user->isOwner()) {
             $selectedStoreId = $user->store_id;
-        }
-
-        if ($selectedStoreId && $selectedStoreId !== 'all') {
-            $query->whereHas('stores', function($q) use ($selectedStoreId) {
-                $q->where('store_id', $selectedStoreId)
-                  ->where('status_aktif', true);
-            });
-        } else {
-            // Owner viewing all or default view
-            $query->where(function($q) {
-                $q->whereDoesntHave('stores')
-                  ->orWhereHas('stores', function($sq) {
-                      $sq->where('status_aktif', true);
-                  });
-            });
         }
 
         if ($request->has('category_id') && $request->category_id != '') {
@@ -55,24 +41,28 @@ class ProductController extends Controller
         }
 
         if ($request->has('search') && $request->search != '') {
-            $query->where('nama_produk', 'ilike', '%' . $request->search . '%');
+            $search = strtolower($request->search);
+            $query->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
         }
 
         $products = $query->paginate(10);
 
         // Add current stock for each product based on store context
         $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
+            $storeRelation = null;
             if ($user->isOwner()) {
                 if ($selectedStoreId && $selectedStoreId !== 'all') {
-                    $storeRelation = $product->stores ? $product->stores->where('store_id', $selectedStoreId)->first() : null;
+                    $storeRelation = $product->stores->where('store_id', $selectedStoreId)->first();
                     $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
                 } else {
-                    $product->current_stok = $product->stores ? $product->stores->sum('stok') : 0;
+                    $product->current_stok = $product->stores->sum('stok');
                 }
             } else {
-                $storeRelation = $product->stores ? $product->stores->where('store_id', $user->store_id)->first() : null;
+                $storeRelation = $product->stores->where('store_id', $user->store_id)->first();
                 $product->current_stok = $storeRelation ? $storeRelation->stok : 0;
             }
+            
+            $product->current_kadaluarsa = $storeRelation && $storeRelation->kadaluarsa ? \Carbon\Carbon::parse($storeRelation->kadaluarsa)->format('d F Y') : '-';
             $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
             return $product;
         });
@@ -190,16 +180,54 @@ class ProductController extends Controller
     }
 
     /**
-     * Display the request product list (Tab 3).
+     * Display the stock and expired alerts (Tab 3).
      */
     public function request(Request $request)
     {
         /** @var User $user */
         $user = Auth::user();
-        $query = StockRequest::with(['product.category', 'product.stores', 'store'])->orderBy('uuid', 'desc');
+        
+        $query = ProductStore::with(['product.category', 'store'])
+            ->where(function($q) {
+                $q->where('status_aktif', true)->orWhereNull('status_aktif');
+            });
 
         if (!$user->isOwner()) {
             $query->where('store_id', $user->store_id);
+        } else {
+            $selectedStoreId = $request->get('store_id');
+            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                $query->where('store_id', $selectedStoreId);
+            }
+        }
+
+        // Filter based on type
+        $type = $request->get('type');
+        if ($type == 'stok_habis') {
+            $query->where(function($q) {
+                $q->where('stok', '<=', 10)->orWhereNull('stok');
+            });
+        } elseif ($type == 'expired') {
+            $query->whereNotNull('kadaluarsa')
+                  ->where('kadaluarsa', '<=', now()->addDays(30));
+        } else {
+            // Default: Show both alerts
+            $query->where(function($q) {
+                $q->where(function($sq) {
+                    $sq->where('stok', '<=', 10)->orWhereNull('stok');
+                })
+                ->orWhere(function($sq) {
+                    $sq->whereNotNull('kadaluarsa')
+                       ->where('kadaluarsa', '<=', now()->addDays(30));
+                });
+            });
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $search = strtolower($request->search);
+            $query->whereHas('product', function($q) use ($search) {
+                $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
+            });
         }
 
         if ($request->has('category_id') && $request->category_id != '') {
@@ -207,56 +235,71 @@ class ProductController extends Controller
                 $q->where('kategori_id', $request->category_id);
             });
         }
-
-        if ($request->has('status') && $request->status != '') {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('prioritas') && $request->prioritas != '') {
-            $query->where('prioritas', $request->prioritas);
-        }
-
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->whereHas('product', function($sq) use ($search) {
-                    $sq->where('nama_produk', 'ilike', '%' . $search . '%');
-                })->orWhere('status', 'ilike', '%' . $search . '%');
-            });
-        }
-
-        $summaryQuery = StockRequest::query();
-        if (!$user->isOwner()) {
-            $summaryQuery->where('store_id', $user->store_id);
-        }
-        $pending_requests_count = (clone $summaryQuery)->where('status', 'Pending')->count();
-        $high_priority_count = (clone $summaryQuery)->where('prioritas', 'Tinggi')->count();
-
-        $requests = $query->paginate(10)->withQueryString();
-        $categories = Category::all();
+        $alerts = $query->paginate(10)->withQueryString();
+        
+        // Count for stats
+        $baseStatsQuery = ProductStore::where(function($q) {
+            $q->where('status_aktif', true)->orWhereNull('status_aktif');
+        });
 
         if (!$user->isOwner()) {
-            $products = Product::whereHas('stores', function($q) use ($user) {
-                $q->where('store_id', $user->store_id);
-            })->get();
+            $baseStatsQuery->where('store_id', $user->store_id);
         } else {
-            $products = Product::all();
+            $selectedStoreId = $request->get('store_id');
+            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                $baseStatsQuery->where('store_id', $selectedStoreId);
+            }
         }
+        
+        $stok_habis_count = (clone $baseStatsQuery)->where(function($q) {
+            $q->where('stok', '<=', 10)->orWhereNull('stok');
+        })->count();
+        $expired_count = (clone $baseStatsQuery)->whereNotNull('kadaluarsa')
+                                               ->where('kadaluarsa', '<=', now()->addDays(30))->count();
 
-        $all_products = Product::all();
-        $all_stores = Outlet::all();
+        $categories = Category::all();
+        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
         return view('product.index', [
             'active_tab' => 'request',
-            'requests' => $requests,
-            'products' => $products,
+            'alerts' => $alerts,
             'categories' => $categories,
-            'pending_requests_count' => $pending_requests_count,
-            'high_priority_count' => $high_priority_count,
-            'all_products' => $all_products,
-            'all_stores' => $all_stores,
+            'stores' => $stores,
+            'selected_store_id' => $selectedStoreId ?? 'all',
+            'stok_habis_count' => $stok_habis_count,
+            'expired_count' => $expired_count,
+            'all_products' => Product::all()
         ]);
     }
+
+    public function updateStoreData(Request $request, $uuid)
+    {
+        $productStore = ProductStore::findOrFail($uuid);
+        
+        $request->validate([
+            'stok' => 'required|integer',
+            'kadaluarsa' => 'nullable|date',
+        ]);
+
+        $oldStok = $productStore->stok;
+        $productStore->update([
+            'stok' => $request->stok,
+            'kadaluarsa' => $request->kadaluarsa,
+        ]);
+
+        // Log to stock card if stock changed
+        if ($oldStok != $request->stok) {
+            StockCard::create([
+                'product_id' => $productStore->product_id,
+                'store_id' => $productStore->store_id,
+                'jmlh' => $request->stok - $oldStok,
+                'keterangan' => 'Penyesuaian stok manual di menu Stok & Expired',
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Data stok dan kadaluarsa berhasil diperbarui!');
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -686,7 +729,7 @@ class ProductController extends Controller
     {
         $tab = $request->active_tab ?? 'produk';
         $data = $this->getExportData($request, $tab);
-        $title = "Laporan " . ($tab == 'produk' ? 'Produk' : ($tab == 'opname' ? 'Stock Opname' : 'Request Produk'));
+        $title = "Laporan " . ($tab == 'produk' ? 'Produk' : ($tab == 'opname' ? 'Stock Opname' : 'Stok & Expired'));
 
         $pdf = Pdf::loadView('exports.pdf', [
             'title' => $title,
@@ -741,14 +784,18 @@ class ProductController extends Controller
         }
 
         if ($tab == 'request') {
-            $query = StockRequest::with(['product', 'store'])->orderBy('uuid', 'desc');
+            $query = ProductStore::with(['product.category', 'store'])->where('status_aktif', true);
             if (!$user->isOwner()) $query->where('store_id', $user->store_id);
             if ($request->search) {
                 $query->whereHas('product', function($q) use ($request) {
                     $q->where('nama_produk', 'ilike', '%' . $request->search . '%');
                 });
             }
-            if ($request->status) $query->where('status', $request->status);
+            if ($request->type == 'stok_habis') {
+                $query->where('stok', '<=', 0);
+            } elseif ($request->type == 'expired') {
+                $query->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30));
+            }
             return $query->get();
         }
 
@@ -759,7 +806,7 @@ class ProductController extends Controller
     {
         if ($tab == 'produk') return ['Nama Produk', 'Barcode', 'Kategori', 'Harga Modal', 'Harga Jual', 'Stok'];
         if ($tab == 'opname') return ['No Ref', 'Tanggal', 'User', 'Outlet', 'Total Item', 'Total Selisih', 'Status'];
-        if ($tab == 'request') return ['Produk', 'Pemohon', 'Outlet', 'Jumlah', 'Prioritas', 'Status', 'Tanggal'];
+        if ($tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
         return [];
     }
 
@@ -805,12 +852,10 @@ class ProductController extends Controller
         if ($tab == 'request') {
             return [
                 $item->product->nama_produk ?? '-',
-                $item->pemohon,
                 $item->store->nama ?? '-',
-                $item->jumlah_minta,
-                $item->prioritas,
-                $item->status,
-                '-'
+                $item->stok,
+                $item->kadaluarsa ? \Carbon\Carbon::parse($item->kadaluarsa)->format('d-m-Y') : '-',
+                $item->product->category->nama_category ?? '-'
             ];
         }
         return [];

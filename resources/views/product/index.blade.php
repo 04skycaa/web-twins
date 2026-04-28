@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
 
 
@@ -22,8 +22,8 @@
             <span>Produk Opname</span>
         </a>
         <a href="{{ route('products.request') }}" class="tab-pill {{ $active_tab == 'request' ? 'active' : '' }}">
-            <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
-            <span>Request Produk</span>
+            <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
+            <span>Stok & Expired</span>
         </a>
     </div>
 
@@ -34,7 +34,7 @@
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" name="search" id="searchInput" class="search-input" 
-                        placeholder="{{ $active_tab == 'request' ? 'Cari produk atau status request...' : 'cari data' }}" 
+                        placeholder="{{ $active_tab == 'request' ? 'Cari produk...' : 'cari data' }}" 
                         value="{{ request('search') }}"
                         oninput="debounceSearch()">
                 </div>
@@ -57,31 +57,15 @@
                 </div>
 
                 @if($active_tab == 'request')
-                    {{-- Status Filter Request --}}
+                    {{-- Type Filter for Stock Alerts --}}
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Status: {{ request('status') ?: 'Semua' }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:check-read-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        <button type="button" class="btn-filter" title="Filter: {{ request('type') == 'stok_habis' ? 'Stok Habis' : (request('type') == 'expired' ? 'Mau Expired' : 'Semua Alert') }}" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:bell-bing-bold-duotone" style="font-size: 24px;" class="{{ request('type') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ request()->fullUrlWithQuery(['status' => '']) }}">Semua Status</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Pending']) }}">Pending</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Diproses']) }}">Diproses</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Dikirim']) }}">Dikirim</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Selesai']) }}">Selesai</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Ditolak']) }}">Ditolak</a>
-                        </div>
-                    </div>
-
-                    {{-- Priority Filter --}}
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Prioritas: {{ request('prioritas') ?: 'Semua' }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:flag-bold-duotone" style="font-size: 24px;" class="{{ request('prioritas') ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="{{ request()->fullUrlWithQuery(['prioritas' => '']) }}">Semua Prioritas</a>
-                            <a href="{{ request()->fullUrlWithQuery(['prioritas' => 'Tinggi']) }}">Tinggi</a>
-                            <a href="{{ request()->fullUrlWithQuery(['prioritas' => 'Sedang']) }}">Sedang</a>
-                            <a href="{{ request()->fullUrlWithQuery(['prioritas' => 'Rendah']) }}">Rendah</a>
+                            <a href="{{ request()->fullUrlWithQuery(['type' => '']) }}">Semua Alert</a>
+                            <a href="{{ request()->fullUrlWithQuery(['type' => 'stok_habis']) }}">Stok Habis</a>
+                            <a href="{{ request()->fullUrlWithQuery(['type' => 'expired']) }}">Mau Expired</a>
                         </div>
                     </div>
                 @elseif($active_tab == 'opname')
@@ -98,7 +82,7 @@
                         </div>
                     </div>
                 @endif
-                @if(Auth::user()->isOwner() && $active_tab == 'produk')
+                @if(Auth::user()->isOwner() && ($active_tab == 'produk' || $active_tab == 'request'))
                     <input type="hidden" name="store_id" id="hiddenStoreId" value="{{ request('store_id') }}">
                     <div class="dropdown">
                         <button type="button" class="btn-filter" title="Filter Toko: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Toko' }}" onclick="toggleDropdown(event)">
@@ -164,10 +148,7 @@
                     <span>Tambah Opname</span>
                 </button>
             @elseif($active_tab == 'request')
-                <button class="btn-action" onclick="openAddRequestModal()">
-                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                    <span>Ajukan Request</span>
-                </button>
+                {{-- No add button for alerts tab --}}
             @endif
         </div>
     </div>
@@ -198,7 +179,7 @@
                                 </td>
                                 <td>
                                     <div class="product-info">
-                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url) }}?t={{ time() }}" class="product-img">
+                                        <img src="{{ $product->resolved_image_url }}?t={{ time() }}" class="product-img">
                                         <div>
                                             <div style="font-weight: 600;">{{ $product->nama_produk }}</div>
                                             <div style="font-size: 12px; color: #888;">{{ $product->barcode ?? '-' }}</div>
@@ -219,7 +200,10 @@
                                                             {{ $ps->store->nama ?? '-' }}
                                                         </span>
                                                     </div>
-                                                    <span style="font-weight: 800; color: var(--primary-blue); background: #eff6ff; padding: 2px 6px; border-radius: 6px; min-width: 24px; text-align: center;">{{ $ps->stok }}</span>
+                                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+                                                        <span style="font-weight: 800; color: var(--primary-blue); background: #eff6ff; padding: 2px 6px; border-radius: 6px; min-width: 24px; text-align: center;">{{ $ps->stok }}</span>
+                                                        <span style="font-size: 9px; color: #94a3b8; font-weight: 500;">Exp: {{ $ps->kadaluarsa ? \Carbon\Carbon::parse($ps->kadaluarsa)->format('d/m/y') : '-' }}</span>
+                                                    </div>
                                                 </div>
                                             @endforeach
                                             @if($product->stores->isEmpty())
@@ -230,7 +214,8 @@
                                         <div style="font-weight: 800; color: var(--primary-blue); font-size: 16px;">
                                             {{ $product->current_stok }}
                                         </div>
-                                        <div style="font-size: 10px; color: #888;">Stok di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
+                                        <div style="font-size: 10px; color: #64748b; font-weight: 500;">Exp: {{ $product->current_kadaluarsa }}</div>
+                                        <div style="font-size: 10px; color: #94a3b8;">Di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
                                     @endif
                                 </td>
                                 <td style="white-space: nowrap;">
@@ -358,147 +343,85 @@
                     {{ $opnames->links() }}
                 </div>
             @elseif($active_tab == 'request')
-                @if(Auth::user()->isOwner())
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="background: #E3F2FD; color: #1976D2; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #888;">📦 Request Pending</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $pending_requests_count ?? 0 }}</div>
-                            </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
                         </div>
-                        <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 12px; color: #888;">⚠️ Prioritas Tinggi</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $high_priority_count ?? 0 }}</div>
-                            </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">📦 Stok Menipis</div>
+                            <div style="font-size: 18px; font-weight: 700;">{{ $stok_habis_count ?? 0 }}</div>
                         </div>
                     </div>
-                @endif
+                    <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="background: #FFF3E0; color: #E65100; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">⚠️ Hampir Expired</div>
+                            <div style="font-size: 18px; font-weight: 700;">{{ $expired_count ?? 0 }}</div>
+                        </div>
+                    </div>
+                </div>
 
                 <table class="fitur-table">
                     <thead>
                         <tr>
-                            <th style="width: 30%;">PRODUK</th>
-                            <th>PEMOHON</th>
-                            @if(Auth::user()->isOwner())
-                                <th>OUTLET</th>
-                            @endif
-                            <th>JUMLAH</th>
-                            <th>PRIORITAS</th>
-                            <th>STATUS</th>
+                            <th style="width: 35%;">PRODUK</th>
+                            <th>OUTLET</th>
+                            <th>STOK</th>
+                            <th>KADALUARSA</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($requests as $req)
-                            <tr class="{{ $req->prioritas == 'Tinggi' ? 'row-high-prio' : '' }} {{ $req->status == 'Dikirim' && !Auth::user()->isOwner() ? 'row-shipped' : '' }}">
+                        @forelse($alerts as $alert)
+                            <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        @if($req->prioritas == 'Tinggi')
-                                            <iconify-icon icon="solar:danger-bold" style="color: #C62828; font-size: 18px;" title="Prioritas Tinggi"></iconify-icon>
-                                        @endif
-                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl(optional($req->product)->image_url) }}" 
+                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl(optional($alert->product)->image_url) }}" 
                                              style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;">
                                         <div>
-                                            <div style="font-weight: 600;">{{ optional($req->product)->nama_produk ?? 'Produk Terhapus' }}</div>
-                                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 2px;">
-                                                <span style="font-size: 11px; color: #888;">{{ optional($req->product)->barcode ?? '-' }}</span>
-                                                @php
-                                                    $localStock = 0;
-                                                    if ($req->product && $req->product->stores) {
-                                                        $storeRel = $req->product->stores->where('store_id', $req->store_id)->first();
-                                                        $localStock = $storeRel ? $storeRel->stok : 0;
-                                                    }
-                                                @endphp
-                                                <span style="background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;">
-                                                    Stok: {{ $localStock }}
-                                                </span>
-                                            </div>
+                                            <div style="font-weight: 600;">{{ optional($alert->product)->nama_produk ?? 'Produk Terhapus' }}</div>
+                                            <div style="font-size: 11px; color: #888;">{{ optional($alert->product)->barcode ?? '-' }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td><strong>{{ $req->pemohon }}</strong></td>
-                                @if(Auth::user()->isOwner())
-                                    <td style="font-size: 12px; color: #666;">{{ $req->store->nama ?? '-' }}</td>
-                                @endif
-                                <td style="font-weight: 700; font-size: 15px;">{{ $req->jumlah_minta }}</td>
+                                <td>{{ $alert->store->nama ?? '-' }}</td>
                                 <td>
-                                    @php $prioClass = 'prio-' . strtolower($req->prioritas); @endphp
-                                    <span class="status-badge {{ $prioClass }}">
-                                        @if($req->prioritas == 'Tinggi')
-                                            <iconify-icon icon="solar:danger-bold" style="margin-right: 4px; font-size: 14px; vertical-align: middle;"></iconify-icon>
-                                        @endif
-                                        {{ $req->prioritas }}
+                                    <span class="status-badge {{ $alert->stok <= 10 ? 'stat-ditolak' : 'stat-pending' }}">
+                                        {{ $alert->stok }}
                                     </span>
                                 </td>
                                 <td>
-                                    @php
-                                        $lowStatus = strtolower($req->status);
-                                        $icon = [
-                                            'pending' => 'solar:clock-circle-bold-duotone',
-                                            'diproses' => 'solar:settings-bold-duotone',
-                                            'dikirim' => 'solar:routing-2-bold-duotone',
-                                            'selesai' => 'solar:check-circle-bold-duotone',
-                                            'ditolak' => 'solar:close-circle-bold-duotone'
-                                        ][$lowStatus] ?? 'solar:clock-circle-bold-duotone';
-                                    @endphp
-                                    <span class="status-badge stat-{{ $lowStatus }}" style="gap: 4px;">
-                                        <iconify-icon icon="{{ $icon }}" style="font-size: 14px;"></iconify-icon>
-                                        {{ $req->status }}
-                                    </span>
+                                    @if($alert->kadaluarsa)
+                                        @php 
+                                            $isExpired = \Carbon\Carbon::parse($alert->kadaluarsa)->isPast();
+                                            $isNear = \Carbon\Carbon::parse($alert->kadaluarsa)->diffInDays(now()) <= 30;
+                                        @endphp
+                                        <span class="status-badge {{ $isExpired ? 'stat-ditolak' : ($isNear ? 'prio-tinggi' : 'stat-selesai') }}">
+                                            {{ \Carbon\Carbon::parse($alert->kadaluarsa)->format('d F Y') }}
+                                        </span>
+                                    @else
+                                        <span style="color: #999;">-</span>
+                                    @endif
                                 </td>
                                 <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        @if(Auth::user()->isOwner())
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($req)' onclick="openRequestDetailModal(JSON.parse(this.dataset.item))" title="Lihat Detail">
-                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                            </button>
-                                            @if($req->status == 'Pending')
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #2E7D32; border-color: #E8F5E9;" onclick="confirmRequestAction('{{ $req->uuid }}', 'approve')" title="Setujui">
-                                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                                                </button>
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #FFEBEE;" onclick="confirmRequestAction('{{ $req->uuid }}', 'reject')" title="Tolak">
-                                                    <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @elseif($req->status == 'Diproses')
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #1976D2; border-color: #E3F2FD;" onclick="confirmShipRequest('{{ $req->uuid }}')" title="Kirim Barang">
-                                                    <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @endif
-                                        @else
-                                            @if($req->status == 'Pending')
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" data-item='@json($req)' onclick="openEditRequestModal(JSON.parse(this.dataset.item))" title="Ubah Request">
-                                                    <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
-                                                </button>
-                                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #FFEBEE;" onclick="confirmCancelRequest('{{ $req->uuid }}')" title="Batalkan Request">
-                                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                                </button>
-                                            @elseif($req->status == 'Dikirim')
-                                                <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 12px; background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9;" onclick="confirmReceiveRequest('{{ $req->uuid }}')">
-                                                    📦 Terima Barang
-                                                </button>
-                                            @else
-                                                <span style="font-size: 10px; color: #999; font-style: italic;">No Action Required</span>
-                                            @endif
-                                        @endif
-                                    </div>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
+                                        onclick="openEditAlertModal('{{ $alert->uuid }}', '{{ $alert->stok }}', '{{ $alert->kadaluarsa }}', '{{ optional($alert->product)->nama_produk }}')" title="Update Data">
+                                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                    </button>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ Auth::user()->isOwner() ? 7 : 6 }}" style="text-align: center; padding: 40px; color: #999;">Belum ada data request produk.</td>
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk yang perlu perhatian saat ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
                 <div class="pagination-container">
-                    {{ $requests->links() }}
+                    {{ $alerts->links() }}
                 </div>
             @endif
         </div>
@@ -518,7 +441,7 @@
             @csrf
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
                 <div class="form-group" style="text-align: center;">
-                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
+                    <label for="productImageInput" style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
                     <input type="file" id="productImageInput" accept="image/*" style="display: none;">
                     <input type="hidden" name="cropped_image" id="croppedImageResult">
                     <div id="imagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('productImageInput').click()">
@@ -528,11 +451,11 @@
                     <small style="display: block; color: #888; font-size: 11px; margin-top: 6px;">Klik kotak di atas untuk memilih gambar</small>
                 </div>
             <div class="form-group">
-                <label>Nama Produk</label>
+                <label for="addNamaProduk">Nama Produk</label>
                 <input type="text" name="nama_produk" id="addNamaProduk" class="form-control" required placeholder="Contoh: Coca Cola">
             </div>
             <div class="form-group">
-                <label>Barcode</label>
+                <label for="addBarcode">Barcode</label>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" name="barcode" id="addBarcode" class="form-control" placeholder="Scan atau ketik barcode..." style="flex: 1;">
                     <button type="button" class="btn-action" onclick="openScannerModal()" style="padding: 0 16px; background: #333;">
@@ -541,8 +464,8 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Kategori</label>
-                <select name="kategori_id" class="form-control" required>
+                <label for="addKategoriId">Kategori</label>
+                <select name="kategori_id" id="addKategoriId" class="form-control" required>
                     @foreach($categories ?? [] as $category)
                         <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
                     @endforeach
@@ -550,18 +473,18 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
-                    <label>Harga Modal</label>
-                    <input type="number" name="harga_modal" class="form-control" value="0">
+                    <label for="addHargaModal">Harga Modal</label>
+                    <input type="number" name="harga_modal" id="addHargaModal" class="form-control" value="0">
                 </div>
                 <div class="form-group">
-                    <label>Harga Jual (Retail)</label>
-                    <input type="number" name="harga_jual" class="form-control" value="0">
+                    <label for="addHargaJual">Harga Jual (Retail)</label>
+                    <input type="number" name="harga_jual" id="addHargaJual" class="form-control" value="0">
                 </div>
             </div>
 
             <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <label style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</label>
+                    <span style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</span>
                     <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('addPriceLevelBody')">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
                     </button>
@@ -662,7 +585,7 @@
             @method('PUT')
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
                 <div class="form-group" style="text-align: center;">
-                    <label style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
+                    <label for="editProductImageInput" style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
                     <input type="file" id="editProductImageInput" accept="image/*" style="display: none;">
                     <input type="hidden" name="cropped_image" id="editCroppedImageResult">
                     <div id="editImagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('editProductImageInput').click()">
@@ -670,15 +593,15 @@
                     </div>
                 </div>
             <div class="form-group">
-                <label>Nama Produk</label>
+                <label for="edit_nama">Nama Produk</label>
                 <input type="text" name="nama_produk" id="edit_nama" class="form-control" required>
             </div>
             <div class="form-group">
-                <label>Barcode</label>
+                <label for="edit_barcode">Barcode</label>
                 <input type="text" name="barcode" id="edit_barcode" class="form-control">
             </div>
             <div class="form-group">
-                <label>Kategori</label>
+                <label for="edit_kategori">Kategori</label>
                 <select name="kategori_id" id="edit_kategori" class="form-control" required>
                     @foreach($categories ?? [] as $category)
                         <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
@@ -687,18 +610,18 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div class="form-group">
-                    <label>Harga Modal</label>
+                    <label for="edit_modal">Harga Modal</label>
                     <input type="number" name="harga_modal" id="edit_modal" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Harga Jual (Retail)</label>
+                    <label for="edit_jual">Harga Jual (Retail)</label>
                     <input type="number" name="harga_jual" id="edit_jual" class="form-control">
                 </div>
             </div>
 
             <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <label style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</label>
+                    <span style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</span>
                     <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('editPriceLevelBody')">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
                     </button>
@@ -754,9 +677,9 @@
             @csrf
             <div id="opnameMethod"></div>
             <div class="form-group">
-                <label>Pilih Toko / Outlet</label>
+                <label for="opname_store_id">Pilih Toko / Outlet</label>
                 @if(Auth::user()->isOwner())
-                    <select name="store_id" class="form-control" required>
+                    <select name="store_id" id="opname_store_id" class="form-control" required>
                         <option value="">-- Pilih Toko --</option>
                         @foreach($stores ?? [] as $store)
                             <option value="{{ $store->uuid }}">{{ $store->nama }}</option>
@@ -764,7 +687,7 @@
                     </select>
                 @else
                     <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
-                    <select class="form-control" disabled style="background-color: #f8f9fa;">
+                    <select class="form-control" id="opname_store_id_display" disabled style="background-color: #f8f9fa;">
                         @foreach($stores ?? [] as $store)
                             <option value="{{ $store->uuid }}" selected>{{ $store->nama }}</option>
                         @endforeach
@@ -847,101 +770,35 @@
     </div>
 </div>
 
-<!-- Tambah Request Modal -->
-<div id="addRequestModal" class="modal-overlay">
-    <div class="modal-content">
+<!-- Modal Update Stok & Expired -->
+<div id="editAlertModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
         <div class="modal-header">
-            <h3>Ajukan Request Produk</h3>
-            <button class="close-modal" onclick="closeModal('addRequestModal')">&times;</button>
+            <h3>Update Stok & Expired</h3>
+            <button class="close-modal" onclick="closeModal('editAlertModal')">&times;</button>
         </div>
-        <form action="{{ route('products.request.store') }}" method="POST" id="requestForm">
+        <form id="editAlertForm" method="POST">
             @csrf
-            <div id="requestMethod"></div>
-
-            @if(Auth::user()->isOwner())
+            @method('PUT')
+            <div class="modal-body">
                 <div class="form-group">
-                    <label>Pilih Cabang (Khusus Owner)</label>
-                    <select name="store_id" class="form-control" required style="border-color: #007BFF; background-color: #f8fbff;">
-                        <option value="">-- Pilih Cabang --</option>
-                        @foreach($all_stores ?? [] as $store)
-                            <option value="{{ $store->uuid }}">{{ $store->nama }} ({{ $store->lokasi }})</option>
-                        @endforeach
-                    </select>
+                    <label for="alert_product_name">Nama Produk</label>
+                    <input type="text" id="alert_product_name" class="form-control" readonly style="background: #f1f5f9;">
                 </div>
-            @endif
-
-            <div class="form-group">
-                <label>Pilih Produk dari Semua Katalog</label>
-                <select name="product_id" class="form-control" required>
-                    <option value="">-- Cari atau Pilih Produk --</option>
-                    @foreach($all_products ?? [] as $product)
-                        <option value="{{ $product->uuid }}">{{ $product->nama_produk }} ({{ $product->barcode ?? 'Tanpa Barcode' }})</option>
-                    @endforeach
-                </select>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div class="form-group">
-                    <label>Jumlah Permintaan</label>
-                    <input type="number" name="jumlah_minta" class="form-control" value="1" min="1" required>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="alert_stok">Stok Saat Ini</label>
+                    <input type="number" name="stok" id="alert_stok" class="form-control" required>
                 </div>
-                <div class="form-group">
-                    <label>Prioritas</label>
-                    <select name="prioritas" class="form-control" required>
-                        <option value="Sedang">Sedang</option>
-                        <option value="Tinggi" style="color: #D9534F;">Tinggi</option>
-                        <option value="Rendah">Rendah</option>
-                    </select>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="alert_kadaluarsa">Tanggal Kadaluarsa</label>
+                    <input type="date" name="kadaluarsa" id="alert_kadaluarsa" class="form-control">
                 </div>
             </div>
-            <div class="form-group">
-                <label>Alasan Permintaan</label>
-                <textarea name="alasan_permintaan" class="form-control" rows="3" placeholder="Contoh: Stok menipis, persiapan promo, dll."></textarea>
-            </div>
-            
             <div style="margin-top: 24px; display: flex; gap: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('addRequestModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan Request</button>
+                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('editAlertModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Update</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- Detail Request Modal -->
-<div id="requestDetailModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h3>Rincian Request Produk</h3>
-            <button class="close-modal" onclick="closeModal('requestDetailModal')">&times;</button>
-        </div>
-        <div style="margin-bottom: 20px; display: grid; gap: 15px; font-size: 14px;">
-            <div style="display: grid; grid-template-columns: 100px 1fr; gap: 10px;">
-                <div style="color: #888;">Produk:</div>
-                <div id="det_req_produk" style="font-weight: 600;">-</div>
-                
-                <div style="color: #888;">Pemohon:</div>
-                <div id="det_req_pemohon" style="font-weight: 600;">-</div>
-
-                <div style="color: #888;">Outlet:</div>
-                <div id="det_req_outlet" style="font-weight: 600;">-</div>
-
-                <div style="color: #888;">Jumlah:</div>
-                <div id="det_req_jumlah" style="font-weight: 600; font-size: 16px;">-</div>
-
-                <div style="color: #888;">Prioritas:</div>
-                <div id="det_req_prioritas">-</div>
-
-                <div style="color: #888;">Status:</div>
-                <div id="det_req_status">-</div>
-            </div>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
-            <div>
-                <div style="color: #888; margin-bottom: 4px;">Alasan Permintaan:</div>
-                <div id="det_req_alasan" style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-style: italic; line-height: 1.5;">-</div>
-            </div>
-        </div>
-        <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
-            <button type="button" class="btn-action" style="padding: 10px 24px;" onclick="closeModal('requestDetailModal')">Tutup</button>
-        </div>
     </div>
 </div>
 
@@ -1658,73 +1515,6 @@
         });
     }
 
-    function openAddRequestModal() {
-        const form = document.getElementById('requestForm');
-        form.action = "{{ route('products.request.store') }}";
-        document.getElementById('requestMethod').innerHTML = '';
-        form.reset();
-        openModal('addRequestModal');
-    }
-
-    function openEditRequestModal(req) {
-        const form = document.getElementById('requestForm');
-        form.action = `/products/request/${req.uuid}`;
-        document.getElementById('requestMethod').innerHTML = '@method("PUT")';
-        
-        form.querySelector('[name="product_id"]').value = req.product_id;
-        form.querySelector('[name="jumlah_minta"]').value = req.jumlah_minta;
-        form.querySelector('[name="prioritas"]').value = req.prioritas;
-        form.querySelector('[name="alasan_permintaan"]').value = req.alasan_permintaan || '';
-        
-        if (form.querySelector('[name="store_id"]')) {
-            form.querySelector('[name="store_id"]').value = req.store_id;
-        }
-        
-        openModal('addRequestModal');
-    }
-
-    function openRequestDetailModal(req) {
-        document.getElementById('det_req_produk').innerText = req.product ? req.product.nama_produk : 'Produk Terhapus';
-        document.getElementById('det_req_pemohon').innerText = req.pemohon;
-        document.getElementById('det_req_outlet').innerText = req.store ? req.store.nama : '-';
-        document.getElementById('det_req_jumlah').innerText = req.jumlah_minta;
-        document.getElementById('det_req_prioritas').innerText = req.prioritas;
-        document.getElementById('det_req_status').innerText = req.status;
-        document.getElementById('det_req_alasan').innerText = req.alasan_permintaan || '(Tidak ada alasan)';
-        
-        openModal('requestDetailModal');
-    }
-
-    function confirmCancelRequest(uuid) {
-        Swal.fire({
-            title: 'Batalkan Request?',
-            text: "Yakin ingin membatalkan permintaan stok ini?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#D9534F',
-            confirmButtonText: 'Ya, Batalkan!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                submitHiddenForm(`/products/request/${uuid}`, 'DELETE');
-            }
-        });
-    }
-
-    function confirmRequestAction(uuid, action) {
-        const isApprove = action === 'approve';
-        Swal.fire({
-            title: isApprove ? 'Setujui Request?' : 'Tolak Request?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: isApprove ? '#2E7D32' : '#D9534F',
-            confirmButtonText: isApprove ? 'Ya, Setujui' : 'Ya, Tolak'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                submitHiddenForm(`/products/request/${uuid}/${action}`, 'POST');
-            }
-        });
-    }
-
     function confirmShipRequest(uuid) {
         Swal.fire({
             title: 'Kirim Barang?',
@@ -1770,6 +1560,18 @@
         });
     }
 
+    function openEditAlertModal(uuid, stok, kadaluarsa, productName) {
+        const modal = document.getElementById('editAlertModal');
+        const form = document.getElementById('editAlertForm');
+        
+        document.getElementById('alert_product_name').value = productName;
+        document.getElementById('alert_stok').value = stok;
+        document.getElementById('alert_kadaluarsa').value = kadaluarsa || '';
+        
+        form.action = `/products/store-data/${uuid}`;
+        modal.style.display = 'flex';
+    }
+
     function submitHiddenForm(url, method) {
         const form = document.createElement('form');
         form.method = 'POST';
@@ -1791,6 +1593,7 @@
 
     window.onclick = e => { 
         if (e.target.className === 'modal-overlay') e.target.style.display = 'none'; 
+        if (e.target.className === 'modal') e.target.style.display = 'none'; 
 
         // Close dropdowns if clicking outside any dropdown
         if (!e.target.closest('.dropdown')) {

@@ -32,6 +32,7 @@
                         <th>PELANGGAN</th>
                         <th>ITEM</th>
                         <th>TOTAL HARGA</th>
+                        <th>DISKON</th>
                         <th>STATUS</th>
                         <th>AKSI</th>
                     </tr>
@@ -45,6 +46,7 @@
                         <td>{{ $trx['pelanggan'] }}</td>
                         <td>{{ $trx['qty'] }} pcs</td>
                         <td class="price-text">{{ $trx['total'] }}</td>
+                        <td style="color: #ef4444; font-weight: 600;">{{ $trx['diskon'] }}</td>
                         <td>
                             <span class="status-badge {{ strtolower($trx['status']) == 'selesai' ? 'status-active' : 'status-proses' }}">
                                 {{ $trx['status'] }}

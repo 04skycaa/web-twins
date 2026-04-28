@@ -48,6 +48,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     Route::post('/products/request/{id}/reject', [ProductController::class, 'rejectRequest'])->name('products.request.reject');
     Route::post('/products/request/{id}/ship', [ProductController::class, 'shipRequest'])->name('products.request.ship');
     Route::post('/products/request/{id}/receive', [ProductController::class, 'receiveRequest'])->name('products.request.receive');
+    Route::put('/products/store-data/{uuid}', [ProductController::class, 'updateStoreData'])->name('products.store_data.update');
 
     // Export Routes
     Route::get('/products/export/excel', [ProductController::class, 'exportExcel'])->name('products.export.excel');
@@ -122,9 +123,12 @@ Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDel
 Route::post('/outlet/{id}/checkout-token', [LandingController::class, 'createCheckoutToken'])
     ->middleware(['auth'])
     ->name('user.checkout.token');
-Route::get('/outlet/{id}/payment-order/{orderId}', [LandingController::class, 'showPaymentOrder'])
-    ->middleware(['auth'])
-    ->name('user.payment-order.show');
+    Route::get('/outlet/{id}/payment-order/{orderId}', [LandingController::class, 'showPaymentOrder'])
+        ->middleware(['auth'])
+        ->name('user.payment-order.show');
+    Route::get('/outlet/{id}/history', [LandingController::class, 'getUserHistory'])
+        ->middleware(['auth'])
+        ->name('user.history.api');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');

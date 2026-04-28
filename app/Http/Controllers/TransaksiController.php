@@ -18,12 +18,23 @@ class TransaksiController extends Controller
 
     public function riwayat()
     {
-        // Dummy data for riwayat (can be refactored later to use real transactions)
-        $data = [
-            ['id' => '#TW-00123', 'tanggal' => '24 Okt 2023 14:30', 'kasir' => 'Budi (Admin)', 'pelanggan' => 'Umum / Non-Member', 'qty' => 3, 'total' => 'Rp 60.000', 'status' => 'Selesai'],
-            ['id' => '#TW-00124', 'tanggal' => '24 Okt 2023 15:10', 'kasir' => 'Siti (Kasir)', 'pelanggan' => 'Member (Andi)', 'qty' => 5, 'total' => 'Rp 120.000', 'status' => 'Selesai'],
-            ['id' => '#TW-00125', 'tanggal' => '24 Okt 2023 16:05', 'kasir' => 'Budi (Admin)', 'pelanggan' => 'GrabFood', 'qty' => 2, 'total' => 'Rp 45.000', 'status' => 'Proses'],
-        ];
+        $data = \App\Models\PaymentOrder::orderBy('created_at', 'desc')->get()->map(function($trx) {
+            $meta = $trx->meta ?: [];
+            $itemDiscount = (int)($meta['item_discount_total'] ?? 0);
+            $globalDiscount = (int)($meta['global_discount_amount'] ?? 0);
+            $totalDiscount = $itemDiscount + $globalDiscount;
+
+            return [
+                'id' => $trx->order_code,
+                'tanggal' => $trx->created_at->format('d M Y H:i'),
+                'kasir' => 'Online Checkout',
+                'pelanggan' => $trx->recipient_name,
+                'qty' => $trx->items_count,
+                'total' => 'Rp ' . number_format($trx->total_amount, 0, ',', '.'),
+                'diskon' => $totalDiscount > 0 ? '-Rp ' . number_format($totalDiscount, 0, ',', '.') : '-',
+                'status' => ucfirst($trx->payment_status)
+            ];
+        });
 
         return view('transaksi.riwayat', compact('data'));
     }
