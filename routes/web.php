@@ -70,6 +70,7 @@ Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(f
     Route::post('/', [OutletController::class, 'store'])->name('outlet.store');
     Route::put('/{id}', [OutletController::class, 'update'])->name('outlet.update');
     Route::delete('/{id}', [OutletController::class, 'destroy'])->name('outlet.destroy');
+    Route::post('/{id}/toggle-status', [OutletController::class, 'toggleStatus'])->name('outlet.toggle-status');
 });
 
 Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {

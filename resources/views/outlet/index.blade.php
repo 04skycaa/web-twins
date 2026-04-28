@@ -1,67 +1,76 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="page-wrapper">
-    @if(session('success'))
-    <div class="alert alert-success">
-        {{ session('success') }}
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="alert alert-danger">
-        {{ session('error') }}
-    </div>
-    @endif
-    @if($errors->any())
-    <div class="alert alert-danger">
-        <ul style="margin:0; padding-left:15px;">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
+<link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 
-    <div class="content-card">
-        <div class="card-header">
-            <h4>Operasional Outlet</h4>
-            <div class="header-actions">
-                <button class="btn-primary-small" onclick="openModal('addModal')">
-                    <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
-                    Tambah Outlet
-                </button>
+<div class="fitur-container">
+    {{-- ACTION BAR --}}
+    <div class="action-bar">
+        <div class="left-actions-group">
+            <div class="search-wrapper">
+                <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." onkeyup="filterOutlets()">
             </div>
         </div>
+        <div class="right-actions">
+            <button class="btn-action" onclick="openModal('addModal')">
+                <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
+                <span>Tambah Outlet</span>
+            </button>
+        </div>
+    </div>
 
-        <div class="table-responsive">
-            <table class="custom-table">
+    {{-- MAIN BOX --}}
+    <div class="main-content-box">
+        <div class="table-container">
+            <table class="fitur-table">
                 <thead>
                     <tr>
-                        <th>Nama Outlet</th>
-                        <th>Alamat</th>
-                        <th>No. Telp</th>
-                        <th>Total User</th>
-                        <th>Aksi</th>
+                        <th>NAMA OUTLET</th>
+                        <th>ALAMAT</th>
+                        <th>NO. TELP</th>
+                        <th>JAM BUKA</th>
+                        <th>RATING</th>
+                        <th>STATUS</th>
+                        <th>AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($outlets as $out)
-                    <tr>
-                        <td class="text-bold text-success">{{ $out->nama }}</td>
-                        <td>{{ $out->alamat ?: '-' }}</td>
-                        <td>{{ $out->notelp ?: '-' }}</td>
+                    @forelse($outlets as $outlet)
+                    <tr class="outlet-row" data-name="{{ strtolower($outlet->nama) }}" data-address="{{ strtolower($outlet->alamat) }}">
+                        <td style="font-weight: 600;">{{ $outlet->nama }}</td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $outlet->alamat ?? '-' }}</td>
+                        <td>{{ $outlet->notelp ?? '-' }}</td>
                         <td>
-                            @php
-                                $count = \App\Models\User::where('store_id', $out->uuid)->count();
-                            @endphp
-                            <span class="badge" style="background: #e0f2fe; color: #0284c7;">{{ $count }} User</span>
+                            <span class="status-badge" style="background: rgba(14, 165, 233, 0.1); color: var(--accent-purple); border: 1px solid rgba(14, 165, 233, 0.2);">
+                                {{ $outlet->jam_buka ?? '08.00 - 23.59' }}
+                            </span>
                         </td>
                         <td>
-                            <div class="action-buttons-table">
-                                <button class="btn-icon" onclick="openEditModal({{ json_encode($out) }})">
-                                    <iconify-icon icon="solar:pen-2-bold-duotone"></iconify-icon>
+                            <div style="display: flex; align-items: center; gap: 4px; color: #f59e0b; font-weight: 700;">
+                                <iconify-icon icon="solar:star-bold"></iconify-icon>
+                                {{ number_format($outlet->rating, 1) }}
+                            </div>
+                        </td>
+                        <td>
+                            @if($outlet->status_aktif)
+                                <span class="status-badge status-active">Aktif</span>
+                            @else
+                                <span class="status-badge status-inactive">Nonaktif</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($outlet)' onclick="openViewModal(JSON.parse(this.dataset.item))" title="View Detail">
+                                    <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                 </button>
-                                <button class="btn-icon text-danger" onclick="openDeleteModal('{{ $out->uuid }}')">
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($outlet)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit Outlet">
+                                    <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                </button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: {{ $outlet->status_aktif ? '#ef4444' : '#10b981' }};" onclick="toggleStatus('{{ $outlet->uuid }}', {{ $outlet->status_aktif ? 'true' : 'false' }})" title="{{ $outlet->status_aktif ? 'Nonaktifkan Outlet' : 'Aktifkan Outlet' }}">
+                                    <iconify-icon icon="{{ $outlet->status_aktif ? 'solar:shop-2-bold-duotone' : 'solar:shop-bold-duotone' }}"></iconify-icon>
+                                </button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="openDeleteModal('{{ $outlet->uuid }}')" title="Hapus Outlet">
                                     <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                 </button>
                             </div>
@@ -69,7 +78,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">Belum ada data outlet</td>
+                        <td colspan="7" style="text-align: center; color: #999; padding: 40px;">Belum ada data outlet</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -80,30 +89,34 @@
 
 <!-- Modal Tambah -->
 <div id="addModal" class="modal-overlay">
-    <div class="modal-content modal-sm">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
-            <h5>Tambah Outlet Baru</h5>
-            <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
+            <h3>Tambah Outlet Baru</h3>
+            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
         <form action="{{ route('outlet.store') }}" method="POST">
             @csrf
-            <div class="modal-body">
+            <div class="modal-body" style="padding: 20px;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
-                    <input type="text" name="nama_outlet" class="form-control" required placeholder="Contoh: SweetBake Cab. A">
+                    <input type="text" name="nama" class="form-control" placeholder="Contoh: TWINS Bakery Pusat" required>
                 </div>
                 <div class="form-group">
-                    <label>No. Telp</label>
-                    <input type="text" name="notelp" class="form-control" placeholder="Contoh: 08123456789">
+                    <label>Alamat Lengkap</label>
+                    <textarea name="alamat" class="form-control" rows="3" placeholder="Jl. Raya No. 123..."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Alamat (Opsional)</label>
-                    <textarea name="alamat" class="form-control" rows="3" placeholder="Alamat lengkap..."></textarea>
+                    <label>Nomor Telepon</label>
+                    <input type="text" name="notelp" class="form-control" placeholder="08123456789">
+                </div>
+                <div class="form-group">
+                    <label>Jam Operasional</label>
+                    <input type="text" name="jam_buka" class="form-control" placeholder="Contoh: 08.00 - 22.00" value="08.00 - 23.59">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeModal('addModal')">Batal</button>
-                <button type="submit" class="btn-primary">Simpan</button>
+            <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('addModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan</button>
             </div>
         </form>
     </div>
@@ -111,129 +124,183 @@
 
 <!-- Modal Edit -->
 <div id="editModal" class="modal-overlay">
-    <div class="modal-content modal-sm">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
-            <h5>Edit Outlet</h5>
-            <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
+            <h3>Edit Outlet</h3>
+            <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
         <form id="editForm" method="POST">
             @csrf
             @method('PUT')
-            <div class="modal-body">
+            <div class="modal-body" style="padding: 20px;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
-                    <input type="text" name="nama_outlet" id="edit_nama_outlet" class="form-control" required>
+                    <input type="text" name="nama" id="edit_nama" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>No. Telp</label>
+                    <label>Alamat Lengkap</label>
+                    <textarea name="alamat" id="edit_alamat" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Nomor Telepon</label>
                     <input type="text" name="notelp" id="edit_notelp" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Alamat (Opsional)</label>
-                    <textarea name="alamat" id="edit_alamat" class="form-control" rows="3"></textarea>
+                    <label>Jam Operasional</label>
+                    <input type="text" name="jam_buka" id="edit_jam_buka" class="form-control">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeModal('editModal')">Batal</button>
-                <button type="submit" class="btn-primary">Simpan Perubahan</button>
+            <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('editModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan Perubahan</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal Delete -->
-<div id="deleteModal" class="modal-overlay">
-    <div class="modal-content modal-sm">
+<!-- Modal View -->
+<div id="viewModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
-            <h5>Hapus Outlet</h5>
-            <button class="close-btn" onclick="closeModal('deleteModal')">&times;</button>
+            <h3>Detail Outlet</h3>
+            <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div class="modal-body text-center">
-            <iconify-icon icon="solar:danger-triangle-bold-duotone" style="font-size: 50px; color: #ef4444; margin-bottom: 10px;"></iconify-icon>
-            <p>Apakah Anda yakin ingin menghapus outlet ini?</p>
+        <div class="modal-body" style="padding: 20px;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">NAMA OUTLET</label>
+                <div id="view_nama" style="font-weight: 600; color: #334155; font-size: 16px;">-</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">ALAMAT</label>
+                <div id="view_alamat" style="font-weight: 500; color: #334155;">-</div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 12px; color: #888;">NO. TELP</label>
+                    <div id="view_notelp" style="font-weight: 600; color: #334155;">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #888;">JAM OPERASIONAL</label>
+                    <div id="view_jam_buka" style="font-weight: 600; color: #334155;">-</div>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label style="font-size: 12px; color: #888;">RATING</label>
+                    <div id="view_rating" style="font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 4px;">
+                        <iconify-icon icon="solar:star-bold"></iconify-icon>
+                        <span>-</span>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #888;">STATUS</label>
+                    <div id="view_status">-</div>
+                </div>
+            </div>
         </div>
-        <div class="modal-footer" style="justify-content: center;">
-            <button type="button" class="btn-secondary" onclick="closeModal('deleteModal')">Batal</button>
-            <form id="deleteForm" method="POST" style="display:inline;">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn-danger">Ya, Hapus</button>
-            </form>
+        <div style="padding: 0 20px 20px; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn-action" style="padding: 10px 24px;" onclick="closeModal('viewModal')">Tutup</button>
         </div>
     </div>
 </div>
 
 <script>
-    function openModal(id) { document.getElementById(id).classList.add('show'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function openViewModal(data) {
+        document.getElementById('view_nama').innerText = data.nama;
+        document.getElementById('view_alamat').innerText = data.alamat || '-';
+        document.getElementById('view_notelp').innerText = data.notelp || '-';
+        document.getElementById('view_jam_buka').innerText = data.jam_buka || '-';
+        document.getElementById('view_rating').querySelector('span').innerText = parseFloat(data.rating || 0).toFixed(1);
+        
+        const statusEl = document.getElementById('view_status');
+        if (data.status_aktif) {
+            statusEl.innerHTML = '<span class="status-badge status-active">Aktif</span>';
+        } else {
+            statusEl.innerHTML = '<span class="status-badge status-inactive">Nonaktif</span>';
+        }
+        
+        openModal('viewModal');
+    }
 
     function openEditModal(data) {
         document.getElementById('editForm').action = `/outlet/${data.uuid}`;
-        document.getElementById('edit_nama_outlet').value = data.nama;
-        document.getElementById('edit_notelp').value = data.notelp || '';
+        document.getElementById('edit_nama').value = data.nama;
         document.getElementById('edit_alamat').value = data.alamat || '';
+        document.getElementById('edit_notelp').value = data.notelp || '';
+        document.getElementById('edit_jam_buka').value = data.jam_buka || '';
         openModal('editModal');
     }
 
-    function openDeleteModal(uuid) {
-        document.getElementById('deleteForm').action = `/outlet/${uuid}`;
-        openModal('deleteModal');
+    function toggleStatus(id, isAktif) {
+        const action = isAktif ? 'Nonaktifkan' : 'Aktifkan';
+        Swal.fire({
+            title: `${action} Outlet?`,
+            text: `Apakah Anda yakin ingin ${action.toLowerCase()} outlet ini?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: isAktif ? '#ef4444' : '#10b981',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, ${action}!`,
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/outlet/${id}/toggle-status`;
+                form.innerHTML = `@csrf`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
+
+    function openDeleteModal(id) {
+        Swal.fire({
+            title: 'Hapus Outlet?',
+            text: "Data outlet dan relasi terkait akan dihapus secara permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/outlet/${id}`;
+                form.innerHTML = `@csrf @method('DELETE')`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    function filterOutlets() {
+        const search = document.getElementById('outletSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.outlet-row');
+        
+        rows.forEach(row => {
+            const name = row.dataset.name;
+            const address = row.dataset.address;
+            if (name.includes(search) || address.includes(search)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 3000, showConfirmButton: false });
+        @endif
+        @if(session('error'))
+            Swal.fire({ icon: 'error', title: 'Oops...', text: "{{ session('error') }}" });
+        @endif
+    });
 </script>
-
-<style>
-    /* Mengikuti Style yang Sama */
-    .page-wrapper { padding: 20px; display: flex; flex-direction: column; }
-    .content-card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .card-header h4 { margin: 0; font-size: 16px; color: #1e293b; }
-    
-    .table-responsive { overflow-x: auto; }
-    .custom-table { width: 100%; border-collapse: collapse; }
-    .custom-table th { text-align: left; padding: 12px 15px; background: #f8fafc; color: #64748b; font-size: 13px; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
-    .custom-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
-    
-    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-    .text-bold { font-weight: 600; }
-    .text-success { color: #0284c7; }
-
-    .action-buttons-table { display: flex; gap: 8px; }
-    .btn-icon, .btn-primary-small, .btn-secondary, .btn-primary, .btn-danger {
-        border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px; font-weight: 600;
-    }
-    .btn-icon { background: #f1f5f9; width: 32px; height: 32px; color: #64748b; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; }
-    .btn-icon:hover { background: #e0f2fe; color: #0ea5e9; }
-    .btn-icon.text-danger:hover { background: #fee2e2; color: #ef4444; }
-    
-    .btn-primary-small { display: flex; align-items: center; gap: 6px; background: #0ea5e9; color: white; padding: 8px 16px; }
-    .btn-primary-small:hover { opacity: 0.9; }
-
-    .btn-secondary { background: #f1f5f9; color: #475569; padding: 8px 16px; }
-    .btn-primary { background: #0ea5e9; color: white; padding: 8px 16px; }
-    .btn-danger { background: #ef4444; color: white; padding: 8px 16px; }
-    .btn-secondary:hover { background: #e2e8f0; }
-    .btn-primary:hover, .btn-danger:hover { opacity: 0.9; }
-
-    /* Modal */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
-    .modal-overlay.show { opacity: 1; visibility: visible; }
-    .modal-content { background: #fff; width: 100%; max-width: 500px; border-radius: 12px; transform: translateY(-20px); transition: all 0.3s ease; }
-    .modal-overlay.show .modal-content { transform: translateY(0); }
-    .modal-sm { max-width: 400px; }
-    
-    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #f1f5f9; }
-    .modal-header h5 { margin: 0; font-size: 16px; color: #1e293b; }
-    .close-btn { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; }
-    .modal-body { padding: 20px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #475569; font-weight: 500; }
-    .form-control { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; transition: border 0.3s; box-sizing: border-box; resize: vertical; }
-    .form-control:focus { border-color: #0ea5e9; }
-    .modal-footer { padding: 15px 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; }
-    
-    .alert { padding: 12px 15px; border-radius: 12px; margin-bottom: 20px; font-size: 13px; }
-    .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-    .text-center { text-align: center; }
-</style>
 @endsection
