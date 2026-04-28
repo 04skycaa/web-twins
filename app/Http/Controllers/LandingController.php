@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\ProductStore;
 use App\Models\Category;
 use App\Models\StoreReview;
+use App\Models\PaymentOrder;
+use App\Models\PaymentOrderItem;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -239,6 +241,8 @@ class LandingController extends Controller
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:1'],
+            'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:1'],
+            'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $serverKey = (string) config('services.midtrans.server_key', '');
@@ -253,7 +257,9 @@ class LandingController extends Controller
         $distanceKm = (float) ($validated['distance_km'] ?? 0);
 
         $itemDetails = [];
+        $dbItems = [];
         $subTotal = 0;
+        $itemDiscountTotal = 0;
 
         foreach ($validated['items'] as $idx => $item) {
             $qty = (int) $item['qty'];
@@ -261,9 +267,32 @@ class LandingController extends Controller
             $lineSubtotal = $unitPrice * $qty;
             $subTotal += $lineSubtotal;
 
+            $itemDiscountPercent = (float) ($item['discount_percent'] ?? 0);
+            $itemDiscountAmount = (int) ceil((float) ($item['discount_amount'] ?? 0));
+
+            if ($itemDiscountAmount <= 0 && $itemDiscountPercent > 0) {
+                $itemDiscountAmount = (int) round($lineSubtotal * $itemDiscountPercent);
+            }
+
+            if ($itemDiscountAmount > $lineSubtotal) {
+                $itemDiscountAmount = $lineSubtotal;
+            }
+
+            if ($itemDiscountPercent <= 0 && $itemDiscountAmount > 0 && $lineSubtotal > 0) {
+                $itemDiscountPercent = round($itemDiscountAmount / $lineSubtotal, 4);
+            }
+
+            $finalPrice = max(0, $lineSubtotal - $itemDiscountAmount);
+            $itemDiscountTotal += $itemDiscountAmount;
+
             $safeName = Str::limit(trim((string) $item['name']), 50, '');
             if ($safeName === '') {
                 $safeName = 'Item ' . ($idx + 1);
+            }
+
+            $safeDbName = Str::limit(trim((string) $item['name']), 255, '');
+            if ($safeDbName === '') {
+                $safeDbName = $safeName;
             }
 
             $itemDetails[] = [
@@ -271,6 +300,27 @@ class LandingController extends Controller
                 'price' => $unitPrice,
                 'quantity' => $qty,
                 'name' => $safeName,
+            ];
+
+            if ($itemDiscountAmount > 0) {
+                $itemDetails[] = [
+                    'id' => trim((string) ($item['product_id'] ?? 'ITEM-' . ($idx + 1))) . '-DISC',
+                    'price' => -$itemDiscountAmount,
+                    'quantity' => 1,
+                    'name' => 'Diskon ' . $safeName,
+                ];
+            }
+
+            $dbItems[] = [
+                'product_id' => isset($item['product_id']) ? trim((string) $item['product_id']) : null,
+                'product_name' => $safeDbName,
+                'unit_price' => $unitPrice,
+                'quantity' => $qty,
+                'subtotal' => $lineSubtotal,
+                'discount_percent' => $itemDiscountPercent,
+                'discount_amount' => $itemDiscountAmount,
+                'final_price' => $finalPrice,
+                'meta' => null,
             ];
         }
 
@@ -280,8 +330,18 @@ class LandingController extends Controller
             ], 422);
         }
 
-        $discountedSubtotal = (int) round($subTotal * (1 - $discountPercent));
-        $grossAmount = max(1, $discountedSubtotal + $shippingFee);
+        $subtotalAfterItemDiscount = max(0, $subTotal - $itemDiscountTotal);
+        $globalDiscountAmount = (int) round($subtotalAfterItemDiscount * $discountPercent);
+        $grossAmount = max(1, $subtotalAfterItemDiscount - $globalDiscountAmount + $shippingFee);
+
+        if ($globalDiscountAmount > 0) {
+            $itemDetails[] = [
+                'id' => 'DISKON',
+                'price' => -$globalDiscountAmount,
+                'quantity' => 1,
+                'name' => 'Diskon Promo',
+            ];
+        }
 
         if ($shippingFee > 0) {
             $itemDetails[] = [
@@ -297,6 +357,61 @@ class LandingController extends Controller
         $snapUrl = $isProduction
             ? 'https://app.midtrans.com/snap/v1/transactions'
             : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+        $user = Auth::user();
+        $hasCoordinates = isset($validated['coordinates']['lat'], $validated['coordinates']['lng']);
+
+        $paymentOrder = DB::transaction(function () use ($orderId, $outlet, $user, $validated, $hasCoordinates, $distanceKm, $dbItems, $subTotal, $discountPercent, $shippingFee, $grossAmount, $itemDiscountTotal, $globalDiscountAmount, $subtotalAfterItemDiscount) {
+            $order = PaymentOrder::create([
+                'order_code' => $orderId,
+                'midtrans_order_id' => $orderId,
+                'user_id' => $user ? (string) $user->getAuthIdentifier() : null,
+                'outlet_id' => (string) $outlet->uuid,
+                'recipient_name' => $validated['recipient_name'],
+                'recipient_phone' => $validated['recipient_phone'],
+                'delivery_address' => $validated['address'],
+                'delivery_lat' => $hasCoordinates ? (float) $validated['coordinates']['lat'] : null,
+                'delivery_lng' => $hasCoordinates ? (float) $validated['coordinates']['lng'] : null,
+                'delivery_distance_km' => $distanceKm,
+                'items_count' => count($dbItems),
+                'subtotal_amount' => $subTotal,
+                'discount_percent' => $discountPercent,
+                'shipping_fee' => $shippingFee,
+                'total_amount' => $grossAmount,
+                'payment_status' => 'pending',
+                'meta' => [
+                    'source' => 'landing_checkout',
+                    'item_discount_total' => $itemDiscountTotal,
+                    'global_discount_amount' => $globalDiscountAmount,
+                    'subtotal_after_item_discount' => $subtotalAfterItemDiscount,
+                ],
+            ]);
+
+            if (!empty($dbItems)) {
+                $rows = [];
+                $now = now();
+                foreach ($dbItems as $item) {
+                    $rows[] = [
+                        'payment_order_id' => $order->id,
+                        'product_id' => $item['product_id'] ?: null,
+                        'product_name' => $item['product_name'],
+                        'unit_price' => $item['unit_price'],
+                        'quantity' => $item['quantity'],
+                        'subtotal' => $item['subtotal'],
+                        'discount_percent' => $item['discount_percent'],
+                        'discount_amount' => $item['discount_amount'],
+                        'final_price' => $item['final_price'],
+                        'meta' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                PaymentOrderItem::insert($rows);
+            }
+
+            return $order;
+        });
 
         $payload = [
             'transaction_details' => [
@@ -318,6 +433,14 @@ class LandingController extends Controller
             'custom_field2' => 'Jarak: ' . number_format($distanceKm, 2, '.', '') . ' km',
         ];
 
+        $callbackBaseUrl = trim((string) config('services.midtrans.callback_base_url', ''));
+        if ($callbackBaseUrl !== '') {
+            $payload['callbacks'] = [
+                'finish' => rtrim($callbackBaseUrl, '/') . '/outlet/' . $outlet->uuid,
+                'error' => rtrim($callbackBaseUrl, '/') . '/outlet/' . $outlet->uuid,
+            ];
+        }
+
         try {
             $response = Http::withBasicAuth($serverKey, '')
                 ->acceptJson()
@@ -332,10 +455,24 @@ class LandingController extends Controller
 
             $json = $response->json();
             if (!is_array($json) || empty($json['token'])) {
+                $paymentOrder->update([
+                    'payment_status' => 'failed',
+                    'midtrans_response' => [
+                        'message' => 'Token Midtrans tidak ditemukan.',
+                        'raw' => $json,
+                    ],
+                ]);
+
                 return response()->json([
                     'message' => 'Token Midtrans tidak ditemukan pada response.',
                 ], 422);
             }
+
+            $paymentOrder->update([
+                'snap_token' => (string) $json['token'],
+                'midtrans_response' => $json,
+                'payment_status' => 'pending',
+            ]);
 
             return response()->json([
                 'message' => 'Snap token berhasil dibuat.',
@@ -343,8 +480,16 @@ class LandingController extends Controller
                 'snap_token' => $json['token'],
                 'redirect_url' => $json['redirect_url'] ?? null,
                 'gross_amount' => $grossAmount,
+                'payment_order_id' => $paymentOrder->id,
             ]);
         } catch (\Throwable $e) {
+            $paymentOrder->update([
+                'payment_status' => 'failed',
+                'midtrans_response' => [
+                    'message' => $e->getMessage(),
+                ],
+            ]);
+
             return response()->json([
                 'message' => 'Terjadi kesalahan saat menghubungi Midtrans.',
                 'error' => $e->getMessage(),
@@ -382,6 +527,30 @@ class LandingController extends Controller
         });
 
         return back()->with('success', 'Terima kasih atas ulasan Anda!');
+    }
+
+    // Return payment order JSON for frontend detail modal
+    public function showPaymentOrder(Request $request, $id, $orderId)
+    {
+        $outlet = Outlet::findOrFail($id);
+
+        $query = PaymentOrder::with('items')->where('outlet_id', (string) $outlet->uuid);
+
+        if (is_numeric($orderId)) {
+            $query->where('id', (int) $orderId);
+        } else {
+            $query->where(function ($q) use ($orderId) {
+                $q->where('order_code', $orderId)
+                    ->orWhere('midtrans_order_id', $orderId);
+            });
+        }
+
+        $order = $query->first();
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        return response()->json(['order' => $order]);
     }
 
     public function generalReview(Request $request)
