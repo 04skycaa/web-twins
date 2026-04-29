@@ -5,14 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Contact;
 
+use Illuminate\Support\Facades\Schema;
+
 class KontakController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pelanggan = Contact::where('tipe', 'customer')->latest('uuid')->get();
-        $supplier = Contact::where('tipe', 'supplier')->latest('uuid')->get();
+        $sort = $request->get('sort', 'terbaru');
+        $order = $sort == 'terlama' ? 'asc' : 'desc';
+        
+        // Cek apakah kolom created_at ada, jika tidak gunakan uuid sebagai fallback
+        $sortBy = Schema::hasColumn('contacts', 'created_at') ? 'created_at' : 'uuid';
 
-        return view('kontak.index', compact('pelanggan', 'supplier'));
+        $pelanggan = Contact::where('tipe', 'customer')->orderBy($sortBy, $order)->get();
+        $supplier = Contact::where('tipe', 'supplier')->orderBy($sortBy, $order)->get();
+
+        return view('kontak.index', compact('pelanggan', 'supplier', 'sort'));
     }
 
     public function store(Request $request)

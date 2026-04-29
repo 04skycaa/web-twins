@@ -13,7 +13,7 @@ class Contact extends Model
     protected $primaryKey = 'uuid';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'store_id', 'nama', 'tipe', 'no_hp'

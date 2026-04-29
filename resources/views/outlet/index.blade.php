@@ -3,88 +3,344 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 
+<style>
+    .fitur-layout-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-top: 20px;
+    }
+    .main-content-box {
+        flex: 1;
+        min-width: 0;
+        margin-top: 0 !important;
+    }
+    .detail-side-panel {
+        width: 280px;
+        background: white;
+        border: 2px solid var(--border-blue);
+        border-radius: 20px;
+        padding: 16px;
+        position: sticky;
+        top: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .detail-header {
+        margin-bottom: 12px;
+    }
+    .detail-title {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .detail-store-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--primary-blue);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .info-item {
+        display: flex;
+        gap: 12px;
+    }
+    .info-icon {
+        width: 28px;
+        height: 28px;
+        background: #f0f9ff;
+        color: var(--primary-blue);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    .info-content label {
+        display: block;
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+    .info-content span {
+        font-size: 13px;
+        font-weight: 500;
+        color: #334155;
+        line-height: 1.4;
+    }
+    .perf-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 12px;
+    }
+    .perf-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .perf-card {
+        padding: 8px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #f1f5f9;
+    }
+    .perf-card label {
+        display: block;
+        font-size: 9px;
+        color: #64748b;
+        margin-bottom: 2px;
+    }
+    .perf-card .value {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #334155;
+    }
+    .perf-card .sub-value {
+        font-size: 9px;
+        color: #10b981;
+        font-weight: 600;
+        margin-top: 2px;
+        display: block;
+    }
+    .outlet-row {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .outlet-row:hover {
+        background-color: #f0f9ff !important;
+    }
+    .outlet-row.active-row {
+        background-color: #e0f2fe !important;
+    }
+    .detail-side-panel .status-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+</style>
+
 <div class="fitur-container">
-    {{-- ACTION BAR --}}
-    <div class="action-bar">
-        <div class="left-actions-group">
-            <div class="search-wrapper">
-                <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." onkeyup="filterOutlets()">
-            </div>
-        </div>
-        <div class="right-actions">
-            <button class="btn-action" onclick="openModal('addModal')">
-                <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
-                <span>Tambah Outlet</span>
-            </button>
-        </div>
+    {{-- PILL TABS --}}
+    <div class="tab-navigation">
+        <a href="{{ route('outlet.index') }}" class="tab-pill {{ $active_tab == 'data' ? 'active' : '' }}">
+            <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
+            <span>Data Outlet</span>
+        </a>
+        <a href="{{ route('outlet.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}">
+            <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
+            <span>Transfer Stok</span>
+        </a>
+        <a href="{{ route('outlet.riwayat') }}" class="tab-pill {{ $active_tab == 'riwayat' ? 'active' : '' }}">
+            <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+            <span>Riwayat Distribusi</span>
+        </a>
+        <a href="{{ route('outlet.kinerja') }}" class="tab-pill {{ $active_tab == 'kinerja' ? 'active' : '' }}">
+            <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+            <span>Kinerja Outlet</span>
+        </a>
     </div>
 
-    {{-- MAIN BOX --}}
-    <div class="main-content-box">
-        <div class="table-container">
-            <table class="fitur-table">
-                <thead>
-                    <tr>
-                        <th>NAMA OUTLET</th>
-                        <th>ALAMAT</th>
-                        <th>NO. TELP</th>
-                        <th>JAM BUKA</th>
-                        <th>RATING</th>
-                        <th>STATUS</th>
-                        <th>AKSI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($outlets as $outlet)
-                    <tr class="outlet-row" data-name="{{ strtolower($outlet->nama) }}" data-address="{{ strtolower($outlet->alamat) }}">
-                        <td style="font-weight: 600;">{{ $outlet->nama }}</td>
-                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $outlet->alamat ?? '-' }}</td>
-                        <td>{{ $outlet->notelp ?? '-' }}</td>
-                        <td>
-                            <span class="status-badge" style="background: rgba(14, 165, 233, 0.1); color: var(--accent-purple); border: 1px solid rgba(14, 165, 233, 0.2);">
-                                {{ $outlet->jam_buka ?? '08.00 - 23.59' }}
-                            </span>
-                        </td>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 4px; color: #f59e0b; font-weight: 700;">
-                                <iconify-icon icon="solar:star-bold"></iconify-icon>
-                                {{ number_format($outlet->rating, 1) }}
-                            </div>
-                        </td>
-                        <td>
-                            @if($outlet->status_aktif)
-                                <span class="status-badge status-active">Aktif</span>
-                            @else
-                                <span class="status-badge status-inactive">Nonaktif</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($outlet)' onclick="openViewModal(JSON.parse(this.dataset.item))" title="View Detail">
-                                    <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                </button>
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($outlet)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit Outlet">
-                                    <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                </button>
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: {{ $outlet->status_aktif ? '#ef4444' : '#10b981' }};" onclick="toggleStatus('{{ $outlet->uuid }}', {{ $outlet->status_aktif ? 'true' : 'false' }})" title="{{ $outlet->status_aktif ? 'Nonaktifkan Outlet' : 'Aktifkan Outlet' }}">
-                                    <iconify-icon icon="{{ $outlet->status_aktif ? 'solar:shop-2-bold-duotone' : 'solar:shop-bold-duotone' }}"></iconify-icon>
-                                </button>
-                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="openDeleteModal('{{ $outlet->uuid }}')" title="Hapus Outlet">
-                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: #999; padding: 40px;">Belum ada data outlet</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    @if($active_tab == 'data')
+        {{-- ACTION BAR --}}
+        <div class="action-bar">
+            <div class="left-actions-group">
+                <div class="search-wrapper">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." onkeyup="filterOutlets()">
+                </div>
+            </div>
+            <div class="right-actions">
+                <button class="btn-action" onclick="openModal('addModal')">
+                    <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
+                    <span>Tambah Outlet</span>
+                </button>
+            </div>
         </div>
-    </div>
+
+        <div class="fitur-layout-wrapper">
+            {{-- MAIN BOX --}}
+            <div class="main-content-box">
+                <div class="table-container">
+                    <table class="fitur-table">
+                        <thead>
+                            <tr>
+                                <th>NAMA OUTLET</th>
+                                <th>ALAMAT</th>
+                                <th>NO. TELP</th>
+                                <th>JAM BUKA</th>
+                                <th>STATUS</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($outlets as $index => $outlet)
+                            <tr class="outlet-row {{ $index === 0 ? 'active-row' : '' }}" 
+                                data-name="{{ strtolower($outlet->nama) }}" 
+                                data-address="{{ strtolower($outlet->alamat) }}"
+                                data-outlet='@json($outlet)'>
+                                <td style="font-weight: 600;">{{ $outlet->nama }}</td>
+                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $outlet->alamat ?? '-' }}</td>
+                                <td>{{ $outlet->notelp ?? '-' }}</td>
+                                <td>
+                                    <span class="status-badge" style="background: rgba(14, 165, 233, 0.1); color: var(--accent-purple); border: 1px solid rgba(14, 165, 233, 0.2);">
+                                        {{ $outlet->jam_buka ?? '08.00 - 23.59' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($outlet->status_aktif)
+                                        <span class="status-badge status-active">Aktif</span>
+                                    @else
+                                        <span class="status-badge status-inactive">Nonaktif</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px;">
+                                        <button type="button" class="btn-filter" style="width: 28px; height: 28px; border-radius: 6px; color: var(--primary-blue);" data-item='@json($outlet)' onclick="event.stopPropagation(); openEditModal(JSON.parse(this.dataset.item))" title="Edit Outlet">
+                                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                        </button>
+                                        <button type="button" class="btn-filter" style="width: 28px; height: 28px; border-radius: 6px; color: {{ $outlet->status_aktif ? '#ef4444' : '#10b981' }};" onclick="event.stopPropagation(); toggleStatus('{{ $outlet->uuid }}', {{ $outlet->status_aktif ? 'true' : 'false' }})" title="{{ $outlet->status_aktif ? 'Nonaktifkan Outlet' : 'Aktifkan Outlet' }}">
+                                            <iconify-icon icon="{{ $outlet->status_aktif ? 'solar:shop-2-bold-duotone' : 'solar:shop-bold-duotone' }}"></iconify-icon>
+                                        </button>
+                                        <button type="button" class="btn-filter" style="width: 28px; height: 28px; border-radius: 6px; color: #D9534F; border-color: #ffcccc;" onclick="event.stopPropagation(); openDeleteModal('{{ $outlet->uuid }}')" title="Hapus Outlet">
+                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999; padding: 40px;">Belum ada data outlet</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- DETAIL SIDE PANEL --}}
+            <div class="detail-side-panel">
+                <div id="sideDetailContent">
+                    @if(count($outlets ?? []) > 0)
+                        @php $first = $outlets[0]; @endphp
+                        <div class="detail-header">
+                            <div class="detail-title">Detail Outlet</div>
+                            <div class="detail-store-name">
+                                <span id="side_nama">{{ $first->nama }}</span>
+                                <span id="side_status">
+                                    @if($first->status_aktif)
+                                        <span class="status-badge status-active">Aktif</span>
+                                    @else
+                                        <span class="status-badge status-inactive">Nonaktif</span>
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-list">
+                            <div class="info-item">
+                                <div class="info-icon"><iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon></div>
+                                <div class="info-content">
+                                    <label>Alamat</label>
+                                    <span id="side_alamat">{{ $first->alamat ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-icon"><iconify-icon icon="solar:user-bold-duotone"></iconify-icon></div>
+                                <div class="info-content">
+                                    <label>Kepala Toko</label>
+                                    <span id="side_kepala">{{ $first->users->where('role', 'kepala_toko')->first()->username ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-icon"><iconify-icon icon="solar:phone-bold-duotone"></iconify-icon></div>
+                                <div class="info-content">
+                                    <label>No. Telepon</label>
+                                    <span id="side_notelp">{{ $first->notelp ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-icon"><iconify-icon icon="solar:letter-bold-duotone"></iconify-icon></div>
+                                <div class="info-content">
+                                    <label>Email</label>
+                                    <span id="side_email">{{ $first->users->where('role', 'kepala_toko')->first()->email ?? '-' }}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-icon"><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
+                                <div class="info-content">
+                                    <label>Jam Operasional</label>
+                                    <span id="side_jam">{{ $first->jam_buka ?? '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="perf-title">Ringkasan Performa Outlet</div>
+                        <div class="perf-grid">
+                            <div class="perf-card">
+                                <label>Omzet</label>
+                                <span class="value" id="side_omzet">Rp {{ number_format(rand(10000000, 30000000), 0, ',', '.') }}</span>
+                                <span class="sub-value">▲ 12.5% dari bulan lalu</span>
+                            </div>
+                            <div class="perf-card">
+                                <label>Transaksi</label>
+                                <span class="value" id="side_transaksi">{{ number_format(rand(500, 1500), 0, ',', '.') }}</span>
+                                <span class="sub-value">▲ 8.3% dari bulan lalu</span>
+                            </div>
+                            <div class="perf-card">
+                                <label>Produk Terlaris</label>
+                                <span class="value" id="side_terlaris">Roti Tawar</span>
+                                <span style="font-size: 10px; color: #64748b;" id="side_terlaris_qty">320 pcs terjual</span>
+                            </div>
+                            <div class="perf-card">
+                                <label>Stok Menipis</label>
+                                <span class="value" id="side_stok">12 Produk</span>
+                                <a href="{{ route('products.request') }}" style="font-size: 10px; color: var(--primary-blue); text-decoration: none; font-weight: 600;">Lihat Detail ></a>
+                            </div>
+                        </div>
+                    @else
+                        <div style="text-align: center; color: #94a3b8; padding: 40px 0;">
+                            <iconify-icon icon="solar:shop-linear" style="font-size: 48px; margin-bottom: 12px;"></iconify-icon>
+                            <p>Pilih outlet untuk melihat detail</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- PLACEHOLDER FOR OTHER TABS --}}
+        <div class="main-content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+            <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
+                @if($active_tab == 'transfer')
+                    <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
+                @elseif($active_tab == 'riwayat')
+                    <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+                @elseif($active_tab == 'kinerja')
+                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+                @endif
+            </div>
+            <h3 style="color: #334155; margin-bottom: 8px;">Fitur {{ ucfirst($active_tab) }} Sedang Disiapkan</h3>
+            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk {{ $active_tab == 'transfer' ? 'distribusi barang antar outlet' : ($active_tab == 'riwayat' ? 'histori transfer stok' : 'analisis omzet dan performa cabang') }} akan segera hadir.</p>
+            <a href="{{ route('outlet.index') }}" class="btn-action" style="margin-top: 24px;">
+                <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon>
+                Kembali ke Data Outlet
+            </a>
+        </div>
+    @endif
+</div>
 </div>
 
 <!-- Modal Tambah -->
@@ -208,6 +464,50 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+    function selectOutlet(row, data) {
+        // Remove active class from all rows
+        document.querySelectorAll('.outlet-row').forEach(r => r.classList.remove('active-row'));
+        // Add active class to clicked row
+        row.classList.add('active-row');
+
+        // Update side panel info
+        document.getElementById('side_nama').innerText = data.nama;
+        document.getElementById('side_alamat').innerText = data.alamat || '-';
+        document.getElementById('side_notelp').innerText = data.notelp || '-';
+        document.getElementById('side_jam').innerText = data.jam_buka || '-';
+        
+        // Update status badge in side panel
+        const statusEl = document.getElementById('side_status');
+        if (data.status_aktif) {
+            statusEl.innerHTML = '<span class="status-badge status-active">Aktif</span>';
+        } else {
+            statusEl.innerHTML = '<span class="status-badge status-inactive">Nonaktif</span>';
+        }
+
+        // Get kepala toko from data
+        const sideKepala = document.getElementById('side_kepala');
+        const sideEmail = document.getElementById('side_email');
+        
+        if (data.users && data.users.length > 0) {
+            const head = data.users.find(u => u.operator && (u.operator.nama === 'Kepala Toko' || u.operator.nama === 'kepala_toko')) || data.users[0];
+            sideKepala.innerText = head.username || head.name || '-';
+            sideEmail.innerText = head.email || '-';
+        } else {
+            sideKepala.innerText = '-';
+            sideEmail.innerText = '-';
+        }
+
+        // Mock updates for performance (Since this is layout focus)
+        // In real app, you might fetch this via AJAX
+        const mockOmzet = Math.floor(Math.random() * (30000000 - 10000000 + 1) + 10000000);
+        const mockTransaksi = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
+        const mockStok = Math.floor(Math.random() * 20);
+        
+        document.getElementById('side_omzet').innerText = 'Rp ' + mockOmzet.toLocaleString('id-ID');
+        document.getElementById('side_transaksi').innerText = mockTransaksi.toLocaleString('id-ID');
+        document.getElementById('side_stok').innerText = mockStok + ' Produk';
+    }
+
     function openViewModal(data) {
         document.getElementById('view_nama').innerText = data.nama;
         document.getElementById('view_alamat').innerText = data.alamat || '-';
@@ -295,6 +595,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Handle Row Clicks
+        document.querySelectorAll('.outlet-row').forEach(row => {
+            row.addEventListener('click', function() {
+                const data = JSON.parse(this.dataset.outlet);
+                selectOutlet(this, data);
+            });
+        });
+
         @if(session('success'))
             Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 3000, showConfirmButton: false });
         @endif

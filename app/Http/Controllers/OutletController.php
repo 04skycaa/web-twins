@@ -9,8 +9,32 @@ class OutletController extends Controller
 {
     public function index()
     {
-        $outlets = Outlet::all();
-        return view('outlet.index', compact('outlets'));
+        $outlets = Outlet::with(['users.operator'])->get();
+        return view('outlet.index', [
+            'outlets' => $outlets,
+            'active_tab' => 'data'
+        ]);
+    }
+
+    public function transfer()
+    {
+        return view('outlet.index', [
+            'active_tab' => 'transfer'
+        ]);
+    }
+
+    public function riwayat()
+    {
+        return view('outlet.index', [
+            'active_tab' => 'riwayat'
+        ]);
+    }
+
+    public function kinerja()
+    {
+        return view('outlet.index', [
+            'active_tab' => 'kinerja'
+        ]);
     }
 
     public function store(Request $request)

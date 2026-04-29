@@ -35,6 +35,16 @@
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                 <input type="text" id="searchInput" class="search-input" placeholder="Cari nama atau nomor HP...">
             </div>
+            <div class="dropdown">
+                <button type="button" class="btn-filter" style="width: auto; padding: 0 16px; border-radius: 50px; background: white; border: 2px solid var(--border-blue); color: var(--primary-blue); gap: 8px;" onclick="toggleDropdown(event)">
+                    <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                    <span style="font-weight: 600; font-size: 14px;">Urutkan: {{ $sort == 'terbaru' ? 'Terbaru' : 'Terlama' }}</span>
+                </button>
+                <div class="dropdown-content">
+                    <a href="{{ request()->fullUrlWithQuery(['sort' => 'terbaru']) }}" class="{{ $sort == 'terbaru' ? 'active-dropdown-item' : '' }}">Terbaru</a>
+                    <a href="{{ request()->fullUrlWithQuery(['sort' => 'terlama']) }}" class="{{ $sort == 'terlama' ? 'active-dropdown-item' : '' }}">Terlama</a>
+                </div>
+            </div>
         </div>
         <button onclick="openAddModal()" class="btn-filter" style="width: auto; padding: 0 20px; border-radius: 50px; background: var(--primary-blue); color: white; gap: 8px;">
             <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 24px;"></iconify-icon>
@@ -61,16 +71,16 @@
                             <td style="color: var(--text-muted);">{{ $p->no_hp }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue);" data-item='@json($p)' onclick="openViewModal(JSON.parse(this.dataset.item))">
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openViewModal(JSON.parse(this.dataset.item))">
                                         <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                     </button>
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #8B5CF6;" data-item='@json($p)' onclick="openEditModal(JSON.parse(this.dataset.item))">
-                                        <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
                                     <form action="{{ route('kontak.destroy', $p->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444;">
+                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </form>
@@ -107,16 +117,16 @@
                             <td style="color: var(--text-muted);">{{ $s->no_hp }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue);" data-item='@json($s)' onclick="openViewModal(JSON.parse(this.dataset.item))">
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openViewModal(JSON.parse(this.dataset.item))">
                                         <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                     </button>
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #8B5CF6;" data-item='@json($s)' onclick="openEditModal(JSON.parse(this.dataset.item))">
-                                        <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
                                     <form action="{{ route('kontak.destroy', $s->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444;">
+                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </form>
@@ -136,90 +146,101 @@
 </div>
 
 {{-- MODAL TAMBAH --}}
-<div id="addModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
-    <div class="modal-content" style="background: white; width: 100%; max-width: 480px; border-radius: 24px; padding: 32px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h3 id="modalTitle" style="color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 700;">Tambah Pelanggan</h3>
-            <button onclick="closeModal('addModal')" style="background: var(--light-blue); border: none; color: var(--primary-blue); cursor: pointer; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
-            </button>
+<div id="addModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Tambah Pelanggan</h3>
+            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
         <form action="{{ route('kontak.store') }}" method="POST">
             @csrf
-            <input type="hidden" name="tipe" id="add_tipe" value="customer">
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 14px; font-weight: 600;">Nama Lengkap</label>
-                <input type="text" name="nama" class="search-input" placeholder="Contoh: Budi Santoso" required style="padding-left: 20px;">
+            <div class="modal-body">
+                <input type="hidden" name="tipe" id="add_tipe" value="customer">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama" class="form-control" placeholder="Contoh: Budi Santoso" required>
+                </div>
+                <div class="form-group">
+                    <label>Nomor HP / WhatsApp</label>
+                    <input type="text" name="no_hp" class="form-control" placeholder="Contoh: 08123456789" required>
+                </div>
             </div>
-            <div style="margin-bottom: 28px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 14px; font-weight: 600;">Nomor HP / WhatsApp</label>
-                <input type="text" name="no_hp" class="search-input" placeholder="Contoh: 08123456789" required style="padding-left: 20px;">
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button type="button" onclick="closeModal('addModal')" style="flex: 1; padding: 14px; border-radius: 50px; border: 2px solid var(--border-blue); background: white; color: var(--primary-blue); font-weight: 700; cursor: pointer; transition: all 0.3s;">Batal</button>
-                <button type="submit" style="flex: 1; padding: 14px; border-radius: 50px; border: none; background: var(--primary-blue); color: white; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0, 129, 201, 0.2);">Simpan Kontak</button>
+            <div style="display: flex; gap: 12px; margin-top: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('addModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Simpan Kontak</button>
             </div>
         </form>
     </div>
 </div>
 
 {{-- MODAL EDIT --}}
-<div id="editModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
-    <div class="modal-content" style="background: white; width: 100%; max-width: 480px; border-radius: 24px; padding: 32px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h3 style="color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 700;">Edit Kontak</h3>
-            <button onclick="closeModal('editModal')" style="background: var(--light-blue); border: none; color: var(--primary-blue); cursor: pointer; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
-            </button>
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Kontak</h3>
+            <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
         <form id="editForm" method="POST">
             @csrf
             @method('PUT')
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 14px; font-weight: 600;">Nama Lengkap</label>
-                <input type="text" name="nama" id="edit_nama" class="search-input" required style="padding-left: 20px;">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama" id="edit_nama" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Nomor HP / WhatsApp</label>
+                    <input type="text" name="no_hp" id="edit_no_hp" class="form-control" required>
+                </div>
             </div>
-            <div style="margin-bottom: 28px;">
-                <label style="display: block; margin-bottom: 8px; color: var(--text-dark); font-size: 14px; font-weight: 600;">Nomor HP / WhatsApp</label>
-                <input type="text" name="no_hp" id="edit_no_hp" class="search-input" required style="padding-left: 20px;">
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button type="button" onclick="closeModal('editModal')" style="flex: 1; padding: 14px; border-radius: 50px; border: 2px solid var(--border-blue); background: white; color: var(--primary-blue); font-weight: 700; cursor: pointer; transition: all 0.3s;">Batal</button>
-                <button type="submit" style="flex: 1; padding: 14px; border-radius: 50px; border: none; background: #8B5CF6; color: white; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">Update Kontak</button>
+            <div style="display: flex; gap: 12px; margin-top: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('editModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Update Kontak</button>
             </div>
         </form>
     </div>
 </div>
 
 {{-- MODAL VIEW --}}
-<div id="viewModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
-    <div class="modal-content" style="background: white; width: 100%; max-width: 480px; border-radius: 24px; padding: 32px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h3 style="color: var(--text-dark); margin: 0; font-size: 20px; font-weight: 700;">Detail Kontak</h3>
-            <button onclick="closeModal('viewModal')" style="background: var(--light-blue); border: none; color: var(--primary-blue); cursor: pointer; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                <iconify-icon icon="solar:close-circle-bold"></iconify-icon>
-            </button>
+<div id="viewModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Detail Kontak</h3>
+            <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div style="background: var(--light-blue); border-radius: 20px; padding: 24px; border: 2px solid var(--border-blue);">
-            <div style="margin-bottom: 18px;">
-                <label style="display: block; color: var(--primary-blue); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; margin-bottom: 6px;">Nama Lengkap</label>
-                <p id="view_nama" style="color: var(--text-dark); font-weight: 700; font-size: 18px; margin: 0;"></p>
-            </div>
-            <div style="margin-bottom: 18px;">
-                <label style="display: block; color: var(--primary-blue); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; margin-bottom: 6px;">Nomor HP</label>
-                <p id="view_no_hp" style="color: var(--text-dark); font-weight: 600; font-size: 16px; margin: 0;"></p>
-            </div>
-            <div>
-                <label style="display: block; color: var(--primary-blue); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 800; margin-bottom: 6px;">Tipe Kontak</label>
-                <span id="view_tipe" style="background: white; color: var(--primary-blue); border: 2px solid var(--primary-blue); padding: 4px 14px; border-radius: 50px; font-size: 12px; font-weight: 700; text-transform: capitalize; display: inline-block;"></span>
+        <div class="modal-body">
+            <div style="background: var(--light-blue); border-radius: 16px; padding: 20px; border: 1px solid var(--border-blue);">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nama Lengkap</label>
+                    <p id="view_nama" style="color: var(--text-dark); font-weight: 700; font-size: 16px; margin: 0;"></p>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nomor HP</label>
+                    <p id="view_no_hp" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
+                </div>
+                <div>
+                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Tipe Kontak</label>
+                    <span id="view_tipe" class="status-badge" style="background: white; color: var(--primary-blue); border: 1px solid var(--primary-blue); font-weight: 700; text-transform: capitalize;"></span>
+                </div>
             </div>
         </div>
-        <button onclick="closeModal('viewModal')" style="width: 100%; margin-top: 28px; padding: 14px; border-radius: 50px; border: 2px solid var(--border-blue); background: white; color: var(--primary-blue); font-weight: 700; cursor: pointer; transition: all 0.3s;">Tutup Detail</button>
+        <div style="margin-top: 20px;">
+            <button onclick="closeModal('viewModal')" class="btn-action" style="width: 100%; justify-content: center; background: white; color: var(--primary-blue); border: 1px solid var(--border-blue);">Tutup Detail</button>
+        </div>
     </div>
 </div>
 
 <script>
     let activeTab = 'customer';
+
+    function toggleDropdown(event) {
+        event.stopPropagation();
+        const dropdown = event.currentTarget.nextElementSibling;
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            if (el !== dropdown) el.classList.remove('show');
+        });
+        dropdown.classList.toggle('show');
+    }
 
     function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
@@ -270,6 +291,20 @@
             } else {
                 row.style.display = 'none';
             }
+        });
+    });
+
+    // Form Processing Notification
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            Swal.fire({
+                title: 'Memproses Data...',
+                text: 'Harap tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            });
         });
     });
 
