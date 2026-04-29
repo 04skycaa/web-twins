@@ -23,12 +23,10 @@
     <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
     @if (config('services.midtrans.client_key'))
         <script
             src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
@@ -1405,6 +1403,14 @@
 
                     function initMap() {
                         if (popupMap || typeof L === 'undefined') return;
+
+                        // Fix for Leaflet default marker icons being blocked by Tracking Prevention
+                        delete L.Icon.Default.prototype._getIconUrl;
+                        L.Icon.Default.mergeOptions({
+                            iconRetinaUrl: '{{ asset('vendor/leaflet/images/marker-icon-2x.png') }}',
+                            iconUrl: '{{ asset('vendor/leaflet/images/marker-icon.png') }}',
+                            shadowUrl: '{{ asset('vendor/leaflet/images/marker-shadow.png') }}',
+                        });
 
                         const initialLatLng = selectedLatLng ? [selectedLatLng.lat, selectedLatLng.lng] : [-
                             6.200000, 106.816666

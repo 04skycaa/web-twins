@@ -12,7 +12,8 @@
     @endif
 
     {{-- HEADER --}}
-    <div class="header-section" style="margin-bottom: 30px;">
+    <div class="header-section" style="margin-bottom: 20px;">
+    </div>
 
     </div>
 
@@ -26,6 +27,44 @@
             <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
             <span>Supplier</span>
         </button>
+        <button onclick="switchTab('pesanan')" id="tab-pesanan-btn" class="tab-pill">
+            <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
+            <span>Riwayat Pesanan</span>
+        </button>
+    </div>
+
+    {{-- QUICK STATS --}}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div style="background: white; padding: 20px; border-radius: 20px; border: 2px solid var(--border-blue); display: flex; align-items: center; gap: 15px; transition: transform 0.3s; cursor: default;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: var(--light-blue); display: flex; align-items: center; justify-content: center; color: var(--primary-blue);">
+                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 30px;"></iconify-icon>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Pelanggan</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--text-dark);">{{ number_format($totalPelanggan) }} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">Orang</span></div>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 20px; border: 2px solid #bbf7d0; display: flex; align-items: center; gap: 15px; transition: transform 0.3s; cursor: default;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #15803d;">
+                <iconify-icon icon="solar:chart-bold-duotone" style="font-size: 30px;"></iconify-icon>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Aktif Bulan Ini</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--text-dark);">+{{ number_format($aktifBulanIni) }} <span style="font-size: 14px; font-weight: 500; color: var(--text-muted);">Pelanggan</span></div>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 20px; border: 2px solid #fed7aa; display: flex; align-items: center; gap: 15px; transition: transform 0.3s; cursor: default;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: #fff7ed; display: flex; align-items: center; justify-content: center; color: #c2410c;">
+                <iconify-icon icon="solar:crown-bold-duotone" style="font-size: 30px;"></iconify-icon>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Top Spender</div>
+                <div style="font-size: 16px; font-weight: 800; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">{{ $topSpender ? ($topSpender->matching_username ?? $topSpender->nama) : '-' }}</div>
+                <div style="font-size: 11px; color: #c2410c; font-weight: 700;">{{ $topSpender ? $topSpender->total_transaksi : 0 }} Transaksi</div>
+            </div>
+        </div>
     </div>
 
     {{-- ACTION BAR --}}
@@ -52,6 +91,24 @@
         </button>
     </div>
 
+    {{-- BULK ACTION BAR --}}
+    <div id="bulk-action-bar" style="display: none; background: #fee2e2; border: 1px solid #fecaca; border-radius: 15px; padding: 12px 20px; margin-bottom: 15px; align-items: center; justify-content: space-between; animation: slideIn 0.3s ease;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <iconify-icon icon="solar:info-circle-bold-duotone" style="color: #ef4444; font-size: 24px;"></iconify-icon>
+            <span style="font-weight: 600; color: #b91c1c;"><span id="selected-count">0</span> Kontak Terpilih</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button onclick="openBroadcastModal()" class="btn-action" style="padding: 8px 16px; font-size: 13px; background: #22c55e; color: white; border: none;">
+                <iconify-icon icon="solar:whatsapp-bold-duotone"></iconify-icon>
+                Siaran WA
+            </button>
+            <button onclick="bulkDelete()" class="btn-action btn-danger" style="padding: 8px 16px; font-size: 13px;">
+                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                Hapus Terpilih
+            </button>
+        </div>
+    </div>
+
     {{-- TABLE PELANGGAN --}}
     <div id="tab-customer" class="tab-content">
         <div class="main-content-box">
@@ -59,28 +116,69 @@
                 <table class="fitur-table">
                     <thead>
                         <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="checkAllCustomer" style="width: 18px; height: 18px; cursor: pointer;">
+                            </th>
                             <th>NAMA PELANGGAN</th>
                             <th>NOMOR HP</th>
+                            <th style="text-align: center;">TOTAL TRANSAKSI</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($pelanggan as $p)
-                        <tr class="contact-row" data-search="{{ strtolower($p->nama . ' ' . $p->no_hp) }}">
-                            <td style="font-weight: 600; color: var(--text-dark);">{{ $p->nama }}</td>
+                        <tr class="contact-row" data-search="{{ strtolower(($p->matching_username ?? $p->nama) . ' ' . $p->no_hp) }}">
+                            <td style="text-align: center;">
+                                <input type="checkbox" class="customer-checkbox" value="{{ $p->uuid }}" style="width: 18px; height: 18px; cursor: pointer;">
+                            </td>
+                            <td style="font-weight: 600; color: var(--text-dark);">
+                                {{ $p->nama }}
+                                @if($p->matching_username)
+                                    <div style="font-size: 11px; color: var(--primary-blue); font-weight: 600; margin-top: 4px;">
+                                        <iconify-icon icon="solar:user-id-bold-duotone" style="vertical-align: middle;"></iconify-icon>
+                                        {{ $p->matching_username }}
+                                    </div>
+                                    @if($p->matching_email)
+                                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 400;">
+                                            {{ $p->matching_email }}
+                                        </div>
+                                    @endif
+                                @endif
+                            </td>
                             <td style="color: var(--text-muted);">{{ $p->no_hp }}</td>
+                            <td style="text-align: center;">
+                                @if($p->total_transaksi > 0)
+                                    <span class="status-badge" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-weight: 700;">
+                                        {{ $p->total_transaksi }}x
+                                    </span>
+                                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+                                        Terhubung: {{ $p->matching_username ?? ($p->user->username ?? 'Ya') }}
+                                    </div>
+                                @else
+                                    <span class="status-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-weight: 700;">
+                                        0x
+                                    </span>
+                                    <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">Tidak ada transaksi</div>
+                                @endif
+                            </td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openViewModal(JSON.parse(this.dataset.item))">
+                                    <a href="https://wa.me/{{ preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $p->no_hp)) }}" target="_blank" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #25d366; border-color: #dcfce7; background: #f0fff4; display: flex; align-items: center; justify-content: center; text-decoration: none;" title="WhatsApp">
+                                        <iconify-icon icon="ic:baseline-whatsapp" style="font-size: 20px;"></iconify-icon>
+                                    </a>
+                                    <a href="tel:{{ $p->no_hp }}" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue); background: var(--light-blue); display: flex; align-items: center; justify-content: center; text-decoration: none;" title="Telepon">
+                                        <iconify-icon icon="solar:phone-calling-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                                    </a>
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openViewModal(JSON.parse(this.dataset.item))" title="Detail">
                                         <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                     </button>
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit">
                                         <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
                                     <form action="{{ route('kontak.destroy', $p->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;">
+                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </form>
@@ -89,7 +187,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="3" style="text-align: center; padding: 50px; color: var(--text-muted);">Belum ada data pelanggan.</td>
+                            <td colspan="5" style="text-align: center; padding: 50px; color: var(--text-muted);">Belum ada data pelanggan.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -117,16 +215,22 @@
                             <td style="color: var(--text-muted);">{{ $s->no_hp }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openViewModal(JSON.parse(this.dataset.item))">
+                                    <a href="https://wa.me/{{ preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $s->no_hp)) }}" target="_blank" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #25d366; border-color: #dcfce7; background: #f0fff4; display: flex; align-items: center; justify-content: center; text-decoration: none;" title="WhatsApp">
+                                        <iconify-icon icon="ic:baseline-whatsapp" style="font-size: 20px;"></iconify-icon>
+                                    </a>
+                                    <a href="tel:{{ $s->no_hp }}" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue); background: var(--light-blue); display: flex; align-items: center; justify-content: center; text-decoration: none;" title="Telepon">
+                                        <iconify-icon icon="solar:phone-calling-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                                    </a>
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openViewModal(JSON.parse(this.dataset.item))" title="Detail">
                                         <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                     </button>
-                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                    <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit">
                                         <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
                                     <form action="{{ route('kontak.destroy', $s->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;">
+                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </form>
@@ -142,9 +246,96 @@
                 </table>
             </div>
         </div>
+
+        {{-- TAB PESANAN --}}
+        <div id="tab-pesanan" class="tab-content" style="display: none;">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">No</th>
+                            <th>Kode Order</th>
+                            <th>Nama Penerima</th>
+                            <th>Nomor HP</th>
+                            <th>Total Pembayaran</th>
+                            <th style="text-align: center;">Status</th>
+                            <th style="text-align: center;">Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($orders as $index => $order)
+                        <tr>
+                            <td style="text-align: center; color: var(--text-muted);">{{ $index + 1 }}</td>
+                            <td style="font-weight: 700; color: var(--primary-blue);">#{{ $order->order_code }}</td>
+                            <td style="font-weight: 600; color: var(--text-dark);">{{ $order->recipient_name }}</td>
+                            <td style="color: var(--text-muted);">{{ $order->recipient_phone }}</td>
+                            <td style="font-weight: 700; color: var(--text-dark);">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                            <td style="text-align: center;">
+                                @php
+                                    $statusColor = [
+                                        'pending' => '#f59e0b',
+                                        'success' => '#10b981',
+                                        'paid' => '#10b981',
+                                        'settlement' => '#10b981',
+                                        'failed' => '#ef4444',
+                                        'expired' => '#6b7280'
+                                    ][$order->payment_status] ?? '#6b7280';
+                                @endphp
+                                <span class="status-badge" style="background: {{ $statusColor }}15; color: {{ $statusColor }}; border: 1px solid {{ $statusColor }}30;">
+                                    {{ strtoupper($order->payment_status) }}
+                                </span>
+                            </td>
+                            <td style="text-align: center; color: var(--text-muted); font-size: 12px;">
+                                {{ $order->created_at ? $order->created_at->format('d M Y H:i') : '-' }}
+                            </td>
+                        </tr>
+                        @endforeach
+                        @if($orders->isEmpty())
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 50px; color: var(--text-muted);">
+                                <iconify-icon icon="solar:box-minimalistic-broken" style="font-size: 48px; display: block; margin: 0 auto 10px;"></iconify-icon>
+                                Belum ada riwayat pesanan.
+                            </td>
+                        </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
+    {{-- MODAL BROADCAST --}}
+    <div id="modalBroadcast" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 45px; height: 45px; border-radius: 12px; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #15803d;">
+                        <iconify-icon icon="solar:whatsapp-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 800; color: var(--text-dark); margin: 0;">Siaran WhatsApp</h2>
+                        <p style="font-size: 12px; color: var(--text-muted); margin: 0;"><span id="broadcast-count">0</span> Kontak terpilih</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modalBroadcast')" class="close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Pesan Siaran</label>
+                    <textarea id="broadcast-message" style="width: 100%; height: 150px; padding: 12px; border: 2px solid var(--border-blue); border-radius: 12px; font-size: 14px; resize: none;" placeholder="Ketik pesan Anda di sini..."></textarea>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Tips: Pesan akan dikirim secara berurutan ke semua nomor yang Anda centang.</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="closeModal('modalBroadcast')" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;">Batal</button>
+                    <button type="button" onclick="startBroadcast()" class="btn-action" style="flex: 2; justify-content: center; border-radius: 50px; background: #22c55e;">
+                        <iconify-icon icon="solar:send-square-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                        Kirim Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 {{-- MODAL TAMBAH --}}
 <div id="addModal" class="modal-overlay">
     <div class="modal-content">
@@ -163,6 +354,16 @@
                 <div class="form-group">
                     <label>Nomor HP / WhatsApp</label>
                     <input type="text" name="no_hp" class="form-control" placeholder="Contoh: 08123456789" required>
+                </div>
+                <div class="form-group" id="add_user_field">
+                    <label>Hubungkan ke Akun Pelanggan (Opsional)</label>
+                    <select name="user_id" class="form-control">
+                        <option value="">-- Tidak Terhubung --</option>
+                        @foreach($users as $user)
+                        <option value="{{ $user->uuid }}">{{ $user->username }} ({{ $user->no_hp }})</option>
+                        @endforeach
+                    </select>
+                    <small style="color: var(--text-muted); font-size: 11px;">Pilih akun jika kontak ini memiliki akun di aplikasi untuk menghitung total transaksi.</small>
                 </div>
             </div>
             <div style="display: flex; gap: 12px; margin-top: 10px;">
@@ -192,6 +393,15 @@
                     <label>Nomor HP / WhatsApp</label>
                     <input type="text" name="no_hp" id="edit_no_hp" class="form-control" required>
                 </div>
+                <div class="form-group" id="edit_user_field">
+                    <label>Hubungkan ke Akun Pelanggan (Opsional)</label>
+                    <select name="user_id" id="edit_user_id" class="form-control">
+                        <option value="">-- Tidak Terhubung --</option>
+                        @foreach($users as $user)
+                        <option value="{{ $user->uuid }}">{{ $user->username }} ({{ $user->no_hp }})</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
             <div style="display: flex; gap: 12px; margin-top: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('editModal')">Batal</button>
@@ -218,10 +428,29 @@
                     <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nomor HP</label>
                     <p id="view_no_hp" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
                 </div>
-                <div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Akun Terhubung</label>
+                    <p id="view_username" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
+                </div>
+                <div id="view_stats_row" style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Total Transaksi</label>
+                    <p id="view_total_transaksi" style="color: var(--text-dark); font-weight: 700; font-size: 15px; margin: 0;"></p>
+                </div>
+                <div style="margin-bottom: 0;">
                     <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Tipe Kontak</label>
                     <span id="view_tipe" class="status-badge" style="background: white; color: var(--primary-blue); border: 1px solid var(--primary-blue); font-weight: 700; text-transform: capitalize;"></span>
                 </div>
+            </div>
+
+            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <a id="view_wa_btn" href="#" target="_blank" class="btn-action" style="justify-content: center; background: #25d366; color: white; border: none; border-radius: 15px; text-decoration: none;">
+                    <iconify-icon icon="ic:baseline-whatsapp" style="font-size: 20px;"></iconify-icon>
+                    <span>WhatsApp</span>
+                </a>
+                <a id="view_call_btn" href="#" class="btn-action" style="justify-content: center; background: var(--primary-blue); color: white; border: none; border-radius: 15px; text-decoration: none;">
+                    <iconify-icon icon="solar:phone-calling-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    <span>Telepon</span>
+                </a>
             </div>
         </div>
         <div style="margin-top: 20px;">
@@ -250,9 +479,20 @@
         document.getElementById('tab-' + tab + '-btn').classList.add('active');
 
         // Update UI components
-        document.getElementById('addBtnText').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
-        document.getElementById('add_tipe').value = tab;
-        document.getElementById('modalTitle').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
+        if(tab === 'pesanan') {
+            document.querySelector('.action-bar').style.display = 'none';
+        } else {
+            document.querySelector('.action-bar').style.display = 'flex';
+            document.getElementById('addBtnText').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
+            document.getElementById('add_tipe').value = tab;
+            document.getElementById('modalTitle').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
+        }
+
+        // Toggle user field visibility
+        if(tab !== 'pesanan') {
+            document.getElementById('add_user_field').style.display = tab === 'customer' ? 'block' : 'none';
+            document.getElementById('edit_user_field').style.display = tab === 'customer' ? 'block' : 'none';
+        }
     }
 
     function openModal(id) {
@@ -271,6 +511,12 @@
         document.getElementById('editForm').action = `/kontak/${data.uuid}`;
         document.getElementById('edit_nama').value = data.nama;
         document.getElementById('edit_no_hp').value = data.no_hp;
+        document.getElementById('edit_user_id').value = data.user_id || '';
+        
+        // Show/hide user field based on current data type if needed, 
+        // but here it's already handled by activeTab in some way or we can just check data.tipe
+        document.getElementById('edit_user_field').style.display = data.tipe === 'customer' ? 'block' : 'none';
+        
         openModal('editModal');
     }
 
@@ -278,6 +524,24 @@
         document.getElementById('view_nama').innerText = data.nama;
         document.getElementById('view_no_hp').innerText = data.no_hp;
         document.getElementById('view_tipe').innerText = data.tipe;
+        document.getElementById('view_username').innerText = data.user ? data.user.username : 'Belum terhubung ke akun';
+
+        const statsRow = document.getElementById('view_stats_row');
+        if (data.tipe === 'customer') {
+            statsRow.style.display = 'block';
+            document.getElementById('view_total_transaksi').innerText = (data.total_transaksi || 0) + ' Kali Belanja';
+        } else {
+            statsRow.style.display = 'none';
+        }
+
+        // WA Link
+        let phone = data.no_hp.replace(/[^0-9]/g, '');
+        if (phone.startsWith('0')) {
+            phone = '62' + phone.substring(1);
+        }
+        document.getElementById('view_wa_btn').href = `https://wa.me/${phone}`;
+        document.getElementById('view_call_btn').href = `tel:${data.no_hp}`;
+
         openModal('viewModal');
     }
 
@@ -293,6 +557,112 @@
             }
         });
     });
+
+    // Bulk Actions logic
+    const bulkBar = document.getElementById('bulk-action-bar');
+    const selectedCount = document.getElementById('selected-count');
+    const checkboxes = document.querySelectorAll('.customer-checkbox');
+    const checkAll = document.getElementById('checkAllCustomer');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.customer-checkbox:checked');
+        if (checked.length > 0) {
+            bulkBar.style.display = 'flex';
+            selectedCount.innerText = checked.length;
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+
+    checkAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => {
+            if (cb.parentElement.parentElement.style.display !== 'none') {
+                cb.checked = this.checked;
+            }
+        });
+        updateBulkBar();
+    });
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    function bulkDelete() {
+        const checked = document.querySelectorAll('.customer-checkbox:checked');
+        const ids = Array.from(checked).map(cb => cb.value);
+        
+        Swal.fire({
+            title: 'Hapus ' + ids.length + ' Kontak?',
+            text: "Data yang dihapus tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus Semua!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire('Coming Soon!', 'Fitur bulk delete sedang disiapkan.', 'info');
+            }
+        });
+    }
+
+    // Broadcast logic
+    function openBroadcastModal() {
+        const checked = document.querySelectorAll('.customer-checkbox:checked');
+        if (checked.length === 0) {
+            Swal.fire('Peringatan', 'Pilih minimal satu kontak untuk siaran.', 'warning');
+            return;
+        }
+        document.getElementById('broadcast-count').innerText = checked.length;
+        document.getElementById('modalBroadcast').style.display = 'flex';
+    }
+
+    async function startBroadcast() {
+        const message = document.getElementById('broadcast-message').value;
+        if (!message.trim()) {
+            Swal.fire('Peringatan', 'Harap isi pesan siaran Anda.', 'warning');
+            return;
+        }
+
+        const checked = document.querySelectorAll('.customer-checkbox:checked');
+        const contacts = Array.from(checked).map(cb => {
+            const row = cb.closest('tr');
+            const phone = row.querySelector('td:nth-child(3)').innerText;
+            return phone.replace(/[^0-9]/g, '').replace(/^0/, '62');
+        });
+
+        closeModal('modalBroadcast');
+
+        Swal.fire({
+            title: 'Memulai Siaran...',
+            html: `Mengirim ke <b>${contacts.length}</b> kontak.<br><small>Harap jangan tutup halaman ini.</small>`,
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        for (let i = 0; i < contacts.length; i++) {
+            const phone = contacts[i];
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            
+            // Open window
+            window.open(url, '_blank');
+
+            // Delay to avoid blocking and spam filters
+            if (i < contacts.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Siaran Selesai!',
+            text: `Berhasil memproses ${contacts.length} pengiriman.`,
+            confirmButtonColor: '#22c55e'
+        });
+    }
 
     // Form Processing Notification
     document.querySelectorAll('form').forEach(form => {

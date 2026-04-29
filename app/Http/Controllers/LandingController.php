@@ -205,16 +205,30 @@ class LandingController extends Controller
         session()->put('delivery_address.' . $outlet->uuid, $deliveryData);
 
         // Otomatis simpan ke Kelola Kontak (Customer)
-        \App\Models\Contact::updateOrCreate(
-            [
-                'store_id' => $outlet->uuid,
-                'no_hp' => $validated['recipient_phone'],
-            ],
-            [
-                'nama' => $validated['recipient_name'],
-                'tipe' => 'customer'
-            ]
-        );
+        $contactData = [
+            'nama' => $validated['recipient_name'],
+            'tipe' => 'customer'
+        ];
+
+        $matchCriteria = [
+            'no_hp' => $validated['recipient_phone'],
+        ];
+
+        // Cek kolom store_id
+        if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
+            $matchCriteria['store_id'] = $outlet->uuid;
+        }
+
+        // Jika user login, hubungkan ke user_id jika kolom ada
+        if (Auth::check() && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
+            $contactData['user_id'] = Auth::id();
+        }
+
+        try {
+            \App\Models\Contact::updateOrCreate($matchCriteria, $contactData);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal menyimpan kontak otomatis: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Alamat pengiriman dan kontak berhasil disimpan.',
