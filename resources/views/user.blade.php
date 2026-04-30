@@ -1407,14 +1407,12 @@
                         // Fix for Leaflet default marker icons being blocked by Tracking Prevention
                         delete L.Icon.Default.prototype._getIconUrl;
                         L.Icon.Default.mergeOptions({
-                            iconRetinaUrl: '{{ asset('vendor/leaflet/images/marker-icon-2x.png') }}',
-                            iconUrl: '{{ asset('vendor/leaflet/images/marker-icon.png') }}',
-                            shadowUrl: '{{ asset('vendor/leaflet/images/marker-shadow.png') }}',
+                            iconRetinaUrl: "{{ asset('vendor/leaflet/images/marker-icon-2x.png') }}",
+                            iconUrl: "{{ asset('vendor/leaflet/images/marker-icon.png') }}",
+                            shadowUrl: "{{ asset('vendor/leaflet/images/marker-shadow.png') }}",
                         });
 
-                        const initialLatLng = selectedLatLng ? [selectedLatLng.lat, selectedLatLng.lng] : [-
-                            6.200000, 106.816666
-                        ];
+                        const initialLatLng = selectedLatLng ? [selectedLatLng.lat, selectedLatLng.lng] : [-6.200000, 106.816666];
                         const initialZoom = selectedLatLng ? 16 : 12;
 
                         popupMap = L.map('addressMapCanvas', {

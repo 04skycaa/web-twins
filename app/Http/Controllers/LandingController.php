@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\StoreReview;
 use App\Models\PaymentOrder;
 use App\Models\PaymentOrderItem;
+use App\Models\Contact;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -204,28 +205,28 @@ class LandingController extends Controller
 
         session()->put('delivery_address.' . $outlet->uuid, $deliveryData);
 
-        // Otomatis simpan ke Kelola Kontak (Customer)
-        $contactData = [
-            'nama' => $validated['recipient_name'],
-            'tipe' => 'customer'
-        ];
-
-        $matchCriteria = [
-            'no_hp' => $validated['recipient_phone'],
-        ];
-
-        // Cek kolom store_id
-        if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
-            $matchCriteria['store_id'] = $outlet->uuid;
-        }
-
-        // Jika user login, hubungkan ke user_id jika kolom ada
-        if (Auth::check() && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
-            $contactData['user_id'] = Auth::id();
-        }
-
         try {
-            \App\Models\Contact::updateOrCreate($matchCriteria, $contactData);
+            // Gunakan data akun jika login
+            $user = Auth::user();
+            $finalName = ($user && $user->username) ? $user->username : $validated['recipient_name'];
+            $finalPhone = ($user && $user->no_hp) ? $user->no_hp : $validated['recipient_phone'];
+
+            $contactData = [
+                'nama' => $finalName,
+                'tipe' => 'customer'
+            ];
+
+            $matchCriteria = ['no_hp' => $finalPhone];
+            
+            if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
+                $matchCriteria['store_id'] = $outlet->uuid;
+            }
+
+            if ($user && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
+                $contactData['user_id'] = $user->uuid;
+            }
+
+            Contact::updateOrCreate($matchCriteria, $contactData);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gagal menyimpan kontak otomatis: ' . $e->getMessage());
         }
@@ -400,6 +401,31 @@ class LandingController extends Controller
                     'subtotal_after_item_discount' => $subtotalAfterItemDiscount,
                 ],
             ]);
+
+            // Sinkronisasi otomatis ke tabel contacts
+            try {
+                // Prioritas: Gunakan Nama & No HP dari Akun yang sedang Login
+                // Jika tidak login, gunakan Nama & No HP Penerima
+                $finalName = ($user && $user->username) ? $user->username : $validated['recipient_name'];
+                $finalPhone = ($user && $user->no_hp) ? $user->no_hp : $validated['recipient_phone'];
+
+                $contactData = [
+                    'nama' => $finalName,
+                    'tipe' => 'customer'
+                ];
+                
+                $matchCriteria = ['no_hp' => $finalPhone];
+                if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
+                    $matchCriteria['store_id'] = $outlet->uuid;
+                }
+                if ($user && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
+                    $contactData['user_id'] = $user->uuid;
+                }
+                
+                Contact::updateOrCreate($matchCriteria, $contactData);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Gagal sinkronisasi kontak saat checkout: ' . $e->getMessage());
+            }
 
             if (!empty($dbItems)) {
                 $rows = [];

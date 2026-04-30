@@ -140,17 +140,13 @@
             <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
             <span>Data Outlet</span>
         </a>
-        <a href="{{ route('outlet.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}">
-            <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
-            <span>Transfer Stok</span>
-        </a>
-        <a href="{{ route('outlet.riwayat') }}" class="tab-pill {{ $active_tab == 'riwayat' ? 'active' : '' }}">
-            <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
-            <span>Riwayat Distribusi</span>
-        </a>
         <a href="{{ route('outlet.kinerja') }}" class="tab-pill {{ $active_tab == 'kinerja' ? 'active' : '' }}">
             <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
             <span>Kinerja Outlet</span>
+        </a>
+        <a href="{{ route('outlet.riwayat') }}" class="tab-pill {{ $active_tab == 'riwayat' ? 'active' : '' }}">
+            <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
+            <span>Riwayat Stok</span>
         </a>
     </div>
 
@@ -324,16 +320,14 @@
         {{-- PLACEHOLDER FOR OTHER TABS --}}
         <div class="main-content-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
             <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
-                @if($active_tab == 'transfer')
-                    <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
+                @if($active_tab == 'kinerja')
+                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
                 @elseif($active_tab == 'riwayat')
                     <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
-                @elseif($active_tab == 'kinerja')
-                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
                 @endif
             </div>
             <h3 style="color: #334155; margin-bottom: 8px;">Fitur {{ ucfirst($active_tab) }} Sedang Disiapkan</h3>
-            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk {{ $active_tab == 'transfer' ? 'distribusi barang antar outlet' : ($active_tab == 'riwayat' ? 'histori transfer stok' : 'analisis omzet dan performa cabang') }} akan segera hadir.</p>
+            <p style="color: #64748b; text-align: center; max-width: 400px;">Halaman untuk {{ $active_tab == 'kinerja' ? 'analisis omzet dan performa cabang' : 'histori aktivitas stok outlet' }} akan segera hadir.</p>
             <a href="{{ route('outlet.index') }}" class="btn-action" style="margin-top: 24px;">
                 <iconify-icon icon="solar:arrow-left-bold-duotone"></iconify-icon>
                 Kembali ke Data Outlet

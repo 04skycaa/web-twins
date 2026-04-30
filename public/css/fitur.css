@@ -15,10 +15,16 @@
 
 /* Tabs Section */
 .tab-navigation {
+    position: sticky;
+    top: -35px; /* Offset for .main-content padding */
+    background: white;
+    z-index: 100;
+    padding: 20px 0;
+    margin: -35px -35px 20px -35px; /* Negative margin to span full width of main-content padding */
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 30px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .tab-pill {
@@ -1170,6 +1176,74 @@ input:checked + .slider:before {
 .banner-preview-4x2:hover {
     border-color: var(--primary-blue);
     background: #f0f9ff;
+}
+
+/* --- Switch Toggle --- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary-blue);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary-blue);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.status-active {
+    background: #E8F5E9 !important;
+    color: #2E7D32 !important;
+    border: 1px solid #C8E6C9 !important;
+}
+
+.status-inactive {
+    background: #FFEBEE !important;
+    color: #D32F2F !important;
+    border: 1px solid #FFCDD2 !important;
 }
 
 .banner-preview-4x2 img {

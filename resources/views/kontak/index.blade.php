@@ -27,10 +27,6 @@
             <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
             <span>Supplier</span>
         </button>
-        <button onclick="switchTab('pesanan')" id="tab-pesanan-btn" class="tab-pill">
-            <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
-            <span>Riwayat Pesanan</span>
-        </button>
     </div>
 
     {{-- QUICK STATS --}}
@@ -72,7 +68,7 @@
         <div class="left-actions-group">
             <div class="search-wrapper">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                <input type="text" id="searchInput" class="search-input" placeholder="Cari nama atau nomor HP...">
+                <input type="text" id="searchInput" class="search-input" placeholder="Cari nama atau nomor HP..." aria-label="Cari nama atau nomor HP">
             </div>
             <div class="dropdown">
                 <button type="button" class="btn-filter" style="width: auto; padding: 0 16px; border-radius: 50px; background: white; border: 2px solid var(--border-blue); color: var(--primary-blue); gap: 8px;" onclick="toggleDropdown(event)">
@@ -117,7 +113,7 @@
                     <thead>
                         <tr>
                             <th style="width: 40px; text-align: center;">
-                                <input type="checkbox" id="checkAllCustomer" style="width: 18px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" id="checkAllCustomer" style="width: 18px; height: 18px; cursor: pointer;" aria-label="Pilih semua pelanggan">
                             </th>
                             <th>NAMA PELANGGAN</th>
                             <th>NOMOR HP</th>
@@ -129,20 +125,15 @@
                         @forelse($pelanggan as $p)
                         <tr class="contact-row" data-search="{{ strtolower(($p->matching_username ?? $p->nama) . ' ' . $p->no_hp) }}">
                             <td style="text-align: center;">
-                                <input type="checkbox" class="customer-checkbox" value="{{ $p->uuid }}" style="width: 18px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" class="customer-checkbox" value="{{ $p->uuid }}" style="width: 18px; height: 18px; cursor: pointer;" aria-label="Pilih pelanggan {{ $p->nama }}">
                             </td>
                             <td style="font-weight: 600; color: var(--text-dark);">
                                 {{ $p->nama }}
-                                @if($p->matching_username)
-                                    <div style="font-size: 11px; color: var(--primary-blue); font-weight: 600; margin-top: 4px;">
-                                        <iconify-icon icon="solar:user-id-bold-duotone" style="vertical-align: middle;"></iconify-icon>
-                                        {{ $p->matching_username }}
+                                @if($p->matching_email)
+                                    <div style="font-size: 10px; color: var(--text-muted); font-weight: 400; margin-top: 2px;">
+                                        <iconify-icon icon="solar:letter-bold-duotone" style="vertical-align: middle;"></iconify-icon>
+                                        {{ $p->matching_email }}
                                     </div>
-                                    @if($p->matching_email)
-                                        <div style="font-size: 10px; color: var(--text-muted); font-weight: 400;">
-                                            {{ $p->matching_email }}
-                                        </div>
-                                    @endif
                                 @endif
                             </td>
                             <td style="color: var(--text-muted);">{{ $p->no_hp }}</td>
@@ -247,61 +238,6 @@
             </div>
         </div>
 
-        {{-- TAB PESANAN --}}
-        <div id="tab-pesanan" class="tab-content" style="display: none;">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px; text-align: center;">No</th>
-                            <th>Kode Order</th>
-                            <th>Nama Penerima</th>
-                            <th>Nomor HP</th>
-                            <th>Total Pembayaran</th>
-                            <th style="text-align: center;">Status</th>
-                            <th style="text-align: center;">Waktu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($orders as $index => $order)
-                        <tr>
-                            <td style="text-align: center; color: var(--text-muted);">{{ $index + 1 }}</td>
-                            <td style="font-weight: 700; color: var(--primary-blue);">#{{ $order->order_code }}</td>
-                            <td style="font-weight: 600; color: var(--text-dark);">{{ $order->recipient_name }}</td>
-                            <td style="color: var(--text-muted);">{{ $order->recipient_phone }}</td>
-                            <td style="font-weight: 700; color: var(--text-dark);">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
-                            <td style="text-align: center;">
-                                @php
-                                    $statusColor = [
-                                        'pending' => '#f59e0b',
-                                        'success' => '#10b981',
-                                        'paid' => '#10b981',
-                                        'settlement' => '#10b981',
-                                        'failed' => '#ef4444',
-                                        'expired' => '#6b7280'
-                                    ][$order->payment_status] ?? '#6b7280';
-                                @endphp
-                                <span class="status-badge" style="background: {{ $statusColor }}15; color: {{ $statusColor }}; border: 1px solid {{ $statusColor }}30;">
-                                    {{ strtoupper($order->payment_status) }}
-                                </span>
-                            </td>
-                            <td style="text-align: center; color: var(--text-muted); font-size: 12px;">
-                                {{ $order->created_at ? $order->created_at->format('d M Y H:i') : '-' }}
-                            </td>
-                        </tr>
-                        @endforeach
-                        @if($orders->isEmpty())
-                        <tr>
-                            <td colspan="7" style="text-align: center; padding: 50px; color: var(--text-muted);">
-                                <iconify-icon icon="solar:box-minimalistic-broken" style="font-size: 48px; display: block; margin: 0 auto 10px;"></iconify-icon>
-                                Belum ada riwayat pesanan.
-                            </td>
-                        </tr>
-                        @endif
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -322,7 +258,7 @@
             </div>
             <div class="modal-body" style="padding: 20px;">
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Pesan Siaran</label>
+                    <label for="broadcast-message" style="display: block; font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Pesan Siaran</label>
                     <textarea id="broadcast-message" style="width: 100%; height: 150px; padding: 12px; border: 2px solid var(--border-blue); border-radius: 12px; font-size: 14px; resize: none;" placeholder="Ketik pesan Anda di sini..."></textarea>
                     <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Tips: Pesan akan dikirim secara berurutan ke semua nomor yang Anda centang.</p>
                 </div>
@@ -348,16 +284,16 @@
             <div class="modal-body">
                 <input type="hidden" name="tipe" id="add_tipe" value="customer">
                 <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" name="nama" class="form-control" placeholder="Contoh: Budi Santoso" required>
+                    <label for="add_nama">Nama Lengkap</label>
+                    <input type="text" name="nama" id="add_nama" class="form-control" placeholder="Contoh: Budi Santoso" required>
                 </div>
                 <div class="form-group">
-                    <label>Nomor HP / WhatsApp</label>
-                    <input type="text" name="no_hp" class="form-control" placeholder="Contoh: 08123456789" required>
+                    <label for="add_no_hp">Nomor HP / WhatsApp</label>
+                    <input type="text" name="no_hp" id="add_no_hp" class="form-control" placeholder="Contoh: 08123456789" required>
                 </div>
                 <div class="form-group" id="add_user_field">
-                    <label>Hubungkan ke Akun Pelanggan (Opsional)</label>
-                    <select name="user_id" class="form-control">
+                    <label for="add_user_id">Hubungkan ke Akun Pelanggan (Opsional)</label>
+                    <select name="user_id" id="add_user_id" class="form-control">
                         <option value="">-- Tidak Terhubung --</option>
                         @foreach($users as $user)
                         <option value="{{ $user->uuid }}">{{ $user->username }} ({{ $user->no_hp }})</option>
@@ -386,15 +322,15 @@
             @method('PUT')
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nama Lengkap</label>
+                    <label for="edit_nama">Nama Lengkap</label>
                     <input type="text" name="nama" id="edit_nama" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Nomor HP / WhatsApp</label>
+                    <label for="edit_no_hp">Nomor HP / WhatsApp</label>
                     <input type="text" name="no_hp" id="edit_no_hp" class="form-control" required>
                 </div>
                 <div class="form-group" id="edit_user_field">
-                    <label>Hubungkan ke Akun Pelanggan (Opsional)</label>
+                    <label for="edit_user_id">Hubungkan ke Akun Pelanggan (Opsional)</label>
                     <select name="user_id" id="edit_user_id" class="form-control">
                         <option value="">-- Tidak Terhubung --</option>
                         @foreach($users as $user)
@@ -418,43 +354,56 @@
             <h3>Detail Kontak</h3>
             <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div class="modal-body">
-            <div style="background: var(--light-blue); border-radius: 16px; padding: 20px; border: 1px solid var(--border-blue);">
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
+            <div style="background: var(--light-blue); border-radius: 16px; padding: 20px; border: 1px solid var(--border-blue); margin-bottom: 20px;">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nama Lengkap</label>
+                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nama Lengkap</span>
                     <p id="view_nama" style="color: var(--text-dark); font-weight: 700; font-size: 16px; margin: 0;"></p>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nomor HP</label>
+                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nomor HP</span>
                     <p id="view_no_hp" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Akun Terhubung</label>
+                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Akun Terhubung</span>
                     <p id="view_username" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
                 </div>
                 <div id="view_stats_row" style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Total Transaksi</label>
+                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Total Transaksi</span>
                     <p id="view_total_transaksi" style="color: var(--text-dark); font-weight: 700; font-size: 15px; margin: 0;"></p>
                 </div>
                 <div style="margin-bottom: 0;">
-                    <label style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Tipe Kontak</label>
+                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Tipe Kontak</span>
                     <span id="view_tipe" class="status-badge" style="background: white; color: var(--primary-blue); border: 1px solid var(--primary-blue); font-weight: 700; text-transform: capitalize;"></span>
                 </div>
             </div>
 
-            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <a id="view_wa_btn" href="#" target="_blank" class="btn-action" style="justify-content: center; background: #25d366; color: white; border: none; border-radius: 15px; text-decoration: none;">
+            <div id="transaction_history_section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="font-size: 14px; font-weight: 800; color: var(--text-dark); margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <iconify-icon icon="solar:bill-list-bold-duotone" style="color: var(--primary-blue); font-size: 20px;"></iconify-icon>
+                        Riwayat Transaksi
+                    </h4>
+                    <span id="transaction_count_badge" style="font-size: 11px; background: var(--light-blue); color: var(--primary-blue); padding: 2px 10px; border-radius: 50px; font-weight: 700;">0 Pesanan</span>
+                </div>
+                <div id="transaction_list" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Transaksi akan muncul di sini -->
+                </div>
+            </div>
+
+            <div style="margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <a id="view_wa_btn" href="#" target="_blank" class="btn-action" style="justify-content: center; background: #25d366; color: white; border: none; border-radius: 15px; text-decoration: none; padding: 12px;">
                     <iconify-icon icon="ic:baseline-whatsapp" style="font-size: 20px;"></iconify-icon>
                     <span>WhatsApp</span>
                 </a>
-                <a id="view_call_btn" href="#" class="btn-action" style="justify-content: center; background: var(--primary-blue); color: white; border: none; border-radius: 15px; text-decoration: none;">
+                <a id="view_call_btn" href="#" class="btn-action" style="justify-content: center; background: var(--primary-blue); color: white; border: none; border-radius: 15px; text-decoration: none; padding: 12px;">
                     <iconify-icon icon="solar:phone-calling-bold-duotone" style="font-size: 20px;"></iconify-icon>
                     <span>Telepon</span>
                 </a>
             </div>
         </div>
-        <div style="margin-top: 20px;">
-            <button onclick="closeModal('viewModal')" class="btn-action" style="width: 100%; justify-content: center; background: white; color: var(--primary-blue); border: 1px solid var(--border-blue);">Tutup Detail</button>
+        <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9;">
+            <button onclick="closeModal('viewModal')" class="btn-action" style="width: 100%; justify-content: center; background: #f1f5f9; color: #64748b; border: none; border-radius: 50px; font-weight: 700;">Tutup Detail</button>
         </div>
     </div>
 </div>
@@ -542,7 +491,151 @@
         document.getElementById('view_wa_btn').href = `https://wa.me/${phone}`;
         document.getElementById('view_call_btn').href = `tel:${data.no_hp}`;
 
+        // Populate Transactions
+        const transactionList = document.getElementById('transaction_list');
+        const transactionSection = document.getElementById('transaction_history_section');
+        const countBadge = document.getElementById('transaction_count_badge');
+        transactionList.innerHTML = '';
+
+        if (data.payment_orders && data.payment_orders.length > 0) {
+            transactionSection.style.display = 'block';
+            countBadge.innerText = data.payment_orders.length + ' Pesanan';
+            data.payment_orders.forEach(order => {
+                const accordionItem = document.createElement('div');
+                accordionItem.style.cssText = 'background: white; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);';
+                
+                const statusColor = {
+                    'pending': '#f59e0b',
+                    'success': '#10b981',
+                    'paid': '#10b981',
+                    'settlement': '#10b981',
+                    'failed': '#ef4444',
+                    'expired': '#6b7280'
+                }[order.payment_status] || '#6b7280';
+
+                const orderDate = new Date(order.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
+
+                accordionItem.innerHTML = `
+                    <div class="order-header" onclick="toggleOrderDetails(this)" style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="arrow-icon" style="color: #94a3b8; transition: transform 0.3s;"></iconify-icon>
+                            <div>
+                                <div style="font-weight: 800; color: var(--primary-blue); font-size: 13px;">#${order.order_code}</div>
+                                <div style="font-size: 10px; color: var(--text-muted);">${orderDate}</div>
+                            </div>
+                        </div>
+                        <span style="font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 50px; background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30; text-transform: uppercase;">
+                            ${order.payment_status}
+                        </span>
+                    </div>
+                    <div class="order-details" style="display: none; padding: 0 15px 15px; border-top: 1px dashed #f1f5f9; animation: slideDown 0.3s ease;">
+                        <div style="padding-top: 15px;">
+                            <div style="background: #f8fafc; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <iconify-icon icon="solar:user-bold-duotone" style="color: var(--primary-blue); font-size: 14px;"></iconify-icon>
+                                        <span style="font-size: 12px; font-weight: 700; color: var(--text-dark);">${order.recipient_name}</span>
+                                    </div>
+                                    <div style="font-size: 11px; font-weight: 700; color: var(--primary-blue); display: flex; align-items: center; gap: 4px;">
+                                        <iconify-icon icon="solar:phone-bold-duotone" style="font-size: 12px;"></iconify-icon>
+                                        ${order.recipient_phone}
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: start; gap: 6px;">
+                                    <iconify-icon icon="solar:map-point-bold-duotone" style="color: var(--primary-blue); font-size: 14px; flex-shrink: 0;"></iconify-icon>
+                                    <div style="font-size: 10px; color: var(--text-muted); line-height: 1.4;">
+                                        ${order.delivery_address}
+                                        <div style="color: var(--primary-blue); font-weight: 700; margin-top: 2px;">Jarak: ${order.delivery_distance_km} KM</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                                <div onclick="toggleProductList('${order.order_code}')" style="background: #fdf2f2; padding: 6px 10px; border-radius: 8px; border: 1px solid #fee2e2; cursor: pointer; transition: all 0.2s; position: relative;" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='#fee2e2'">
+                                    <div style="font-size: 8px; color: #991b1b; text-transform: uppercase; font-weight: 800;">Items (Klik Detail)</div>
+                                    <div style="font-size: 12px; font-weight: 800; color: #991b1b; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>${order.items_count} Produk</span>
+                                        <iconify-icon icon="solar:alt-arrow-down-bold-duotone" style="font-size: 14px;"></iconify-icon>
+                                    </div>
+                                </div>
+                                <div style="background: #f0fdf4; padding: 6px 10px; border-radius: 8px; border: 1px solid #dcfce7;">
+                                    <div style="font-size: 8px; color: #166534; text-transform: uppercase; font-weight: 800;">Total</div>
+                                    <div style="font-size: 12px; font-weight: 800; color: #166534;">Rp ${new Number(order.total_amount).toLocaleString('id-ID')}</div>
+                                </div>
+                            </div>
+
+                            <div id="product_list_${order.order_code}" style="display: none; margin-bottom: 12px; animation: slideDown 0.3s ease;">
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    ${order.items.map(item => {
+                                        const imageUrl = item.product && item.product.resolved_image_url ? item.product.resolved_image_url : '/images/placeholder-product.png';
+                                        return `
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; border: 1px solid #f1f5f9; border-radius: 10px;">
+                                            <div style="display: flex; gap: 10px; align-items: center;">
+                                                <div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                                    <img src="${imageUrl}" onerror="this.src='/images/placeholder-product.png'" style="width: 100%; height: 100%; object-fit: cover;">
+                                                </div>
+                                                <div>
+                                                    <div style="font-size: 11px; font-weight: 700; color: var(--text-dark);">${item.product_name}</div>
+                                                    <div style="font-size: 10px; color: var(--text-muted);">Rp ${new Number(item.unit_price).toLocaleString('id-ID')} x ${item.quantity}</div>
+                                                </div>
+                                            </div>
+                                            <div style="font-size: 11px; font-weight: 800; color: var(--primary-blue);">
+                                                Rp ${new Number(item.subtotal).toLocaleString('id-ID')}
+                                            </div>
+                                        </div>
+                                    `}).join('')}
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
+                                <span>Ongkir: Rp ${new Number(order.shipping_fee).toLocaleString('id-ID')}</span>
+                                <span style="color: #ef4444; font-weight: 700;">Diskon: ${order.discount_percent * 100}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                transactionList.appendChild(accordionItem);
+            });
+        } else {
+            countBadge.innerText = '0 Pesanan';
+            transactionList.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border-radius: 20px; border: 2px dashed #e2e8f0;">
+                    <iconify-icon icon="solar:box-minimalistic-broken" style="font-size: 48px; color: #cbd5e1; margin-bottom: 10px;"></iconify-icon>
+                    <div style="color: #94a3b8; font-size: 13px; font-weight: 600;">Belum ada riwayat transaksi</div>
+                </div>
+            `;
+        }
+
         openModal('viewModal');
+    }
+
+    function toggleOrderDetails(header) {
+        const details = header.nextElementSibling;
+        const arrow = header.querySelector('.arrow-icon');
+        const isVisible = details.style.display === 'block';
+        
+        // Tutup detail lain yang sedang terbuka jika mau (opsional)
+        // document.querySelectorAll('.order-details').forEach(el => el.style.display = 'none');
+        // document.querySelectorAll('.arrow-icon').forEach(el => el.style.transform = 'rotate(0)');
+
+        if (isVisible) {
+            details.style.display = 'none';
+            arrow.style.transform = 'rotate(0)';
+            header.style.background = 'transparent';
+        } else {
+            details.style.display = 'block';
+            arrow.style.transform = 'rotate(90deg)';
+            header.style.background = '#f8fafc';
+        }
+    }
+
+    function toggleProductList(orderCode) {
+        const list = document.getElementById('product_list_' + orderCode);
+        if (list.style.display === 'none') {
+            list.style.display = 'block';
+        } else {
+            list.style.display = 'none';
+        }
     }
 
     // Search functionality

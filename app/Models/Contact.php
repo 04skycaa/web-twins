@@ -16,7 +16,7 @@ class Contact extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'store_id', 'nama', 'tipe', 'no_hp'
+        'store_id', 'nama', 'tipe', 'no_hp', 'user_id'
     ];
 
     protected static function boot()
@@ -27,5 +27,15 @@ class Contact extends Model
                 $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'uuid');
+    }
+
+    public function paymentOrders()
+    {
+        return $this->hasMany(PaymentOrder::class, 'user_id', 'user_id');
     }
 }

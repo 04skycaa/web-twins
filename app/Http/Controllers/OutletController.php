@@ -16,24 +16,21 @@ class OutletController extends Controller
         ]);
     }
 
-    public function transfer()
+    public function kinerja()
     {
+        $outlets = Outlet::with(['users.operator'])->get();
         return view('outlet.index', [
-            'active_tab' => 'transfer'
+            'active_tab' => 'kinerja',
+            'outlets' => $outlets
         ]);
     }
 
     public function riwayat()
     {
+        $outlets = Outlet::with(['users.operator'])->get();
         return view('outlet.index', [
-            'active_tab' => 'riwayat'
-        ]);
-    }
-
-    public function kinerja()
-    {
-        return view('outlet.index', [
-            'active_tab' => 'kinerja'
+            'active_tab' => 'riwayat',
+            'outlets' => $outlets
         ]);
     }
 

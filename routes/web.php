@@ -27,9 +27,12 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/stok', [ProductController::class, 'request'])->name('products.stok');
+    Route::get('/products/restok', [ProductController::class, 'restok'])->name('products.restok');
+    Route::get('/products/transfer', [ProductController::class, 'transfer'])->name('products.transfer');
     Route::get('/products/opname', [ProductController::class, 'opname'])->name('products.opname');
     Route::get('/products/request', [ProductController::class, 'request'])->name('products.request');
-    Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
+    Route::get('/products/opname-detail/{id}', [ProductController::class, 'show'])->name('products.opname.detail')->whereUuid('id');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
     Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
@@ -68,9 +71,8 @@ Route::prefix('users')->middleware(['auth', 'verified', 'role:owner,kepala_toko'
 
 Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(function () {
     Route::get('/', [OutletController::class, 'index'])->name('outlet.index');
-    Route::get('/transfer', [OutletController::class, 'transfer'])->name('outlet.transfer');
-    Route::get('/riwayat', [OutletController::class, 'riwayat'])->name('outlet.riwayat');
     Route::get('/kinerja', [OutletController::class, 'kinerja'])->name('outlet.kinerja');
+    Route::get('/riwayat', [OutletController::class, 'riwayat'])->name('outlet.riwayat');
     Route::post('/', [OutletController::class, 'store'])->name('outlet.store');
     Route::put('/{id}', [OutletController::class, 'update'])->name('outlet.update');
     Route::delete('/{id}', [OutletController::class, 'destroy'])->name('outlet.destroy');
@@ -93,6 +95,7 @@ Route::get('/keuangan', [KeuanganController::class, 'index'])
 
 Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KontakController::class, 'index'])->name('kontak.index');
+    Route::post('/sync', [KontakController::class, 'syncFromOrders'])->name('kontak.sync');
     Route::post('/', [KontakController::class, 'store'])->name('kontak.store');
     Route::put('/{id}', [KontakController::class, 'update'])->name('kontak.update');
     Route::delete('/{id}', [KontakController::class, 'destroy'])->name('kontak.destroy');
