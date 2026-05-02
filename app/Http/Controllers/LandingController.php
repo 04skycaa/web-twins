@@ -217,7 +217,7 @@ class LandingController extends Controller
             ];
 
             $matchCriteria = ['no_hp' => $finalPhone];
-            
+
             if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
                 $matchCriteria['store_id'] = $outlet->uuid;
             }
@@ -413,7 +413,7 @@ class LandingController extends Controller
                     'nama' => $finalName,
                     'tipe' => 'customer'
                 ];
-                
+
                 $matchCriteria = ['no_hp' => $finalPhone];
                 if (\Illuminate\Support\Facades\Schema::hasColumn('contacts', 'store_id')) {
                     $matchCriteria['store_id'] = $outlet->uuid;
@@ -421,7 +421,7 @@ class LandingController extends Controller
                 if ($user && \Illuminate\Support\Facades\Schema::hasColumn('contacts', 'user_id')) {
                     $contactData['user_id'] = $user->uuid;
                 }
-                
+
                 Contact::updateOrCreate($matchCriteria, $contactData);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Gagal sinkronisasi kontak saat checkout: ' . $e->getMessage());
@@ -472,6 +472,13 @@ class LandingController extends Controller
             'custom_field1' => $outlet->nama,
             'custom_field2' => 'Jarak: ' . number_format($distanceKm, 2, '.', '') . ' km',
         ];
+
+        $notificationUrl = trim((string) config('services.midtrans.notification_url', ''));
+        if ($notificationUrl === '') {
+            $notificationUrl = rtrim($request->getSchemeAndHttpHost(), '/') . '/midtrans/webhook';
+        }
+
+        $payload['notification_url'] = $notificationUrl;
 
         $callbackBaseUrl = trim((string) config('services.midtrans.callback_base_url', ''));
         if ($callbackBaseUrl !== '') {
@@ -636,13 +643,13 @@ class LandingController extends Controller
             return $path;
         }
 
-        // Clean path from /storage/ prefix for Storage::url()
+        // Clean path from /storage/ prefix for public asset URL
         $cleanPath = ltrim($path, '/');
         if (str_starts_with($cleanPath, 'storage/')) {
             $cleanPath = substr($cleanPath, 8);
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+        return asset('storage/' . $cleanPath);
     }
 
     public static function uploadToCloudinary($file, $folder = 'twins')
