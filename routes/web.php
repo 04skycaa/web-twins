@@ -114,6 +114,7 @@ Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko
 
 Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [BukuKasController::class, 'index'])->name('keuangan.transaksi');
+    Route::get('/export', [BukuKasController::class, 'export'])->name('keuangan.export');
     Route::post('/cashflow', [BukuKasController::class, 'storeCashFlow'])->name('keuangan.cashflow.store');
     Route::put('/cashflow/{id}', [BukuKasController::class, 'updateCashFlow'])->name('keuangan.cashflow.update');
     Route::delete('/cashflow/{id}', [BukuKasController::class, 'deleteCashFlow'])->name('keuangan.cashflow.destroy');
@@ -128,10 +129,19 @@ Route::get('/laporan', [LaporanController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('laporan.index');
 
-Route::get('/absensi', [AbsensiController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
-    ->name('absensi.index');
+Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
+    Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');
+    Route::post('/shift', [AbsensiController::class, 'storeShift'])->name('absensi.shift.store');
+    Route::put('/shift/{uuid}', [AbsensiController::class, 'updateShift'])->name('absensi.shift.update');
+    Route::delete('/shift/{uuid}', [AbsensiController::class, 'deleteShift'])->name('absensi.shift.destroy');
+    Route::post('/penugasan', [AbsensiController::class, 'storePenugasan'])->name('absensi.penugasan.store');
+    Route::put('/penugasan/{id}', [AbsensiController::class, 'updatePenugasan'])->name('absensi.penugasan.update');
+    Route::delete('/penugasan/{id}', [AbsensiController::class, 'deletePenugasan'])->name('absensi.penugasan.destroy');
+});
 
+
+Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
+    ->name('midtrans.webhook');
 
 Route::get('/outlet/{id}', [LandingController::class, 'showOutlet'])->name('user.index');
 Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDeliveryAddress'])
@@ -140,21 +150,17 @@ Route::post('/outlet/{id}/delivery-address', [LandingController::class, 'saveDel
 Route::post('/outlet/{id}/checkout-token', [LandingController::class, 'createCheckoutToken'])
     ->middleware(['auth'])
     ->name('user.checkout.token');
-    Route::get('/outlet/{id}/payment-order/{orderId}', [LandingController::class, 'showPaymentOrder'])
-        ->middleware(['auth'])
-        ->name('user.payment-order.show');
-    Route::get('/outlet/{id}/history', [LandingController::class, 'getUserHistory'])
-        ->middleware(['auth'])
-        ->name('user.history.api');
+Route::get('/outlet/{id}/payment-order/{orderId}', [LandingController::class, 'showPaymentOrder'])
+    ->middleware(['auth'])
+    ->name('user.payment-order.show');
+Route::get('/outlet/{id}/history', [LandingController::class, 'getUserHistory'])
+    ->middleware(['auth'])
+    ->name('user.history.api');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
     ->middleware(['auth', 'verified'])
     ->name('store.review.store');
 Route::post('/submit-general-review', [LandingController::class, 'generalReview'])
     ->middleware(['auth', 'verified'])
     ->name('landing.review.store');
-
-Route::post('/midtrans/webhook', [MidtransWebhookController::class, 'handle'])
-    ->withoutMiddleware([VerifyCsrfToken::class])
-    ->name('midtrans.webhook');
 
 require __DIR__ . '/auth.php';

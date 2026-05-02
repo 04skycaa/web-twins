@@ -8,6 +8,7 @@ use App\Models\Debt;
 use App\Models\DetailDebt;
 use App\Models\Contact;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BukuKasController extends Controller
 {
@@ -222,5 +223,67 @@ class BukuKasController extends Controller
         $tabTipe = $tipe === 'utang' ? 'hutang' : $tipe;
         $namaTipe = $tipe === 'utang' ? 'Hutang' : ucfirst($tipe);
         return redirect()->back()->with('success', 'Data ' . $namaTipe . ' berhasil dihapus!')->with('active_tab', $tabTipe);
+    }
+
+    public function export(Request $request)
+    {
+        $format = $request->input('format', 'pdf');
+        $kategoriList = $request->input('kategori', []);
+        $store_id = $request->input('store_id', 'all');
+        $start_date = $request->input('start_date');
+        $end_date = $request->input('end_date');
+
+        $pengeluaranQuery = CashFlow::with(['outlet', 'user'])->where('jenis', 'pengeluaran');
+        $pemasukanQuery = CashFlow::with(['outlet', 'user'])->where('jenis', 'pemasukan');
+        $hutangQuery = Debt::with(['contact', 'detailDebts'])->whereRaw('LOWER(tipe) IN (?, ?)', ['hutang', 'utang']);
+        $piutangQuery = Debt::with(['contact', 'detailDebts'])->whereRaw('LOWER(tipe) = ?', ['piutang']);
+
+        if ($store_id !== 'all') {
+            $pengeluaranQuery->where('store_id', $store_id);
+            $pemasukanQuery->where('store_id', $store_id);
+            $hutangQuery->where('store_id', $store_id);
+            $piutangQuery->where('store_id', $store_id);
+            $outlet_name = DB::table('store')->where('uuid', $store_id)->value('nama') ?? 'Semua Outlet';
+        } else {
+            $outlet_name = 'Semua Outlet';
+        }
+
+        if ($start_date) {
+            $pengeluaranQuery->whereDate('tanggal', '>=', $start_date);
+            $pemasukanQuery->whereDate('tanggal', '>=', $start_date);
+            $hutangQuery->whereDate('jatuh_tempo', '>=', $start_date);
+            $piutangQuery->whereDate('jatuh_tempo', '>=', $start_date);
+        }
+        if ($end_date) {
+            $pengeluaranQuery->whereDate('tanggal', '<=', $end_date);
+            $pemasukanQuery->whereDate('tanggal', '<=', $end_date);
+            $hutangQuery->whereDate('jatuh_tempo', '<=', $end_date);
+            $piutangQuery->whereDate('jatuh_tempo', '<=', $end_date);
+        }
+
+        $pengeluaran = $pengeluaranQuery->orderBy('tanggal', 'desc')->get();
+        $pemasukan = $pemasukanQuery->orderBy('tanggal', 'desc')->get();
+        $hutang = $hutangQuery->orderBy('jatuh_tempo', 'asc')->get();
+        $piutang = $piutangQuery->orderBy('jatuh_tempo', 'asc')->get();
+
+        $total_pemasukan = $pemasukan->sum('nominal');
+        $total_pengeluaran = $pengeluaran->sum('nominal');
+        $total_sisa_hutang = $hutang->sum('sisa');
+        $total_sisa_piutang = $piutang->sum('sisa');
+
+        $data = compact(
+            'kategoriList', 'start_date', 'end_date', 'outlet_name',
+            'pengeluaran', 'pemasukan', 'hutang', 'piutang',
+            'total_pemasukan', 'total_pengeluaran', 'total_sisa_hutang', 'total_sisa_piutang'
+        );
+
+        if ($format === 'excel') {
+            return response(view('buku_kas.export_pdf', $data))
+                ->header('Content-Type', 'application/vnd.ms-excel')
+                ->header('Content-Disposition', 'attachment; filename="Export_Buku_Kas_'.date('Ymd_His').'.xls"');
+        }
+
+        $pdf = Pdf::loadView('buku_kas.export_pdf', $data);
+        return $pdf->download('Export_Buku_Kas_'.date('Ymd_His').'.pdf');
     }
 }

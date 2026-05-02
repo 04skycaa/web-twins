@@ -28,19 +28,19 @@
 <div class="fitur-container" id="bukukas-app">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('pengeluaran')" id="pill-pengeluaran">
+        <a href="#pengeluaran" class="tab-pill" onclick="switchTab('pengeluaran')" id="pill-pengeluaran">
             <iconify-icon icon="solar:round-arrow-left-down-bold-duotone"></iconify-icon>
             <span>Pengeluaran</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('pemasukan')" id="pill-pemasukan">
+        <a href="#pemasukan" class="tab-pill" onclick="switchTab('pemasukan')" id="pill-pemasukan">
             <iconify-icon icon="solar:round-arrow-right-up-bold-duotone"></iconify-icon>
             <span>Pemasukan</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('hutang')" id="pill-hutang">
+        <a href="#hutang" class="tab-pill" onclick="switchTab('hutang')" id="pill-hutang">
             <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
             <span>Hutang</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('piutang')" id="pill-piutang">
+        <a href="#piutang" class="tab-pill" onclick="switchTab('piutang')" id="pill-piutang">
             <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
             <span>Piutang</span>
         </a>
@@ -50,40 +50,60 @@
     <div class="action-bar">
         <div style="display: contents;">
             <div class="left-actions-group">
-                <div class="search-wrapper" style="display: flex; gap: 8px; align-items: center; width: 100%; border: none;">
-                    <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                        <iconify-icon icon="solar:magnifer-linear" class="search-icon" style="position: absolute; left: 10px;"></iconify-icon>
-                        <input type="text" id="globalSearch" class="search-input" style="width: 100%; pl-4" placeholder="Cari keterangan..." onkeyup="filterTable()">
-                    </div>
-                    <div style="position: relative;">
-                        <input type="date" id="dateFilter" onchange="filterTable()" style="opacity: 0; position: absolute; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;" title="Filter Tanggal">
-                        <button type="button" class="btn-filter" style="width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; pointer-events: none;">
-                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                        </button>
-                    </div>
+                <div class="search-wrapper">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="globalSearch" class="search-input" placeholder="Cari keterangan..." onkeyup="filterTable()">
+                </div>
+                
+                <div style="position: relative;">
+                    <input type="date" id="dateFilter" onchange="filterTable()" style="opacity: 0; position: absolute; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 2;" title="Filter Tanggal">
+                    <button type="button" class="btn-filter" title="Filter Kalender" style="position: relative; z-index: 1;">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                    </button>
                 </div>
 
                 @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
-                    <div style="display: inline-flex; align-items: center; background: #fff; padding: 5px 10px; border-radius: 10px; border: 1px solid #e5e7eb;">
-                        <iconify-icon icon="solar:shop-bold-duotone" style="color: var(--primary-blue); font-size: 18px; margin-right: 5px;"></iconify-icon>
-                        <form id="storeForm" method="GET" action="{{ route('keuangan.transaksi') }}">
-                            <input type="hidden" name="active_tab" id="storeFormActiveTab" value="">
-                            <select name="store_id" style="background: transparent; border: none; font-weight: 600; cursor: pointer; color: var(--primary-blue); outline: none; font-size: 14px;" onchange="document.getElementById('storeFormActiveTab').value = currentTab; document.getElementById('storeForm').submit()">
-                                @if(Auth::user()->role === 'owner')
-                                    <option value="all" {{ $store_id === 'all' ? 'selected' : '' }}>Semua Outlet</option>
-                                @endif
-                                @foreach($outlets as $o)
-                                    <option value="{{ $o->uuid }}" {{ $store_id == $o->uuid ? 'selected' : '' }}>
-                                        {{ $o->nama }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </form>
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Toko: {{ $store_id == 'all' ? 'Semua Outlet' : ($outlets->firstWhere('uuid', $store_id)->nama ?? 'Semua') }}" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <form id="storeForm" method="GET" action="{{ route('keuangan.transaksi') }}">
+                                <input type="hidden" name="active_tab" id="storeFormActiveTab" value="">
+                                <input type="hidden" name="store_id" id="storeFormStoreId" value="{{ $store_id }}">
+                            </form>
+                            @if(Auth::user()->role === 'owner')
+                                <a href="javascript:void(0)" onclick="document.getElementById('storeFormActiveTab').value = currentTab; document.getElementById('storeFormStoreId').value = 'all'; document.getElementById('storeForm').submit()" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">
+                                    Semua Outlet
+                                </a>
+                            @endif
+                            @foreach($outlets as $o)
+                                <a href="javascript:void(0)" onclick="document.getElementById('storeFormActiveTab').value = currentTab; document.getElementById('storeFormStoreId').value = '{{ $o->uuid }}'; document.getElementById('storeForm').submit()" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">
+                                    {{ $o->nama }}
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>
 
             <div class="right-actions">
+                <div class="dropdown">
+                    <button type="button" class="btn-action" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                        <span>Extract</span>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="javascript:void(0)" onclick="openExportModal('excel')">
+                            <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
+                            Excel
+                        </a>
+                        <a href="javascript:void(0)" onclick="openExportModal('pdf')">
+                            <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
+                            PDF
+                        </a>
+                    </div>
+                </div>
                 <button type="button" class="btn-action" id="btnAddMain" onclick="openCurrentModal()">
                     <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
                     <span id="txtAddMain">Tambah Pengeluaran</span>
@@ -685,7 +705,90 @@
     </div>
 </div>
 
+<!-- Modal Export -->
+<div id="modalExport" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>Export Data <span id="exportFormatLabel"></span></h3>
+            <button type="button" class="close-modal" onclick="closeModal('modalExport')">&times;</button>
+        </div>
+        <form id="formExport" method="GET" action="{{ route('keuangan.export') }}">
+            <input type="hidden" name="format" id="exportFormatInput" value="">
+            
+            @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px;">Pilih Outlet</label>
+                    <select name="store_id" class="form-control" required>
+                        @if(Auth::user()->role === 'owner')
+                            <option value="all" {{ $store_id === 'all' ? 'selected' : '' }}>Semua Outlet</option>
+                        @endif
+                        @foreach($outlets as $o)
+                            <option value="{{ $o->uuid }}" {{ $store_id == $o->uuid ? 'selected' : '' }}>{{ $o->nama }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
+                <input type="hidden" name="store_id" value="{{ $store_id }}">
+            @endif
+            
+            <div class="form-group">
+                <label style="display: block; margin-bottom: 8px;">Pilih Data yang Diekstrak</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--primary-blue); grid-column: span 2; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px;">
+                        <input type="checkbox" id="checkAllKategori" onchange="toggleAllKategori(this)"> Semua Kategori
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                        <input type="checkbox" name="kategori[]" value="Pemasukan" class="export-checkbox" onchange="checkKategoriStatus()"> Pemasukan
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                        <input type="checkbox" name="kategori[]" value="Pengeluaran" class="export-checkbox" onchange="checkKategoriStatus()"> Pengeluaran
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                        <input type="checkbox" name="kategori[]" value="Hutang" class="export-checkbox" onchange="checkKategoriStatus()"> Hutang
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                        <input type="checkbox" name="kategori[]" value="Piutang" class="export-checkbox" onchange="checkKategoriStatus()"> Piutang
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Rentang Waktu (Opsional)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" name="start_date" class="form-control" style="flex: 1;">
+                    <span>-</span>
+                    <input type="date" name="end_date" class="form-control" style="flex: 1;">
+                </div>
+                <small style="color: #888; font-size: 11px;">Kosongkan jika ingin mengekstrak semua tanggal.</small>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <button type="button" onclick="closeModal('modalExport')" class="btn-action btn-danger" style="flex:1; justify-content:center;">Batal</button>
+                <button type="submit" class="btn-action" style="flex:1; justify-content:center; background: #2E7D32;" onclick="setTimeout(() => closeModal('modalExport'), 1000)">
+                    <iconify-icon icon="solar:download-bold-duotone"></iconify-icon> Download
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function toggleDropdown(event) {
+        event.stopPropagation();
+        const dropdown = event.currentTarget.nextElementSibling;
+        document.querySelectorAll('.dropdown-content').forEach(el => {
+            if (el !== dropdown) el.classList.remove('show');
+        });
+        dropdown.classList.toggle('show');
+    }
+
+    // Close dropdowns when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+        }
+    });
+
     let currentTab = '{{ request('active_tab', session('active_tab', 'pengeluaran')) }}';
 
     // Auto-hide success alert
@@ -752,6 +855,37 @@
     
     function closeModal(id) { 
         document.getElementById(id).style.display = 'none'; 
+    }
+
+    function toggleAllKategori(source) {
+        document.querySelectorAll('.export-checkbox').forEach(cb => cb.checked = source.checked);
+    }
+
+    function checkKategoriStatus() {
+        const total = document.querySelectorAll('.export-checkbox').length;
+        const checked = document.querySelectorAll('.export-checkbox:checked').length;
+        document.getElementById('checkAllKategori').checked = (total === checked && total > 0);
+    }
+
+    function openExportModal(format) {
+        document.getElementById('exportFormatInput').value = format;
+        document.getElementById('exportFormatLabel').innerText = format.toUpperCase();
+        
+        // Uncheck all first, then check the current tab
+        document.querySelectorAll('.export-checkbox').forEach(cb => cb.checked = false);
+        
+        let valToSelect = '';
+        if (currentTab === 'pemasukan') valToSelect = 'Pemasukan';
+        if (currentTab === 'pengeluaran') valToSelect = 'Pengeluaran';
+        if (currentTab === 'hutang') valToSelect = 'Hutang';
+        if (currentTab === 'piutang') valToSelect = 'Piutang';
+        
+        const cb = document.querySelector(`.export-checkbox[value="${valToSelect}"]`);
+        if (cb) cb.checked = true;
+
+        checkKategoriStatus();
+
+        openModal('modalExport');
     }
 
     function filterTable() {
