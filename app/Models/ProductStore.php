@@ -21,7 +21,9 @@ class ProductStore extends Model
         'store_id',
         'stok',
         'kadaluarsa',
-        'status_aktif'
+        'status_aktif',
+        'stok_minimum',
+        'tanggal_masuk'
     ];
 
     public function product()

@@ -19,7 +19,9 @@ class Opname extends Model
         'uuid',
         'tanggal',
         'store_id',
-        'user_id'
+        'user_id',
+        'status',
+        'kategori_id'
     ];
 
     public function store()
@@ -42,29 +44,21 @@ class Opname extends Model
         return $this->details->count();
     }
 
-    public function getItemsFilledAttribute()
-    {
-        return $this->details->where('stok_fisik', '>', 0)->count();
-    }
-
     public function getTotalSelisihAttribute()
     {
         return $this->details->sum('selisih');
     }
 
-    public function getStatusAttribute()
+    public function getTotalKerugianAttribute()
     {
-        $total = $this->total_items;
-        $filled = $this->items_filled;
-
-        if ($total == 0 || $filled == 0) {
-            return 'Draft';
-        }
-
-        if ($filled < $total) {
-            return 'Proses';
-        }
-
-        return 'Selesai';
+        // Kerugian = Selisih (jika negatif) x Harga Modal
+        return $this->details->sum(function($detail) {
+            // Jika selisih negatif (stok hilang), maka itu kerugian (nilai negatif)
+            if ($detail->selisih < 0) {
+                $modal = $detail->product ? ($detail->product->harga_modal ?? 0) : 0;
+                return $detail->selisih * $modal;
+            }
+            return 0;
+        });
     }
 }

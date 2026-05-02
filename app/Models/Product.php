@@ -25,6 +25,27 @@ class Product extends Model
         'image_url'
     ];
 
+    protected $appends = ['resolved_image_url'];
+
+    public function getResolvedImageUrlAttribute()
+    {
+        $path = $this->image_url;
+        if (!$path) {
+            return asset('images/placeholder-product.png');
+        }
+
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        $cleanPath = ltrim($path, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'kategori_id', 'uuid');

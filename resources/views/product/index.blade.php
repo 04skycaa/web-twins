@@ -2,12 +2,746 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous">
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
 
+<style>
+    /* Force SweetAlert2 and Global Loading to be on top of EVERYTHING */
+    /* Force SweetAlert2 and Global Loading to be on top of EVERYTHING */
+    .swal2-container { 
+        z-index: 999999999 !important; 
+    }
+    .global-loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999999 !important;
+    }
+    .loader-card {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        min-width: 320px;
+    }
+    .modal-overlay { 
+        z-index: 50000 !important; 
+    }
+    .btn-filter-text { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; background: white; border: 2px solid var(--border-blue); border-radius: 50px; color: var(--primary-blue); font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.3s; height: auto; width: auto; }
+    .btn-filter-text:hover { background: var(--light-blue); border-color: var(--primary-blue); }
+    .btn-filter-text.active { background: var(--primary-blue); color: white; border-color: var(--primary-blue); box-shadow: 0 4px 8px rgba(0, 129, 201, 0.2); }
+    .btn-filter-text iconify-icon { font-size: 18px; }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    .loading-text {
+        font-weight: 700;
+        color: #334155;
+        font-size: 18px;
+        margin: 0;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+<script>
+    function showLoading(text = 'Sedang Memproses Data...') {
+        console.log('showLoading called with text:', text);
+        const el = document.getElementById('globalLoading');
+        if (!el) return;
+        const textEl = el.querySelector('.loading-text');
+        if (textEl) textEl.innerText = text;
+        el.style.setProperty('display', 'flex', 'important');
+    }
+    function hideLoading() {
+        console.log('hideLoading called');
+        const el = document.getElementById('globalLoading');
+        if (el) {
+            el.style.setProperty('display', 'none', 'important');
+        }
+    }
+
+    function openModal(id, zIndex = 20000) {
+        console.log('Attempting to open modal:', id);
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('z-index', zIndex, 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+            console.log('Modal opened successfully:', id);
+        } else {
+            console.error('openModal Error: Element with ID "' + id + '" not found!');
+        }
+    }
+
+    function closeModal(id) {
+        console.log('Closing modal:', id);
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.setProperty('display', 'none', 'important');
+        }
+    }
+</script>
+
+
+{{-- MODALS CONSOLIDATED AT TOP --}}
+
+<!-- Modal Tambah Produk -->
+<div id="addModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+            <h3><iconify-icon icon="solar:add-circle-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Tambah Produk Baru</h3>
+            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
+        </div>
+        <form action="{{ route('products.store') }}" method="POST" id="addForm" enctype="multipart/form-data" onsubmit="showLoading()">
+            @csrf
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+                    <!-- Sisi Kiri: Upload Gambar -->
+                    <div>
+                        <label style="display: block; margin-bottom: 10px; font-weight: 600; font-size: 14px; color: #475569;">Foto Produk</label>
+                        <div id="imagePreviewContainer" style="width: 100%; aspect-ratio: 1/1; border: 2px dashed #cbd5e1; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; cursor: pointer; transition: all 0.3s;" onclick="document.getElementById('productImageInput').click()">
+                            <div style="text-align: center;">
+                                <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 40px; color: #94a3b8;"></iconify-icon>
+                                <p style="font-size: 12px; color: #94a3b8; margin-top: 8px;">Klik untuk Pilih/Foto</p>
+                            </div>
+                        </div>
+                        <input type="file" id="productImageInput" name="image" accept="image/*" style="display: none;">
+                        <input type="hidden" name="cropped_image" id="croppedImageResult">
+                        <p style="font-size: 11px; color: #64748b; margin-top: 8px; text-align: center;">Rasio 1:1 direkomendasikan</p>
+                    </div>
+
+                    <!-- Sisi Kanan: Data Utama -->
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-group">
+                            <label for="nama_produk">Nama Produk</label>
+                            <input type="text" name="nama_produk" id="addNamaProduk" class="form-control" placeholder="Masukkan nama produk..." required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label for="barcode">Barcode / SKU</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" name="barcode" id="barcodeAdd" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;">
+                                    <button type="button" class="btn-action" style="width: 44px; height: 44px; padding: 0; background: #FFB300; color: #333; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('barcodeFileInputAdd').click()" title="Scan dari Gambar">
+                                        <iconify-icon icon="solar:gallery-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                                    </button>
+                                </div>
+                                <input type="file" id="barcodeFileInputAdd" accept="image/*" style="display: none;" onchange="handleBarcodeImageScan(event, 'barcodeAdd')">
+                            </div>
+                            <div class="form-group">
+                                <label for="kategori_id">Kategori</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select name="kategori_id" class="form-control" required>
+                                        <option value="">Pilih Kategori</option>
+                                        @foreach($categories ?? [] as $category)
+                                            <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn-filter" style="width: 44px; flex-shrink: 0;" onclick="openAddCategoryModal()">
+                                        <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                    <div class="form-group">
+                        <label for="harga_modal">Harga Modal (Rp)</label>
+                        <input type="number" name="harga_modal" class="form-control" placeholder="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="harga_jual">Harga Jual Satuan (Rp)</label>
+                        <input type="number" name="harga_jual" class="form-control" placeholder="0" required>
+                    </div>
+                </div>
+
+                <!-- Grosir Section -->
+                <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #1e293b; font-size: 15px;">Harga Grosir / Bertingkat <span style="font-size: 11px; color: #64748b; font-weight: 400;">(Opsional)</span></h4>
+                        <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 12px; background: #f0fdf4; color: #166534;" onclick="addPriceLevelRow('priceLevelBody')">
+                            + Tambah Level
+                        </button>
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; font-size: 12px; color: #64748b;">
+                                    <th style="padding-bottom: 8px; padding-right: 15px;">Minimal Pembelian (Pcs)</th>
+                                    <th style="padding-bottom: 8px; padding-right: 15px;">Harga Satuan Grosir (Rp)</th>
+                                    <th style="width: 40px; padding-bottom: 8px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="priceLevelBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 12px; padding: 20px; border-top: 1px solid #e2e8f0;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('addModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 2; justify-content: center; background: var(--primary-blue); color: white;">
+                    <iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right: 8px;"></iconify-icon> Simpan Produk
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Edit Produk -->
+<div id="editModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+            <h3><iconify-icon icon="solar:pen-new-square-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Edit Data Produk</h3>
+            <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <form id="editForm" method="POST" enctype="multipart/form-data" onsubmit="showLoading('Sedang Mengunggah & Memperbarui Produk...')">
+            @csrf
+            @method('PUT')
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+                    <!-- Sisi Kiri: Upload Gambar -->
+                    <div>
+                        <label style="display: block; margin-bottom: 10px; font-weight: 600; font-size: 14px; color: #475569;">Foto Produk</label>
+                        <div id="editImagePreviewContainer" style="width: 100%; aspect-ratio: 1/1; border: 2px dashed #cbd5e1; border-radius: 16px; display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; cursor: pointer;" onclick="document.getElementById('editProductImageInput').click()">
+                            <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 40px; color: #94a3b8;"></iconify-icon>
+                        </div>
+                        <input type="file" id="editProductImageInput" name="image" accept="image/*" style="display: none;">
+                        <input type="hidden" name="cropped_image" id="editCroppedImageResult">
+                    </div>
+
+                    <!-- Sisi Kanan: Data Utama -->
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div class="form-group">
+                            <label for="edit_nama">Nama Produk</label>
+                            <input type="text" name="nama_produk" id="edit_nama" class="form-control" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label for="edit_barcode">Barcode / SKU</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" name="barcode" id="edit_barcode" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;">
+                                    <button type="button" class="btn-action" style="width: 44px; height: 44px; padding: 0; background: #FFB300; color: #333; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('barcodeFileInputEdit').click()" title="Scan dari Gambar">
+                                        <iconify-icon icon="solar:gallery-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                                    </button>
+                                </div>
+                                <input type="file" id="barcodeFileInputEdit" accept="image/*" style="display: none;" onchange="handleBarcodeImageScan(event, 'edit_barcode')">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit_kategori">Kategori</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select name="kategori_id" id="edit_kategori" class="form-control" required>
+                                        @foreach($categories ?? [] as $category)
+                                            <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn-filter" style="width: 44px; flex-shrink: 0;" onclick="openAddCategoryModal()">
+                                        <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+                    <div class="form-group">
+                        <label for="edit_modal">Harga Modal (Rp)</label>
+                        <input type="number" name="harga_modal" id="edit_modal" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_jual">Harga Jual Satuan (Rp)</label>
+                        <input type="number" name="harga_jual" id="edit_jual" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- Grosir Section Edit -->
+                <div style="margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #1e293b; font-size: 15px;">Harga Grosir / Bertingkat</h4>
+                        <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 12px; background: #f0fdf4; color: #166534;" onclick="addPriceLevelRow('editPriceLevelBody')">
+                            + Tambah Level
+                        </button>
+                    </div>
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; font-size: 12px; color: #64748b;">
+                                    <th>Minimal Qty</th>
+                                    <th>Harga Grosir (Rp)</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="editPriceLevelBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 12px; padding: 20px; border-top: 1px solid #e2e8f0;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('editModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 2; justify-content: center; background: var(--primary-blue); color: white;">
+                    <iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right: 8px;"></iconify-icon> Update Produk
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal View Produk -->
+<div id="viewModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 600px; width: 95%;">
+        <div class="modal-header">
+            <h3><iconify-icon icon="solar:eye-bold-duotone" style="vertical-align: middle; margin-right: 8px;"></iconify-icon> Detail Produk</h3>
+            <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
+        </div>
+        <div class="modal-body" id="viewDetailContent" style="padding: 20px;">
+            {{-- Content will be injected via JS --}}
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #f1f5f9; display: flex; justify-content: center;">
+            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('viewModal')">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Update Stok & Expired -->
+<div id="editAlertModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 style="display: flex; align-items: center; gap: 10px;">
+                <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                Update Katalog & Stok
+            </h3>
+            <button class="close-modal" onclick="closeModal('editAlertModal')">&times;</button>
+        </div>
+        <form id="editAlertForm" method="POST" onsubmit="showLoading('Sedang Memperbarui Stok...')">
+            @csrf
+            @method('PUT')
+            <div class="modal-body">
+                <div id="editAlertProductInfo" style="margin-bottom: 24px; padding: 16px; background: #f8fbff; border-radius: 16px; border: 1px solid #d0e7ff; display: flex; gap: 16px; align-items: center;">
+                    <img id="editAlertImage" src="" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #fff; border: 1px solid #eee;">
+                    <div>
+                        <div id="editAlertName" style="font-size: 16px; font-weight: 700; color: var(--primary-blue); margin-bottom: 4px;">-</div>
+                        <div id="editAlertBarcode" style="font-size: 13px; color: #64748b;">-</div>
+                        <div id="editAlertStore" style="font-size: 12px; color: #0056b3; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                            <iconify-icon icon="solar:shop-2-bold-duotone"></iconify-icon>
+                            <span id="editAlertStoreName">-</span>
+                        </div>
+                        <div style="font-size: 10px; color: #888; margin-top: 2px;">Masuk: <span id="editAlertDateMasuk">-</span></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="alert_stok">Stok Saat Ini (Pcs)</label>
+                        <input type="number" name="stok" id="alert_stok" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="alert_kadaluarsa">Tanggal Kadaluarsa</label>
+                        <input type="date" name="kadaluarsa" id="alert_kadaluarsa" class="form-control">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="alert_stok_minimum">Min. Stok Notifikasi (Pcs)</label>
+                        <input type="number" name="stok_minimum" id="alert_stok_minimum" class="form-control" placeholder="Default: 10">
+                    </div>
+                    <div class="form-group">
+                        <label>Status Aktif di Outlet</label>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                            <label class="switch">
+                                <input type="checkbox" name="status_aktif" id="alert_status_aktif" value="1">
+                                <span class="slider round"></span>
+                            </label>
+                            <span id="statusLabel" style="font-size: 14px; font-weight: 600; color: #2E7D32;">Aktif</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 24px; display: flex; gap: 12px; padding: 20px;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('editAlertModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center; background: var(--primary-blue); color: white;">
+                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tambah Transfer Modal -->
+<div id="transferModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+            <h3>Buat Transfer Stok Baru</h3>
+            <button class="close-modal" onclick="closeModal('transferModal')">&times;</button>
+        </div>
+        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm">
+            @csrf
+            <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label>Toko Asal (Source)</label>
+                        @if(Auth::user()->isOwner())
+                            <select name="store_id" id="sourceStoreSelect" class="form-control" required onchange="handleSourceStoreChange(this.value)">
+                                <option value="">-- Pilih Toko Asal --</option>
+                                @foreach($stores as $s)
+                                    <option value="{{ $s->uuid }}" {{ Auth::user()->store_id == $s->uuid ? 'selected' : '' }}>{{ $s->nama }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama }}" readonly>
+                            <input type="hidden" name="store_id" id="sourceStoreSelect" value="{{ Auth::user()->store_id }}">
+                        @endif
+                    </div>
+                    <div class="form-group">
+                        <label>Toko Tujuan (Destination)</label>
+                        <select name="tujuan_store_id" class="form-control" required>
+                            <option value="">-- Pilih Toko Tujuan --</option>
+                            @foreach($stores as $s)
+                                <option value="{{ $s->uuid }}">{{ $s->nama }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #334155;">Daftar Produk yang Dipindah</h4>
+                        <button type="button" class="btn-action" style="padding: 6px 14px; font-size: 12px;" onclick="addTransferRow()">
+                            <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 6px;"></iconify-icon> Tambah Produk
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="fitur-table" style="font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="width: 70%;">Nama Produk</th>
+                                    <th style="width: 20%;">Qty</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="transferItemsTable">
+                                {{-- Rows injected via JS --}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="transfer_catatan">Catatan / Keterangan</label>
+                    <textarea name="catatan" id="transfer_catatan" class="form-control" rows="2" placeholder="Alasan pemindahan barang..."></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 16px; padding: 0 20px 20px; justify-content: center;">
+                <button type="button" class="btn-action" style="min-width: 140px; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('transferModal')">Batal</button>
+                <button type="submit" class="btn-action" style="min-width: 200px; justify-content: center; background: var(--primary-blue); color: white;">
+                    <iconify-icon icon="solar:transfer-horizontal-bold-duotone" style="margin-right: 8px; font-size: 18px;"></iconify-icon> Kirim Transfer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Detail Transfer Modal v2 -->
+<div id="transferDetailModal_v2" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+            <h3>Detail Transfer Stok</h3>
+            <button class="close-modal" onclick="closeModal('transferDetailModal_v2')">&times;</button>
+        </div>
+        <div class="modal-body" id="transferDetailBody_v2" style="padding: 20px;">
+            {{-- Content injected via JS --}}
+        </div>
+        <div style="margin-top: 24px; display: flex; justify-content: center; padding-bottom: 20px;">
+            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; min-width: 150px; justify-content: center;" onclick="closeModal('transferDetailModal_v2')">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Kategori -->
+<div id="addCategoryModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3>Tambah Kategori Baru</h3>
+            <button class="close-modal" onclick="closeModal('addCategoryModal')">&times;</button>
+        </div>
+        <form id="addCategoryForm" action="{{ route('products.category.store') }}" method="POST">
+            @csrf
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Kategori</label>
+                    <input type="text" name="nama_category" class="form-control" placeholder="Misal: Minuman, Makanan" required>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; padding: 20px; border-top: 1px solid #eee;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('addCategoryModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; background: var(--primary-blue); color: white; justify-content: center;">Simpan Kategori</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tambah Opname Modal -->
+<div id="addOpnameModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 950px; width: 95%;">
+        <div class="modal-header">
+            <h3>Input Opname Stok</h3>
+            <button class="close-modal" onclick="closeModal('addOpnameModal')">&times;</button>
+        </div>
+        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm" onsubmit="showLoading('Sedang Menyimpan Data Opname...')">
+            @csrf
+            <div id="opnameMethod"></div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Pilih Outlet / Toko</label>
+                        @if(Auth::user()->isOwner())
+                            <select name="store_id" id="opname_store_id" class="form-control" required>
+                                <option value="">-- Pilih Toko --</option>
+                                @foreach($stores ?? [] as $store)
+                                    <option value="{{ $store->uuid }}" {{ Auth::user()->store_id == $store->uuid ? 'selected' : '' }}>{{ $store->nama }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
+                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa;">
+                        @endif
+                    </div>
+                    <div class="form-group">
+                        <label>Filter Kategori (Opsional)</label>
+                        <select name="kategori_id" id="opnameKategoriFilter" class="form-control" onchange="filterOpnameProducts(this.value)">
+                            <option value="">-- Semua Kategori --</option>
+                            @foreach($categories ?? [] as $cat)
+                                <option value="{{ $cat->uuid }}">{{ $cat->nama_category }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: var(--primary-blue); display: flex; align-items: center; gap: 8px;">
+                        <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
+                        Item Produk
+                    </h4>
+                    <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 12px; background: #eff6ff; color: var(--primary-blue); border: 1px dashed var(--primary-blue);" onclick="addOpnameRow()">
+                        <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 4px;"></iconify-icon> Tambah Baris
+                    </button>
+                </div>
+
+                <div style="overflow-x: auto; max-height: 400px; border: 1px solid #eee; border-radius: 12px;">
+                    <table class="fitur-table" style="font-size: 13px;">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: #f8f9fa;">
+                            <tr>
+                                <th style="width: 35%;">Produk</th>
+                                <th style="width: 12%;">Sistem</th>
+                                <th style="width: 12%;">Fisik</th>
+                                <th>Alasan Selisih / Keterangan</th>
+                                <th style="width: 50px;">#</th>
+                            </tr>
+                        </thead>
+                        <tbody id="opnameItemsTable">
+                            {{-- Rows will be added here via JS --}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px; padding: 20px;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b;" onclick="closeModal('addOpnameModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">
+                    <iconify-icon icon="solar:diskette-bold-duotone" style="margin-right: 8px;"></iconify-icon>
+                    Simpan Sesi Opname
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tambah Restok Modal -->
+<div id="restokModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 950px; width: 95%;">
+        <div class="modal-header">
+            <h3>Tambah Restok Baru</h3>
+            <button class="close-modal" onclick="closeModal('restokModal')">&times;</button>
+        </div>
+        <form action="{{ route('products.restok.store') }}" method="POST" id="restokForm" onsubmit="showLoading('Sedang Menyimpan Data Restok...')">
+            @csrf
+            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label for="restok_supplier_id">Pilih Supplier</label>
+                        <select name="contact_id" id="restok_supplier_id" class="form-control" required>
+                            <option value="">-- Pilih Supplier --</option>
+                            @foreach($suppliers ?? [] as $supplier)
+                                <option value="{{ $supplier->uuid }}">{{ $supplier->nama }} ({{ $supplier->no_hp }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Metode Pembayaran</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 13px; font-weight: 600; color: #64748b;">Kredit (Hutang)</span>
+                            <label class="switch">
+                                <input type="checkbox" name="metode_pembayaran_toggle" id="paymentMethodToggle" checked onchange="updatePaymentLabel()">
+                                <span class="slider round"></span>
+                            </label>
+                            <span style="font-size: 13px; font-weight: 600; color: #2E7D32;" id="paymentLabel">Tunai (Kas)</span>
+                        </div>
+                        <input type="hidden" name="metode_pembayaran" id="paymentMethodValue" value="Tunai">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #334155;">Daftar Produk</h4>
+                        <button type="button" class="btn-action" style="padding: 6px 14px; font-size: 12px;" onclick="addRestokRow()">
+                            <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 6px;"></iconify-icon> Tambah Baris
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="fitur-table" style="font-size: 13px; min-width: 800px;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="width: 30%;">Nama Produk / Barcode</th>
+                                    <th style="width: 10%;">Qty</th>
+                                    <th style="width: 15%;">Harga Beli</th>
+                                    <th style="width: 15%;">Harga Jual Baru</th>
+                                    <th style="width: 20%;">Tgl Expired</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="restokItemsTable">
+                                {{-- Rows injected via JS --}}
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: #f8fafc; font-weight: 700;">
+                                    <td colspan="2" style="text-align: right; padding: 12px;">TOTAL PEMBELIAN</td>
+                                    <td colspan="4" id="restokGrandTotal" style="padding: 12px; color: var(--primary-blue); font-size: 16px;">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="restok_catatan">Catatan (Opsional)</label>
+                    <textarea name="catatan" id="restok_catatan" class="form-control" rows="2" placeholder="Keterangan tambahan..."></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 16px; padding: 0 20px 20px; justify-content: center;">
+                <button type="button" class="btn-action" style="min-width: 140px; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('restokModal')">Batal</button>
+                <button type="submit" class="btn-action" style="min-width: 200px; justify-content: center; background: var(--primary-blue); color: white;">
+                    <iconify-icon icon="solar:diskette-bold-duotone" style="margin-right: 8px; font-size: 18px;"></iconify-icon> Simpan Restok
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Detail Restok Modal -->
+<div id="purchaseDetailModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 95%;">
+        <div class="modal-header">
+            <h3>Detail Pembelian / Restok</h3>
+            <button class="close-modal" onclick="closeModal('purchaseDetailModal')">&times;</button>
+        </div>
+        <div id="purchaseDetailContent" class="modal-body" style="padding: 20px;">
+            {{-- Content injected via JS --}}
+        </div>
+        <div style="margin-top: 24px; display: flex; justify-content: center; padding: 0 20px 20px;">
+            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('purchaseDetailModal')">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Opname Modal -->
+<div id="opnameDetailModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <div class="modal-header">
+            <h3>Detail Sesi Opname</h3>
+            <button class="close-modal" onclick="closeModal('opnameDetailModal')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 24px; padding: 15px; background: #f8fbff; border-radius: 12px; border: 1px solid #d0e7ff;">
+                <div>
+                    <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">📅 Tanggal Sesi</div>
+                    <div id="det_op_tanggal" style="font-weight: 700; color: var(--primary-blue);">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">🏪 Outlet / Toko</div>
+                    <div id="det_op_toko" style="font-weight: 700; color: var(--primary-blue);">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">👤 Petugas Lapangan</div>
+                    <div id="det_op_petugas" style="font-weight: 700; color: var(--primary-blue);">-</div>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto; max-height: 400px; border: 1px solid #eee; border-radius: 12px;">
+                <table class="fitur-table" style="font-size: 13px;">
+                    <thead style="position: sticky; top: 0; z-index: 10; background: #f8f9fa;">
+                        <tr>
+                            <th>Produk</th>
+                            <th style="text-align: center;">Sistem</th>
+                            <th style="text-align: center;">Fisik</th>
+                            <th style="text-align: center;">Selisih</th>
+                            <th>Alasan / Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opnameDetailRows">
+                        {{-- Rows will be injected here via JS --}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="opnameFinalizeArea" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; display: none;">
+                <div style="background: #FFF9C4; padding: 12px; border-radius: 8px; border: 1px solid #FBC02D; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <iconify-icon icon="solar:info-circle-bold-duotone" style="font-size: 24px; color: #827717;"></iconify-icon>
+                    <span style="font-size: 13px; color: #827717; font-weight: 600;">Double-check: Stok di database akan disesuaikan secara permanen setelah finalisasi.</span>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b;" onclick="closeModal('opnameDetailModal')">Batal</button>
+                    <button id="btnFinalizeOpnameAction" type="button" class="btn-action" style="flex: 1; justify-content: center; background: #2E7D32;">
+                        <iconify-icon icon="solar:check-read-bold-duotone" style="margin-right: 8px;"></iconify-icon>
+                        Finalisasi & Apply Adjustment
+                    </button>
+                </div>
+            </div>
+
+            
+            <div id="opnameDetailCloseArea" style="margin-top: 24px; display: flex; justify-content: center;">
+                <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('opnameDetailModal')">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" crossorigin="anonymous"></script>
 
 
 <div class="fitur-container">
@@ -17,46 +751,101 @@
             <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
             <span>Produk</span>
         </a>
+        <a href="{{ route('products.stok') }}" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}">
+            <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
+            <span>Katalog & Stok</span>
+        </a>
+        <a href="{{ route('products.restok') }}" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}">
+            <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
+            <span>Restok</span>
+        </a>
+        <a href="{{ route('products.transfer') }}" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}">
+            <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
+            <span>Transfer Stok</span>
+        </a>
         <a href="{{ route('products.opname') }}" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}">
             <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
-            <span>Produk Opname</span>
-        </a>
-        <a href="{{ route('products.request') }}" class="tab-pill {{ $active_tab == 'request' ? 'active' : '' }}">
-            <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
-            <span>Stok & Expired</span>
+            <span>Stok Opname</span>
         </a>
     </div>
 
     {{-- ACTION BAR --}}
     <div class="action-bar">
-        <form action="{{ url()->current() }}" method="GET" style="display: contents;" id="filterForm">
+        <form action="{{ url()->current() }}" method="GET" style="display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 12px;" id="filterForm">
             <div class="left-actions-group">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" name="search" id="searchInput" class="search-input" 
-                        placeholder="{{ $active_tab == 'request' ? 'Cari produk...' : 'cari data' }}" 
+                        placeholder="{{ $active_tab == 'stok' ? 'Cari produk...' : 'cari data' }}" 
                         value="{{ request('search') }}"
                         oninput="debounceSearch()">
                 </div>
 
-                <input type="hidden" name="category_id" id="hiddenCategoryId" value="{{ request('category_id') }}">
-                <div class="dropdown">
-                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                    </button>
-                    <div class="dropdown-content" style="left: 0; right: auto;">
-                        <a href="javascript:void(0)" onclick="setCategory('')" class="{{ !request('category_id') ? 'active-dropdown-item' : '' }}">
-                            Semua Kategori
-                        </a>
-                        @foreach($categories as $category)
-                            <a href="javascript:void(0)" onclick="setCategory('{{ $category->uuid }}')" class="{{ request('category_id') == $category->uuid ? 'active-dropdown-item' : '' }}">
-                                {{ $category->nama_category }}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
+                @if($active_tab == 'restok')
+                    <input type="hidden" name="supplier_id" id="hiddenSupplierId" value="{{ request('supplier_id') }}">
+                    
+                    <div style="display: flex; gap: 8px;">
+                        {{-- Supplier Filter --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Supplier" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;" class="{{ request('supplier_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="left: 0; right: auto;">
+                                <a href="javascript:void(0)" onclick="setSupplierFilter('')" class="{{ !request('supplier_id') ? 'active-dropdown-item' : '' }}">
+                                    Semua Supplier
+                                </a>
+                                @foreach($suppliers as $supplier)
+                                    <a href="javascript:void(0)" onclick="setSupplierFilter('{{ $supplier->uuid }}')" class="{{ request('supplier_id') == $supplier->uuid ? 'active-dropdown-item' : '' }}">
+                                        {{ $supplier->nama }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
 
-                @if($active_tab == 'request')
+                    </div>
+                @elseif($active_tab == 'transfer')
+                    <input type="hidden" name="store_id" id="hiddenTransferStoreId" value="{{ request('store_id') }}">
+                    @if(Auth::user()->isOwner())
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Outlet: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Outlet' }}" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:shop-2-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="left: 0; right: auto;">
+                                <a href="javascript:void(0)" onclick="setTransferStore('')" class="{{ !request('store_id') ? 'active-dropdown-item' : '' }}">
+                                    Semua Outlet
+                                </a>
+                                @foreach($stores as $s)
+                                    <a href="javascript:void(0)" onclick="setTransferStore('{{ $s->uuid }}')" class="{{ request('store_id') == $s->uuid ? 'active-dropdown-item' : '' }}">
+                                        {{ $s->nama }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @else
+                    <input type="hidden" name="category_id" id="hiddenCategoryId" value="{{ request('category_id') }}">
+                    
+                    <div style="display: flex; gap: 8px;">
+                        {{-- Category Filter --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Kategori" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;" class="{{ request('category_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="left: 0; right: auto;">
+                                <a href="javascript:void(0)" onclick="setCategory('')" class="{{ !request('category_id') ? 'active-dropdown-item' : '' }}">
+                                    Semua Kategori
+                                </a>
+                                @foreach($categories as $category)
+                                    <a href="javascript:void(0)" onclick="setCategory('{{ $category->uuid }}')" class="{{ request('category_id') == $category->uuid ? 'active-dropdown-item' : '' }}">
+                                        {{ $category->nama_category }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($active_tab == 'stok')
                     {{-- Type Filter for Stock Alerts --}}
                     <div class="dropdown">
                         <button type="button" class="btn-filter" title="Filter: {{ request('type') == 'stok_habis' ? 'Stok Habis' : (request('type') == 'expired' ? 'Mau Expired' : 'Semua Alert') }}" onclick="toggleDropdown(event)">
@@ -68,21 +857,80 @@
                             <a href="{{ request()->fullUrlWithQuery(['type' => 'expired']) }}">Mau Expired</a>
                         </div>
                     </div>
-                @elseif($active_tab == 'opname')
-                    {{-- Status Filter Opname --}}
+                @elseif($active_tab == 'transfer')
+                    {{-- Status Filter Transfer --}}
+                    <input type="hidden" name="status" id="hiddenTransferStatus" value="{{ request('status') }}">
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Status: {{ request('status') ?: 'Semua' }}" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:check-read-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        <button type="button" class="btn-filter" title="Status: {{ request('status') ?: 'Semua' }}" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ request()->fullUrlWithQuery(['status' => '']) }}">Semua Status</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Draft']) }}">Draft</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Proses']) }}">Proses</a>
-                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Selesai']) }}">Selesai</a>
+                            <a href="javascript:void(0)" onclick="setTransferStatus('')">Semua Status</a>
+                            <a href="javascript:void(0)" onclick="setTransferStatus('Pending')">Menunggu</a>
+                            <a href="javascript:void(0)" onclick="setTransferStatus('Disetujui')">Disetujui</a>
+                            <a href="javascript:void(0)" onclick="setTransferStatus('Dikirim')">Sedang Dikirim</a>
+                            <a href="javascript:void(0)" onclick="setTransferStatus('Selesai')">Diterima</a>
+                        </div>
+                    </div>
+                    {{-- Time Filter --}}
+                    <input type="hidden" name="start_date" id="hiddenStartDate" value="{{ request('start_date') }}">
+                    <input type="hidden" name="end_date" id="hiddenEndDate" value="{{ request('end_date') }}">
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Range Waktu" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:calendar-date-bold-duotone" style="font-size: 24px;" class="{{ request('start_date') || request('end_date') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content" style="padding: 15px; width: 280px; left: auto; right: 0;">
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div>
+                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Dari</label>
+                                    <input type="datetime-local" id="inputStartDateTransfer" class="form-control" style="font-size: 12px;" value="{{ request('start_date') }}">
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
+                                    <input type="datetime-local" id="inputEndDateTransfer" class="form-control" style="font-size: 12px;" value="{{ request('end_date') }}">
+                                </div>
+                                <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 8px;" onclick="applyDateFilter('Transfer')">Terapkan</button>
+                            </div>
+                        </div>
+                    </div>
+                @elseif($active_tab == 'restok')
+                    {{-- Time Filter --}}
+                    <input type="hidden" name="start_date" id="hiddenStartDate" value="{{ request('start_date') }}">
+                    <input type="hidden" name="end_date" id="hiddenEndDate" value="{{ request('end_date') }}">
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Waktu" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" class="{{ request('start_date') || request('end_date') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content" style="padding: 15px; width: 280px; left: 0; right: auto;">
+                            <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--primary-blue);">PILIH RENTANG WAKTU</div>
+                            <div class="form-group" style="margin-bottom: 12px;">
+                                <label style="font-size: 11px; color: #666;">Dari Tanggal & Jam</label>
+                                <input type="datetime-local" id="inputStartDateRestok" class="form-control" style="font-size: 12px;" value="{{ request('start_date') }}">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 11px; color: #666;">Sampai Tanggal & Jam</label>
+                                <input type="datetime-local" id="inputEndDateRestok" class="form-control" style="font-size: 12px;" value="{{ request('end_date') }}">
+                            </div>
+                            <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 10px;" onclick="applyDateFilter('Restok')">
+                                Terapkan Filter
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Payment Filter --}}
+                    <input type="hidden" name="status_bayar" id="hiddenPaymentFilter" value="{{ request('status_bayar') }}">
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Bayar: {{ request('status_bayar') ?: 'Semua' }}" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:wallet-money-bold-duotone" style="font-size: 24px;" class="{{ request('status_bayar') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="javascript:void(0)" onclick="setPaymentFilter('')">Semua Status</a>
+                            <a href="javascript:void(0)" onclick="setPaymentFilter('Lunas')">Lunas</a>
+                            <a href="javascript:void(0)" onclick="setPaymentFilter('Hutang')">Hutang</a>
                         </div>
                     </div>
                 @endif
-                @if(Auth::user()->isOwner() && ($active_tab == 'produk' || $active_tab == 'request'))
+                @if(Auth::user()->isOwner() && ($active_tab == 'produk' || $active_tab == 'stok' || $active_tab == 'restok' || $active_tab == 'opname'))
                     <input type="hidden" name="store_id" id="hiddenStoreId" value="{{ request('store_id') }}">
                     <div class="dropdown">
                         <button type="button" class="btn-filter" title="Filter Toko: {{ request('store_id') ? $stores->firstWhere('uuid', request('store_id'))->nama ?? 'Semua' : 'Semua Toko' }}" onclick="toggleDropdown(event)">
@@ -101,61 +949,70 @@
                     </div>
                 @endif
             </div>
-        </form>
-
-        <div class="right-actions">
-            {{-- EXTRACT DROPDOWN --}}
-            <div class="dropdown">
-                <button class="btn-action" onclick="toggleDropdown(event)">
-                    <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                    <span>Extract</span>
-                </button>
-                <div class="dropdown-content">
-                    <a href="{{ route('products.export.excel', array_merge(request()->query(), ['active_tab' => $active_tab])) }}">
-                        <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                        Excel
-                    </a>
-                    <a href="{{ route('products.export.pdf', array_merge(request()->query(), ['active_tab' => $active_tab])) }}" target="_blank">
-                        <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                        PDF
-                    </a>
-                </div>
-            </div>
-
-            @if($active_tab == 'produk')
-                <div id="normalActionGroup" style="display: flex; gap: 12px;">
-                    <button type="button" class="btn-action btn-danger" onclick="toggleMassDeleteMode(true)">
-                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                        <span>Hapus Produk</span>
+            
+            <div class="right-actions">
+                {{-- EXTRACT DROPDOWN --}}
+                <div class="dropdown">
+                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                        <span>Extract</span>
                     </button>
-                    <button type="button" class="btn-action" onclick="openModal('addModal')">
+                    <div class="dropdown-content" style="right: 0; left: auto;">
+                        <a href="{{ route('products.export.excel', array_merge(request()->query(), ['active_tab' => $active_tab])) }}">
+                            <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
+                            Excel
+                        </a>
+                        <a href="{{ route('products.export.pdf', array_merge(request()->query(), ['active_tab' => $active_tab])) }}" target="_blank">
+                            <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
+                            PDF
+                        </a>
+                    </div>
+                </div>
+
+                @if($active_tab == 'produk')
+                    <div id="normalActionGroup" style="display: flex; gap: 12px;">
+                        <button type="button" class="btn-action btn-danger" onclick="toggleMassDeleteMode(true)">
+                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            <span>Hapus Produk</span>
+                        </button>
+                        <button type="button" class="btn-action" onclick="openAddProductModal()">
+                            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                            <span>Tambah Produk</span>
+                        </button>
+                    </div>
+                    <div id="massDeleteActionGroup" style="display: none; gap: 12px;">
+                        <button type="button" class="btn-action" style="background: #999;" onclick="toggleMassDeleteMode(false)">
+                            <span>Batal</span>
+                        </button>
+                        <button type="button" class="btn-action btn-danger" onclick="confirmMassDelete()">
+                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            <span id="massDeleteBtnText">Hapus Terpilih (0)</span>
+                        </button>
+                    </div>
+                @elseif($active_tab == 'restok')
+                    <button type="button" class="btn-action" onclick="openRestokModal()">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                        <span>Tambah Produk</span>
+                        <span>Tambah Restok Baru</span>
                     </button>
-                </div>
-                <div id="massDeleteActionGroup" style="display: none; gap: 12px;">
-                    <button type="button" class="btn-action" style="background: #999;" onclick="toggleMassDeleteMode(false)">
-                        <span>Batal</span>
+                @elseif($active_tab == 'opname')
+                    <button type="button" class="btn-action" onclick="openAddOpnameModal()">
+                        <iconify-icon icon="solar:clipboard-add-bold-duotone"></iconify-icon>
+                        <span>Tambah Opname</span>
                     </button>
-                    <button type="button" class="btn-action btn-danger" onclick="confirmMassDelete()">
-                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                        <span id="massDeleteBtnText">Hapus Terpilih (0)</span>
+                @elseif($active_tab == 'transfer')
+                    <button type="button" class="btn-action" onclick="openTransferModal()">
+                        <iconify-icon icon="solar:transfer-horizontal-bold-duotone"></iconify-icon>
+                        <span>Buat Transfer Baru</span>
                     </button>
-                </div>
-            @elseif($active_tab == 'opname')
-                <button class="btn-action" onclick="openAddOpnameModal()">
-                    <iconify-icon icon="solar:clipboard-add-bold-duotone"></iconify-icon>
-                    <span>Tambah Opname</span>
-                </button>
-            @elseif($active_tab == 'request')
-                {{-- No add button for alerts tab --}}
-            @endif
-        </div>
+                @endif
+            </div>
+        </form>
     </div>
 
     {{-- MAIN BOX --}}
     <div class="main-content-box">
         <div class="table-container">
+            @fragment('dashboard-content')
             @if($active_tab == 'produk')
                 <table class="fitur-table">
                     <thead>
@@ -191,23 +1048,27 @@
                                 <td class="price-text" style="white-space: nowrap;">Rp {{ number_format($product->harga_jual, 0, ',', '.') }}</td>
                                 <td style="min-width: 120px;">
                                     @if(Auth::user()->isOwner())
-                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
                                             @foreach($product->stores as $ps)
-                                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #334155; background: #fdfdfd; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
-                                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                                        <iconify-icon icon="solar:shop-2-bold-duotone" style="color: var(--primary-blue); font-size: 14px;"></iconify-icon>
-                                                        <span style="font-weight: 600; line-height: 1.2;">
-                                                            {{ $ps->store->nama ?? '-' }}
-                                                        </span>
-                                                    </div>
-                                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-                                                        <span style="font-weight: 800; color: var(--primary-blue); background: #eff6ff; padding: 2px 6px; border-radius: 6px; min-width: 24px; text-align: center;">{{ $ps->stok }}</span>
-                                                        <span style="font-size: 9px; color: #94a3b8; font-weight: 500;">Exp: {{ $ps->kadaluarsa ? \Carbon\Carbon::parse($ps->kadaluarsa)->format('d/m/y') : '-' }}</span>
-                                                    </div>
+                                                <div style="display: flex; align-items: center; gap: 5px; background: {{ $ps->stok > 0 ? '#eff6ff' : '#f1f5f9' }}; padding: 4px 8px; border-radius: 6px; border: 1px solid {{ $ps->stok > 0 ? '#dbeafe' : '#e2e8f0' }};" title="{{ $ps->store->nama ?? '-' }}">
+                                                    <span style="font-size: 10px; font-weight: 600; color: {{ $ps->stok > 0 ? 'var(--primary-blue)' : '#64748b' }};">
+                                                        @php
+                                                            $storeName = $ps->store->nama ?? '-';
+                                                            if (preg_match('/\((.*?)\)/', $storeName, $match)) {
+                                                                $displayName = $match[1];
+                                                            } else {
+                                                                $displayName = Str::limit($storeName, 10);
+                                                            }
+                                                        @endphp
+                                                        {{ $displayName }}:
+                                                    </span>
+                                                    <span style="font-size: 11px; font-weight: 800; color: {{ $ps->stok > 0 ? 'var(--primary-blue)' : '#64748b' }};">
+                                                        {{ $ps->stok }}
+                                                    </span>
                                                 </div>
                                             @endforeach
                                             @if($product->stores->isEmpty())
-                                                <span style="font-size: 10px; color: #999; font-style: italic;">Belum ada stok di cabang</span>
+                                                <span style="font-size: 10px; color: #999; font-style: italic;">Kosong</span>
                                             @endif
                                         </div>
                                     @else
@@ -220,10 +1081,10 @@
                                 </td>
                                 <td style="white-space: nowrap;">
                                     <div style="display: flex; gap: 8px;">
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item='@json($product)' onclick="openViewModal(JSON.parse(this.dataset.item))">
+                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openViewModal('{{ $product->uuid }}')" title="Lihat">
                                             <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                         </button>
-                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px;" data-item='@json($product)' onclick="openEditModal(JSON.parse(this.dataset.item))">
+                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openEditModal('{{ $product->uuid }}')" title="Edit">
                                             <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                         </button>
                                         <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="confirmDelete('{{ $product->uuid }}', '{{ $product->nama_produk }}')">
@@ -239,9 +1100,11 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="pagination-container">
-                    {{ $products->appends(request()->query())->links() }}
-                </div>
+                @if(isset($products))
+                    <div class="pagination-container">
+                        {{ $products->appends(request()->query())->links() }}
+                    </div>
+                @endif
             @elseif($active_tab == 'opname')
                 @if(Auth::user()->isOwner())
                     <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -250,18 +1113,18 @@
                                 <iconify-icon icon="solar:danger-bold-duotone"></iconify-icon>
                             </div>
                             <div>
-                                <div style="font-size: 12px; color: #888;">🔥 Belum Selesai</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $unfinished_count ?? 0 }}</div>
+                                <div style="font-size: 12px; color: #888;">🔥 Menunggu Approval</div>
+                                <div style="font-size: 18px; font-weight: 700;">{{ $pending_count ?? 0 }}</div>
                             </div>
                         </div>
                         <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                             <div style="background: #FFF3E0; color: #E65100; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                                <iconify-icon icon="solar:graph-down-bold-duotone"></iconify-icon>
+                                <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
                             </div>
                             <div>
-                                <div style="font-size: 12px; color: #888;">📉 Selisih Stok Hari Ini</div>
-                                <div style="font-size: 18px; font-weight: 700;" class="{{ ($total_selisih_today ?? 0) != 0 ? 'bg-selisih' : '' }}">
-                                    {{ ($total_selisih_today ?? 0) > 0 ? '+' : '' }}{{ $total_selisih_today ?? 0 }}
+                                <div style="font-size: 12px; color: #888;">📉 Total Kerugian (Seluruh)</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #C62828;">
+                                    Rp {{ number_format(abs($total_loss ?? 0), 0, ',', '.') }}
                                 </div>
                             </div>
                         </div>
@@ -270,23 +1133,22 @@
                                 <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
                             </div>
                             <div>
-                                <div style="font-size: 12px; color: #888;">✅ Selesai Hari Ini</div>
-                                <div style="font-size: 18px; font-weight: 700;">{{ $completed_today_count ?? 0 }}</div>
+                                <div style="font-size: 12px; color: #888;">✅ Selesai (Finalized)</div>
+                                <div style="font-size: 18px; font-weight: 700;">{{ $selesai_count ?? 0 }}</div>
                             </div>
                         </div>
-                    </div>
-                @elseif(($unfinished_count ?? 0) > 0)
-                    <div style="background: #FFF9C4; color: #827717; padding: 10px 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; border-left: 4px solid #FBC02D;">
-                        <span>🔥 {{ $unfinished_count }} opname belum selesai hari ini</span>
                     </div>
                 @endif
                 <table class="fitur-table">
                     <thead>
                         <tr>
                             <th>TANGGAL</th>
-                            <th>OUTLET / STORE</th>
+                            <th>OUTLET</th>
                             <th>PETUGAS</th>
                             <th>SUMMARY</th>
+                            @if(Auth::user()->isOwner())
+                                <th>KERUGIAN (RP)</th>
+                            @endif
                             <th>STATUS</th>
                             <th>AKSI</th>
                         </tr>
@@ -306,6 +1168,12 @@
                                         @endif
                                     </div>
                                 </td>
+                                @if(Auth::user()->isOwner())
+                                    <td style="font-weight: 700; color: {{ $opname->total_kerugian < 0 ? '#C62828' : ($opname->total_kerugian > 0 ? '#2E7D32' : '#666') }}">
+                                        Rp {{ number_format(abs($opname->total_kerugian), 0, ',', '.') }}
+                                        <div style="font-size: 10px; opacity: 0.7;">{{ $opname->total_kerugian < 0 ? '(Kurang)' : ($opname->total_kerugian > 0 ? '(Lebih)' : '-') }}</div>
+                                    </td>
+                                @endif
                                 <td>
                                     @php $lowStatus = strtolower($opname->status); @endphp
                                     <span class="status-badge stat-{{ $lowStatus }}">
@@ -318,23 +1186,23 @@
                                             data-uuid="{{ $opname->uuid }}" onclick="openOpnameDetailModal(this.dataset.uuid)" title="Lihat Detail">
                                             <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                         </button>
-                                        @if($opname->status != 'Selesai')
-                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" 
-                                                data-uuid="{{ $opname->uuid }}" onclick="continueOpname(this.dataset.uuid)" title="{{ $opname->status == 'Draft' ? 'Edit Opname' : 'Lanjutkan Opname' }}">
-                                                <iconify-icon icon="{{ $opname->status == 'Draft' ? 'solar:pen-new-square-bold-duotone' : 'solar:play-bold-duotone' }}"></iconify-icon>
+                                        @if(Auth::user()->isOwner() && $opname->status == 'Pending')
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #2E7D32; border-color: #E8F5E9;" 
+                                                onclick="confirmFinalizeOpname('{{ $opname->uuid }}')" title="Finalisasi Stok">
+                                                <iconify-icon icon="solar:check-read-bold-duotone"></iconify-icon>
                                             </button>
                                         @endif
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #999; border: none; background: transparent;" 
+                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" 
                                             data-uuid="{{ $opname->uuid }}" data-date="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}"
                                             onclick="confirmDeleteOpname(this.dataset.uuid, this.dataset.date)" title="Hapus">
-                                            <iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon>
+                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">Belum ada riwayat opname.</td>
+                                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">Belum ada riwayat opname.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -342,7 +1210,7 @@
                 <div class="pagination-container">
                     {{ $opnames->links() }}
                 </div>
-            @elseif($active_tab == 'request')
+            @elseif($active_tab == 'stok' || $active_tab == 'request')
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="background: white; padding: 15px 20px; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; gap: 12px; flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                         <div style="background: #FFEBEE; color: #C62828; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
@@ -367,55 +1235,87 @@
                 <table class="fitur-table">
                     <thead>
                         <tr>
-                            <th style="width: 35%;">PRODUK</th>
-                            <th>OUTLET</th>
+                            <th>PRODUK</th>
                             <th>STOK</th>
+                            <th>TGL MASUK</th>
                             <th>KADALUARSA</th>
+                            <th>STATUS</th>
                             <th>AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($alerts as $alert)
-                            <tr>
+                            @php
+                                $minThreshold = $alert->stok_minimum ?? 10;
+                                $isLowStock = $alert->stok <= $minThreshold;
+                                $isExpired = $alert->kadaluarsa && \Carbon\Carbon::parse($alert->kadaluarsa)->isPast();
+                                $isNearExp = $alert->kadaluarsa && 
+                                            \Carbon\Carbon::parse($alert->kadaluarsa)->isFuture() && 
+                                            \Carbon\Carbon::parse($alert->kadaluarsa)->lessThanOrEqualTo(now()->addDays(30));
+                                $rowBg = '';
+                                if($isExpired) $rowBg = '#FFF5F5';
+                                elseif($isLowStock || $isNearExp) $rowBg = '#FFFAF0';
+                            @endphp
+                            <tr style="background: white">
                                 <td>
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ \App\Http\Controllers\LandingController::resolveImageUrl(optional($alert->product)->image_url) }}" 
-                                             style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;">
+                                    <div class="product-info">
+                                        <img src="{{ optional($alert->product)->resolved_image_url ?? asset('images/placeholder-product.png') }}" class="product-img">
                                         <div>
                                             <div style="font-weight: 600;">{{ optional($alert->product)->nama_produk ?? 'Produk Terhapus' }}</div>
-                                            <div style="font-size: 11px; color: #888;">{{ optional($alert->product)->barcode ?? '-' }}</div>
+                                            <div style="font-size: 11px; color: #888;">{{ optional($alert->store)->nama ?? '-' }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $alert->store->nama ?? '-' }}</td>
                                 <td>
-                                    <span class="status-badge {{ $alert->stok <= 10 ? 'stat-ditolak' : 'stat-pending' }}">
-                                        {{ $alert->stok }}
-                                    </span>
+                                    <div style="font-weight: 700; color: {{ $isLowStock ? '#D9534F' : 'inherit' }}">
+                                        {{ $alert->stok }} Pcs
+                                        @if($isLowStock)
+                                            <div style="font-size: 10px; color: #D9534F; font-weight: 600;">(Stok Menipis)</div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-size: 13px; color: #666;">
+                                        {{ $alert->tanggal_masuk ? \Carbon\Carbon::parse($alert->tanggal_masuk)->format('d/m/Y') : '-' }}
+                                    </div>
                                 </td>
                                 <td>
                                     @if($alert->kadaluarsa)
-                                        @php 
-                                            $isExpired = \Carbon\Carbon::parse($alert->kadaluarsa)->isPast();
-                                            $isNear = \Carbon\Carbon::parse($alert->kadaluarsa)->diffInDays(now()) <= 30;
-                                        @endphp
-                                        <span class="status-badge {{ $isExpired ? 'stat-ditolak' : ($isNear ? 'prio-tinggi' : 'stat-selesai') }}">
+                                        <span style="color: {{ $isExpired ? '#D9534F' : ($isNearExp ? '#FBC02D' : 'inherit') }}; font-weight: {{ $isNearExp || $isExpired ? '700' : '400' }}">
                                             {{ \Carbon\Carbon::parse($alert->kadaluarsa)->format('d F Y') }}
+                                            @if($isExpired) 
+                                                (Sudah Expired) 
+                                            @elseif($isNearExp) 
+                                                (Akan Expired) 
+                                            @endif
                                         </span>
                                     @else
                                         <span style="color: #999;">-</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
-                                        onclick="openEditAlertModal('{{ $alert->uuid }}', '{{ $alert->stok }}', '{{ $alert->kadaluarsa }}', '{{ optional($alert->product)->nama_produk }}')" title="Update Data">
-                                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                    </button>
+                                    @if($alert->status_aktif === false)
+                                        <span class="status-badge status-inactive" style="padding: 4px 10px; font-size: 10px;">Nonaktif</span>
+                                    @else
+                                        <span class="status-badge status-active" style="padding: 4px 10px; font-size: 10px;">Aktif</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
+                                            onclick="openViewModalFromAlert('{{ $alert->uuid }}')" title="Lihat Detail">
+                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                        </button>
+                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" 
+                                            onclick="openEditAlertModal('{{ $alert->uuid }}')" title="Update Data">
+                                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk yang perlu perhatian saat ini.</td>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">Tidak ada produk yang perlu perhatian saat ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -423,389 +1323,201 @@
                 <div class="pagination-container">
                     {{ $alerts->links() }}
                 </div>
-            @endif
-        </div>
-    </div>
-</div>
-
-{{-- MODALS --}}
-
-<!-- Tambah Produk -->
-<div id="addModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Tambah Produk Baru</h3>
-            <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
-        </div>
-        <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
-                <div class="form-group" style="text-align: center;">
-                    <label for="productImageInput" style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
-                    <input type="file" id="productImageInput" accept="image/*" style="display: none;">
-                    <input type="hidden" name="cropped_image" id="croppedImageResult">
-                    <div id="imagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('productImageInput').click()">
-                        <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px; color: var(--primary-blue); margin-bottom: 4px;"></iconify-icon>
-                        <span style="color: var(--primary-blue); font-size: 11px; font-weight: 600;">Tambah Foto</span>
-                    </div>
-                    <small style="display: block; color: #888; font-size: 11px; margin-top: 6px;">Klik kotak di atas untuk memilih gambar</small>
-                </div>
-            <div class="form-group">
-                <label for="addNamaProduk">Nama Produk</label>
-                <input type="text" name="nama_produk" id="addNamaProduk" class="form-control" required placeholder="Contoh: Coca Cola">
-            </div>
-            <div class="form-group">
-                <label for="addBarcode">Barcode</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" name="barcode" id="addBarcode" class="form-control" placeholder="Scan atau ketik barcode..." style="flex: 1;">
-                    <button type="button" class="btn-action" onclick="openScannerModal()" style="padding: 0 16px; background: #333;">
-                        <iconify-icon icon="solar:camera-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                    </button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="addKategoriId">Kategori</label>
-                <select name="kategori_id" id="addKategoriId" class="form-control" required>
-                    @foreach($categories ?? [] as $category)
-                        <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div class="form-group">
-                    <label for="addHargaModal">Harga Modal</label>
-                    <input type="number" name="harga_modal" id="addHargaModal" class="form-control" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="addHargaJual">Harga Jual (Retail)</label>
-                    <input type="number" name="harga_jual" id="addHargaJual" class="form-control" value="0">
-                </div>
-            </div>
-
-            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</span>
-                    <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('addPriceLevelBody')">
-                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
-                    </button>
-                </div>
-                <table style="width: 100%; font-size: 13px;">
-                    <thead>
-                        <tr style="text-align: left; color: #888;">
-                            <th>Min. Qty</th>
-                            <th>Harga per Unit</th>
-                            <th style="width: 40px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="addPriceLevelBody">
-                        {{-- JS will add rows here --}}
-                    </tbody>
-                </table>
-            </div>
-
-            </div> {{-- End modal-body --}}
-
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('addModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Modal Scanner Barcode -->
-<div id="scannerModal" class="modal-overlay" style="z-index: 1050;">
-    <div class="modal-content" style="max-width: 400px;">
-        <div class="modal-header">
-            <h3>Scan Barcode</h3>
-            <button class="close-modal" onclick="closeScannerModal()">&times;</button>
-        </div>
-        <div id="reader" style="width: 100%; min-height: 250px; background: #000; border-radius: 12px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
-            <span id="camera-placeholder" style="color: #666; font-size: 13px;">Pratinjau Kamera</span>
-            <div class="scanner-line" id="scannerLine"></div>
-            <div class="scanner-target" id="scannerTarget"></div>
-            <div class="zoom-badge" id="zoomBadge">DIGITAL ZOOM 2X</div>
-            <div id="deepScanIndicator" style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 10px; display: none; z-index: 110; align-items: center; gap: 5px;">
-                <div class="spinner-border spinner-border-sm" role="status" style="width: 12px; height: 12px; border-width: 2px;"></div>
-                Smart Analyzing...
-            </div>
-        </div>
-        
-        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn-action" id="zoomBtn" style="flex: 1; justify-content: center; background: #555;" onclick="toggleDigitalZoom()">
-                    <iconify-icon icon="solar:magnifer-zoom-in-bold-duotone"></iconify-icon> Zoom 2X
-                </button>
-                <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #2E7D32;" onclick="captureHighResAndScan()">
-                    <iconify-icon icon="solar:camera-square-bold-duotone"></iconify-icon> Ambil Foto
-                </button>
-            </div>
-            <button type="button" class="btn-action" style="justify-content: center; background: #007BFF;" onclick="startCameraScan()">
-                <iconify-icon icon="solar:videocamera-bold-duotone"></iconify-icon> Gunakan Kamera Live
-            </button>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <hr style="flex: 1; border: 0; border-top: 1px solid #ddd;">
-                <span style="font-size: 12px; color: #888;">ATAU</span>
-                <hr style="flex: 1; border: 0; border-top: 1px solid #ddd;">
-            </div>
-            <button type="button" class="btn-action" style="justify-content: center; background: #FFB300; color: #333;" onclick="document.getElementById('scanGalleryInput').click()">
-                <iconify-icon icon="solar:gallery-bold-duotone"></iconify-icon> Upload dari Galeri
-            </button>
-            <input type="file" id="scanGalleryInput" accept="image/*" style="display: none;" onchange="scanImageFile(event)">
-        </div>
-    </div>
-</div>
-
-<!-- Modal Cropper Foto -->
-<div id="cropperModal" class="modal-overlay" style="z-index: 1050;">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h3>Sesuaikan Foto (1:1)</h3>
-            <button class="close-modal" onclick="closeCropperModal()">&times;</button>
-        </div>
-        <div style="width: 100%; height: 300px; background: #eee; border-radius: 12px; overflow: hidden;">
-            <img id="cropperImage" src="" style="max-width: 100%;">
-        </div>
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeCropperModal()">Batal</button>
-            <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #2E7D32;" onclick="applyCrop()">Terapkan Foto</button>
-        </div>
-    </div>
-</div>
-
-<!-- Edit Produk -->
-<div id="editModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Produk</h3>
-            <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
-        </div>
-        <form id="editForm" method="POST" enctype="multipart/form-data">
-            @csrf
-            @method('PUT')
-            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
-                <div class="form-group" style="text-align: center;">
-                    <label for="editProductImageInput" style="display: block; text-align: left; font-weight: 600; margin-bottom: 8px;">Foto Produk (Rasio 1:1)</label>
-                    <input type="file" id="editProductImageInput" accept="image/*" style="display: none;">
-                    <input type="hidden" name="cropped_image" id="editCroppedImageResult">
-                    <div id="editImagePreviewContainer" style="position: relative; width: 140px; height: 140px; border: 2px dashed var(--primary-blue); border-radius: 16px; margin: 0 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f0f7ff; transition: all 0.3s ease;" onclick="document.getElementById('editProductImageInput').click()">
-                        <span style="color: #999; font-size: 12px;">+ Pilih/Foto</span>
-                    </div>
-                </div>
-            <div class="form-group">
-                <label for="edit_nama">Nama Produk</label>
-                <input type="text" name="nama_produk" id="edit_nama" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="edit_barcode">Barcode</label>
-                <input type="text" name="barcode" id="edit_barcode" class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="edit_kategori">Kategori</label>
-                <select name="kategori_id" id="edit_kategori" class="form-control" required>
-                    @foreach($categories ?? [] as $category)
-                        <option value="{{ $category->uuid }}">{{ $category->nama_category }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div class="form-group">
-                    <label for="edit_modal">Harga Modal</label>
-                    <input type="number" name="harga_modal" id="edit_modal" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="edit_jual">Harga Jual (Retail)</label>
-                    <input type="number" name="harga_jual" id="edit_jual" class="form-control">
-                </div>
-            </div>
-
-            <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 12px; border: 1px solid #eee;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-weight: 700; color: var(--primary-blue); margin: 0;">Harga Grosir (Level)</span>
-                    <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="addPriceLevelRow('editPriceLevelBody')">
-                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon> Tambah Level
-                    </button>
-                </div>
-                <table style="width: 100%; font-size: 13px;">
-                    <thead>
-                        <tr style="text-align: left; color: #888;">
-                            <th>Min. Qty</th>
-                            <th>Harga per Unit</th>
-                            <th style="width: 40px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="editPriceLevelBody">
-                        {{-- JS will populate here --}}
-                    </tbody>
-                </table>
-            </div>
-
-            </div> {{-- End modal-body --}}
-
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('editModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Update</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- View Detail Produk -->
-<div id="viewModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h3>Rincian Produk</h3>
-            <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
-        </div>
-        <div id="viewDetailContent">
-            {{-- Content injected via JS --}}
-        </div>
-        <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
-            <button type="button" class="btn-action" style="padding: 10px 24px;" onclick="closeModal('viewModal')">Tutup</button>
-        </div>
-    </div>
-</div>
-
-<!-- Tambah Opname Modal -->
-<div id="addOpnameModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 800px;">
-        <div class="modal-header">
-            <h3>Input Opname Stok</h3>
-            <button class="close-modal" onclick="closeModal('addOpnameModal')">&times;</button>
-        </div>
-        <form action="{{ route('products.opname.store') }}" method="POST" id="opnameForm">
-            @csrf
-            <div id="opnameMethod"></div>
-            <div class="form-group">
-                <label for="opname_store_id">Pilih Toko / Outlet</label>
-                @if(Auth::user()->isOwner())
-                    <select name="store_id" id="opname_store_id" class="form-control" required>
-                        <option value="">-- Pilih Toko --</option>
-                        @foreach($stores ?? [] as $store)
-                            <option value="{{ $store->uuid }}">{{ $store->nama }}</option>
-                        @endforeach
-                    </select>
-                @else
-                    <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
-                    <select class="form-control" id="opname_store_id_display" disabled style="background-color: #f8f9fa;">
-                        @foreach($stores ?? [] as $store)
-                            <option value="{{ $store->uuid }}" selected>{{ $store->nama }}</option>
-                        @endforeach
-                    </select>
-                @endif
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="margin: 0;">Item Produk</h4>
-                    <button type="button" class="btn-action" style="padding: 6px 12px; font-size: 12px;" onclick="addOpnameRow()">
-                        <iconify-icon icon="solar:add-circle-bold-duotone" style="margin-right: 4px;"></iconify-icon> Tambah Baris
-                    </button>
-                </div>
-                <div style="overflow-x: auto; max-height: 300px;">
-                    <table class="fitur-table" style="font-size: 13px;">
+            @elseif($active_tab == 'restok')
+                {{-- Restok Table --}}
+                @if($purchases->count() > 0)
+                    <table class="fitur-table">
                         <thead>
                             <tr>
-                                <th style="width: 40%;">Produk</th>
-                                <th>Stok Sistem</th>
-                                <th>Stok Fisik</th>
-                                <th>Ket.</th>
-                                <th>#</th>
+                                <th>TANGGAL</th>
+                                <th>SUPPLIER</th>
+                                <th>TOTAL</th>
+                                <th>STATUS</th>
+                                <th>PETUGAS</th>
+                                <th>AKSI</th>
                             </tr>
                         </thead>
-                        <tbody id="opnameItemsTable">
-                            {{-- Rows will be added here --}}
+                        <tbody>
+                            @foreach($purchases as $p)
+                                <tr>
+                                    <td>{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $p->contact->nama ?? 'Umum' }}</td>
+                                    <td style="font-weight: 700;">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
+                                    <td>
+                                        @php $isHutang = $p->bayar < $p->total; @endphp
+                                        <span class="status-badge {{ $isHutang ? 'status-inactive' : 'status-active' }}" style="padding: 4px 10px; font-size: 10px; background: {{ $isHutang ? '#FFF5F5' : '#F0FFF4' }}; color: {{ $isHutang ? '#C53030' : '#2F855A' }};">
+                                            {{ $isHutang ? 'Hutang' : 'Lunas' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $p->user->name ?? '-' }}</td>
+                                    <td>
+                                        <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewPurchaseDetail('{{ $p->uuid }}')">
+                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
-                </div>
-            </div>
+                    <div class="pagination-container">
+                        {{ $purchases->links() }}
+                    </div>
+                @else
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+                        <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
+                            <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
+                        </div>
+                        <h3 style="color: #334155; margin-bottom: 8px;">Belum Ada Riwayat Restok</h3>
+                        <p style="color: #64748b; text-align: center; max-width: 400px; margin-bottom: 24px;">Klik tombol di bawah untuk mulai menambah stok produk Anda.</p>
+                        <button type="button" class="btn-action" onclick="openRestokModal()" style="padding: 10px 24px;">
+                            Mulai Restok Sekarang
+                        </button>
+                    </div>
+                @endif
+            @elseif($active_tab == 'transfer')
+                @if($transfers->count() > 0)
+                    <table class="fitur-table">
+                        <thead>
+                            <tr>
+                                <th>TANGGAL</th>
+                                <th>DARI</th>
+                                <th>TUJUAN</th>
+                                <th>STATUS</th>
+                                <th>PETUGAS</th>
+                                <th>AKSI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($transfers as $t)
+                                <tr>
+                                    <td>{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $t->store->nama ?? '-' }}</td>
+                                    <td>{{ $t->tujuanStore->nama ?? '-' }}</td>
+                                    <td>
+                                        @php $s = strtolower($t->status ?: 'pending'); @endphp
+                                        @if($s == 'selesai')
+                                            <span class="status-badge status-active" style="padding: 4px 10px; font-size: 10px;">Diterima</span>
+                                        @elseif($s == 'dikirim')
+                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #E3F2FD; color: #1565C0;">Dikirim</span>
+                                        @elseif($s == 'disetujui')
+                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #E8F5E9; color: #2E7D32;">Disetujui</span>
+                                        @else
+                                            <span class="status-badge" style="padding: 4px 10px; font-size: 10px; background: #FFF3E0; color: #E65100;">{{ $t->status ?: 'Pending' }}</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $t->user->username ?? '-' }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn-filter" title="Lihat Detail" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewTransferDetail('{{ $t->uuid }}')">
+                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                            </button>
 
-            <div style="margin-top: 24px; display: flex; gap: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('addOpnameModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan Opname</button>
+                                            {{-- Tombol Setujui (HANYA OWNER) --}}
+                                            @if(in_array(strtolower($t->status ?: 'pending'), ['pending', 'proses', '']) && Auth::user()->isOwner())
+                                                <button class="btn-filter" title="Setujui Transfer" style="width: 32px; height: 32px; border-radius: 8px; color: #0081C9; border-color: #0081C9;" onclick="approveTransfer('{{ $t->uuid }}')">
+                                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                                                </button>
+                                            @endif
+
+                                            {{-- Tombol Kirim (HANYA Outlet Pengirim) --}}
+                                            @if(strtolower($t->status) == 'disetujui' && Auth::user()->store_id == $t->store_id)
+                                                <button class="btn-filter" title="Kirim Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #E65100; border-color: #FFE0B2;" onclick="shipTransfer('{{ $t->uuid }}')">
+                                                    <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
+                                                </button>
+                                            @endif
+
+                                            {{-- Tombol Terima (HANYA Outlet Penerima) --}}
+                                            @if(strtolower($t->status) == 'dikirim' && Auth::user()->store_id == $t->tujuan_store_id)
+                                                <button class="btn-filter" title="Terima Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #2F855A; border-color: #C6F6D5;" onclick="confirmReceiveTransfer('{{ $t->uuid }}')">
+                                                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <div class="pagination-container">
+                        {{ $transfers->links() }}
+                    </div>
+                @else
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+                        <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">
+                            <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
+                        </div>
+                        <h3 style="color: #334155; margin-bottom: 8px;">Belum Ada Riwayat Transfer</h3>
+                        <p style="color: #64748b; text-align: center; max-width: 400px; margin-bottom: 24px;">Klik tombol di bawah untuk mulai memindahkan stok antar toko.</p>
+                        <button type="button" class="btn-action" onclick="openTransferModal()" style="padding: 10px 24px;">
+                            Buat Transfer Baru
+                        </button>
+                    </div>
+                @endif
+            @endif
+            
+            {{-- Data Bridge for JS (Moved inside fragment for AJAX updates) --}}
+            <div id="js-data-transfer" style="display: none;" 
+                 data-products="{{ json_encode(isset($products) ? $products->items() : []) }}" 
+                 data-alerts="{{ json_encode(isset($alerts) ? $alerts->items() : []) }}">
             </div>
-        </form>
-    </div>
+            @endfragment
+        </div>
+    
+                </div>
 </div>
 
-<!-- Detail Opname Modal -->
-<div id="opnameDetailModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 700px;">
-        <div class="modal-header">
-            <h3>Rincian Opname Stok</h3>
-            <button class="close-modal" onclick="closeModal('opnameDetailModal')">&times;</button>
-        </div>
-        <div style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
-            <div>
-                <div style="color: #888;">Tanggal:</div>
-                <div id="det_op_tanggal" style="font-weight: 600;">-</div>
-            </div>
-            <div>
-                <div style="color: #888;">Toko:</div>
-                <div id="det_op_toko" style="font-weight: 600;">-</div>
-            </div>
-            <div>
-                <div style="color: #888;">Petugas:</div>
-                <div id="det_op_petugas" style="font-weight: 600;">-</div>
-            </div>
-        </div>
-        <div style="overflow-x: auto;">
-            <table class="fitur-table" style="font-size: 13px;">
-                <thead>
-                    <tr>
-                        <th>Produk</th>
-                        <th>Sistem</th>
-                        <th>Fisik</th>
-                        <th>Selisih</th>
-                    </tr>
-                </thead>
-                <tbody id="opnameDetailRows">
-                    {{-- Rows will be injected here --}}
-                </tbody>
-            </table>
-        </div>
-        <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
-            <button type="button" class="btn-action" style="padding: 10px 24px;" onclick="closeModal('opnameDetailModal')">Tutup</button>
-        </div>
-    </div>
-</div>
 
-<!-- Modal Update Stok & Expired -->
-<div id="editAlertModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 400px;">
-        <div class="modal-header">
-            <h3>Update Stok & Expired</h3>
-            <button class="close-modal" onclick="closeModal('editAlertModal')">&times;</button>
-        </div>
-        <form id="editAlertForm" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="alert_product_name">Nama Produk</label>
-                    <input type="text" id="alert_product_name" class="form-control" readonly style="background: #f1f5f9;">
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label for="alert_stok">Stok Saat Ini</label>
-                    <input type="number" name="stok" id="alert_stok" class="form-control" required>
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label for="alert_kadaluarsa">Tanggal Kadaluarsa</label>
-                    <input type="date" name="kadaluarsa" id="alert_kadaluarsa" class="form-control">
-                </div>
-            </div>
-            <div style="margin-top: 24px; display: flex; gap: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1;" onclick="closeModal('editAlertModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Update</button>
-            </div>
-        </form>
-    </div>
-</div>
+
 
 <script>
+    // --- Global Data Maps ---
+    const allProductsMap = {};
+    const stockAlertsMap = {};
+
+    function syncDataMaps() {
+        // Method 1: From productsList (Blade initial load)
+        if (typeof productsList !== 'undefined' && Array.isArray(productsList)) {
+            productsList.forEach(p => { if (p && p.uuid) allProductsMap[p.uuid] = p; });
+        }
+        
+        // Method 2: From js-data-transfer (AJAX fragment updates)
+        const transferEl = document.getElementById('js-data-transfer');
+        if (transferEl) {
+            try {
+                const rawProducts = JSON.parse(transferEl.dataset.products || '[]');
+                const rawAlerts = JSON.parse(transferEl.dataset.alerts || '[]');
+                const productItems = Array.isArray(rawProducts) ? rawProducts : (rawProducts.data || []);
+                const alertItems = Array.isArray(rawAlerts) ? rawAlerts : (rawAlerts.data || []);
+                productItems.forEach(p => { if (p && p.uuid) allProductsMap[p.uuid] = p; });
+                alertItems.forEach(a => { if (a && a.uuid) stockAlertsMap[a.uuid] = a; });
+            } catch (e) { console.error('Error syncing maps:', e); }
+        }
+    }
+
+    // Initialize maps on load
+    document.addEventListener('DOMContentLoaded', () => {
+        syncDataMaps();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
     // --- Global Helpers ---
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    // Specialized opener for USB Scanner focus
+    function openAddProductModal() {
+        openModal('addModal');
+        setTimeout(() => {
+            const input = document.getElementById('barcodeAdd');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }, 400);
+    }
+</script>
+<script>
+    const productsList = {!! json_encode(($active_tab == 'produk' || $active_tab == 'stok') && isset($products) ? $products->items() : ($all_products ?? []), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
+    // No need to redeclare maps here
+
+    // Initialize is now handled in the first script block
 
     // --- Price Level Helpers (Grosir) ---
     function addPriceLevelRow(containerId, data = null) {
@@ -813,14 +1525,14 @@
         const i = tbody.children.length;
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td style="padding: 4px 0;">
-                <input type="number" name="price_levels[${i}][jmlh]" class="form-control" style="font-size: 13px; height: 32px;" value="${data ? data.jmlh : ''}" placeholder="Min. Unit" required>
+            <td style="padding: 6px 15px 6px 0;">
+                <input type="number" name="price_levels[${i}][jmlh]" class="form-control" style="font-size: 13px; height: 36px;" value="${data ? data.jmlh : ''}" placeholder="10" required>
             </td>
-            <td style="padding: 4px 0;">
-                <input type="number" name="price_levels[${i}][harga]" class="form-control" style="font-size: 13px; height: 32px;" value="${data ? data.harga : ''}" placeholder="Harga per unit" required>
+            <td style="padding: 6px 15px 6px 0;">
+                <input type="number" name="price_levels[${i}][harga]" class="form-control" style="font-size: 13px; height: 36px;" value="${data ? data.harga : ''}" placeholder="Harga per unit" required>
             </td>
-            <td style="padding: 4px 0; text-align: right;">
-                <button type="button" class="btn-filter" style="width: 32px; height: 32px; color: #D9534F; border-color: #FFEBEE;" onclick="this.closest('tr').remove()">
+            <td style="padding: 6px 0; text-align: right;">
+                <button type="button" class="btn-filter" style="width: 36px; height: 36px; color: #D9534F; border-color: #FFEBEE; display: flex; align-items: center; justify-content: center; margin-left: 8px;" onclick="this.closest('tr').remove()">
                     <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
                 </button>
             </td>
@@ -874,6 +1586,7 @@
             confirmButtonText: 'Ya, Hapus!'
         }).then(r => {
             if (r.isConfirmed) {
+                showLoading(); // Show loading feedback
                 const form = document.createElement('form');
                 form.method = 'POST'; 
                 form.action = '{{ route("products.mass_destroy") }}';
@@ -888,126 +1601,218 @@
         });
     }
 
-    // --- Filter logic ---
+    function confirmDelete(uuid, nama) {
+        Swal.fire({
+            title: 'Hapus Produk?',
+            text: `Yakin ingin menghapus ${nama}? Tindakan ini tidak bisa dibatalkan.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#D9534F',
+            confirmButtonText: 'Ya, Hapus!'
+        }).then(r => {
+            if (r.isConfirmed) {
+                showLoading(); // Show loading feedback
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/products/${uuid}`;
+                form.innerHTML = `
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    // --- Filter logic (AJAX based) ---
     function setCategory(id) {
-        document.getElementById('hiddenCategoryId').value = id;
-        document.getElementById('filterForm').submit();
+        const input = document.getElementById('hiddenCategoryId');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = id;
+            form.submit();
+        }
     }
 
     function setStore(id) {
-        const storeInput = document.getElementById('hiddenStoreId');
-        if (storeInput) {
-            storeInput.value = id;
-            document.getElementById('filterForm').submit();
+        const input = document.getElementById('hiddenStoreId');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = id;
+            form.submit();
+        }
+    }
+
+    function setTransferStore(id) {
+        const input = document.getElementById('hiddenTransferStoreId');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = id;
+            form.submit();
+        }
+    }
+
+    function setTransferStatus(status) {
+        const input = document.getElementById('hiddenTransferStatus');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = status;
+            form.submit();
+        }
+    }
+
+    function setTimeFilter(val) {
+        const input = document.getElementById('hiddenTimeFilter');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = val;
+            form.submit();
+        }
+    }
+
+    function setPaymentFilter(val) {
+        const input = document.getElementById('hiddenPaymentFilter');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = val;
+            form.submit();
+        }
+    }
+
+    function setSupplierFilter(id) {
+        const input = document.getElementById('hiddenSupplierId');
+        const form = document.getElementById('filterForm');
+        if (input && form) {
+            input.value = id;
+            form.submit();
         }
     }
 
     // --- Product Actions ---
-    function openViewModal(product) {
-        const content = document.getElementById('viewDetailContent');
-        const priceModal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.harga_modal);
-        const priceJual = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.harga_jual);
+    function openViewModal(productUuid, alertData = null) {
+        const product = typeof productUuid === 'string' ? allProductsMap[productUuid] : productUuid;
+        if (!product) {
+            console.error('ViewModal: Product data missing for UUID:', productUuid);
+            Swal.fire('Error', 'Data produk tidak ditemukan.', 'error');
+            return;
+        }
         
-        content.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <div style="display: flex; gap: 20px; align-items: start;">
-                    <img src="${product.resolved_image_url || '/images/placeholder-product.png'}" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; background: #f0f0f0;">
-                    <div style="flex: 1;">
-                        <div style="font-size: 14px; color: #888; margin-bottom: 4px;">Nama Produk</div>
-                        <div style="font-size: 18px; font-weight: 700; color: var(--primary-blue);">${product.nama_produk}</div>
-                        <div style="font-size: 14px; color: #555; margin-top: 8px;">${product.barcode || 'Tidak ada barcode'}</div>
-                    </div>
-                </div>
-                <hr style="border: none; border-top: 1px solid #eee;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div>
-                        <div style="font-size: 12px; color: #888; text-transform: uppercase;">Kategori</div>
-                        <div style="font-weight: 600;">${product.category ? product.category.nama_category : '-'}</div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                    <div>
-                        <div style="font-size: 12px; color: #888; text-transform: uppercase;">Modal</div>
-                        <div style="font-weight: 700; color: #D9534F;">${priceModal}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 12px; color: #888; text-transform: uppercase;">Jual</div>
-                        <div style="font-weight: 700; color: var(--primary-blue);">${priceJual}</div>
-                    </div>
-                </div>
-                ${ !{{ Auth::user()->isOwner() ? 'true' : 'false' }} ? `
-                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Stok Saat Ini</div>
-                        <div style="font-size: 20px; font-weight: 800; color: #1e293b;">${product.current_stok ?? 0} <span style="font-size: 12px; font-weight: 400; color: #64748b;">Unit</span></div>
-                    </div>
-                    <iconify-icon icon="solar:box-bold-duotone" style="font-size: 32px; color: #cbd5e1;"></iconify-icon>
-                </div>
-                ` : ''}
+        const modalBody = document.getElementById('viewDetailContent');
+        const priceModal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.harga_modal || 0);
+        const priceSell = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.harga_jual || 0);
+        
+        let plHtml = '';
+        if (product.price_levels && product.price_levels.length > 0) {
+            plHtml = `
+                <div style="margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                    <div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 10px;">Harga Grosir / Bertingkat:</div>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 12px;">
+                        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #94a3b8; font-size: 11px; text-transform: uppercase;">
+                                    <th style="padding-bottom: 6px;">Minimal Qty</th>
+                                    <th style="padding-bottom: 6px;">Harga Per Pcs</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+            product.price_levels.forEach(pl => {
+                plHtml += `
+                    <tr>
+                        <td style="font-weight: 600; padding: 4px 0;">&ge; ${pl.jmlh} Pcs</td>
+                        <td style="font-weight: 700; color: #C62828;">Rp ${new Intl.NumberFormat('id-ID').format(pl.harga)}</td>
+                    </tr>`;
+            });
+            plHtml += `</tbody></table></div></div>`;
+        }
 
-                ${ {{ Auth::user()->isOwner() ? 'true' : 'false' }} && product.stores && product.stores.length > 0 ? `
-                <div style="margin-top: 8px;">
-                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+        let branchStockHtml = '';
+        const isOwner = {{ Auth::user()->isOwner() ? 'true' : 'false' }};
+        if (isOwner && product.stores && product.stores.length > 0) {
+            branchStockHtml = `
+                <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                         <iconify-icon icon="solar:globus-bold-duotone" style="font-size: 18px; color: var(--primary-blue);"></iconify-icon>
                         Rincian Stok per Cabang
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
                         ${product.stores.map(ps => `
-                            <div style="background: linear-gradient(to right, #ffffff, #f8fbff); padding: 14px 18px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); transition: all 0.2s ease;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <div style="width: 36px; height: 36px; background: #eff6ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary-blue);">
-                                        <iconify-icon icon="solar:shop-2-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                                    </div>
-                                    <div style="display: flex; flex-direction: column;">
-                                        <span style="font-size: 14px; font-weight: 700; color: #1e293b;">${ps.store ? ps.store.nama : 'Cabang'}</span>
-                                        <span style="font-size: 11px; color: #64748b;">Tersedia di Toko</span>
-                                    </div>
+                            <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #1e293b;">${ps.store ? ps.store.nama : 'Cabang'}</div>
+                                    <div style="font-size: 11px; color: #64748b;">Lokasi Stok</div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <span style="font-size: 22px; font-weight: 900; color: var(--primary-blue);">${ps.stok}</span>
-                                    <div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Unit</div>
+                                    <span style="font-size: 20px; font-weight: 800; color: var(--primary-blue);">${ps.stok}</span>
+                                    <span style="font-size: 12px; color: #94a3b8;">Pcs</span>
                                 </div>
                             </div>
                         `).join('')}
                     </div>
                 </div>
-                ` : ''}
-                
-                ${product.price_levels && product.price_levels.length > 0 ? `
-                <div style="margin-top: 8px;">
-                    <div style="font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 8px;">Harga Grosir (Level)</div>
-                    <div style="background: #FFF9C4; padding: 12px; border-radius: 8px; border: 1px solid #FBC02D;">
-                        <table style="width: 100%; font-size: 13px;">
-                            <thead>
-                                <tr style="text-align: left; color: #827717;">
-                                    <th>Min. Qty</th>
-                                    <th>Harga / Unit</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${product.price_levels.map(pl => `
-                                    <tr>
-                                        <td style="font-weight: 600; padding: 4px 0;">&ge; ${pl.jmlh} Unit</td>
-                                        <td style="font-weight: 700; color: #C62828;">Rp ${new Intl.NumberFormat('id-ID').format(pl.harga)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+            `;
+        } else if (!isOwner && alertData) {
+             branchStockHtml = `
+                <div style="background: #f0f7ff; padding: 12px; border-radius: 12px; border: 1px solid #d0e7ff; display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div>
+                        <div style="font-size: 11px; color: #0056b3; text-transform: uppercase; font-weight: 700;">Stok di Outlet Anda</div>
+                        <div style="font-size: 18px; font-weight: 800; color: #0056b3;">${alertData.stok || 0} <span style="font-size: 12px; font-weight: 400;">Pcs</span></div>
+                    </div>
+                    <iconify-icon icon="solar:shop-2-bold-duotone" style="font-size: 32px; color: #0056b3; opacity: 0.3;"></iconify-icon>
+                </div>
+             `;
+        }
+
+        const imgUrl = product.resolved_image_url || (product.image_url ? `/storage/${product.image_url}` : 'https://placehold.co/200x200?text=No+Image');
+
+        modalBody.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="display: flex; gap: 20px; align-items: start;">
+                    <img src="${imgUrl}" 
+                         style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid #f1f5f9; background: #fff;" 
+                         onerror="this.src='https://placehold.co/200x200?text=No+Image'">
+                    <div style="flex: 1;">
+                        <div style="font-size: 18px; font-weight: 700; color: var(--primary-blue);">${product.nama_produk || 'Produk'}</div>
+                        <div style="color: #64748b; font-size: 14px; margin-top: 4px;">Barcode: ${product.barcode || '-'}</div>
+                        <div style="margin-top: 12px; display: inline-block; padding: 4px 12px; background: #eff6ff; color: var(--primary-blue); border-radius: 50px; font-size: 12px; font-weight: 600;">
+                            ${product.nama_category || 'Tanpa Kategori'}
+                        </div>
                     </div>
                 </div>
-                ` : ''}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f8fafc; border-radius: 12px; padding: 15px;">
+                    <div>
+                        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Harga Modal</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #D9534F;">${priceModal}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Harga Jual</div>
+                        <div style="font-size: 16px; font-weight: 700; color: var(--primary-blue);">${priceSell}</div>
+                    </div>
+                </div>
+                ${branchStockHtml}
+                ${plHtml}
             </div>
         `;
         openModal('viewModal');
     }
 
+    function openViewModalFromAlert(alertUuid) {
+        const alertData = stockAlertsMap[alertUuid];
+        if (!alertData || !alertData.product) {
+            console.error('openViewModalFromAlert: Alert data missing for UUID:', alertUuid);
+            Swal.fire('Error', 'Data detail tidak ditemukan.', 'error');
+            return;
+        }
+        openViewModal(alertData.product, alertData);
+    }
+
     function openOpnameDetailModal(uuid) {
-        Swal.fire({ title: 'Memuat detail...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        showLoading('Memuat Detail...');
         
-        fetch(`/products/${uuid}`)
+        fetch(`/products/opname-detail/${uuid}`)
             .then(r => r.json())
             .then(d => {
-                Swal.close();
+                hideLoading();
                 document.getElementById('det_op_tanggal').innerText = new Date(d.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                 document.getElementById('det_op_toko').innerText = d.store ? d.store.nama : '-';
                 document.getElementById('det_op_petugas').innerText = d.user ? (d.user.name || d.user.username) : '-';
@@ -1016,7 +1821,13 @@
                 tbody.innerHTML = '';
                 
                 d.details.forEach(it => {
-                    const diffColor = it.selisih < 0 ? '#D9534F' : (it.selisih > 0 ? '#2E7D32' : '#666');
+                    let diffColor = '#2E7D32'; 
+                    if (it.selisih < 0) {
+                        diffColor = '#D9534F'; 
+                    } else if (it.selisih > 0) {
+                        diffColor = '#FBC02D'; 
+                    }
+                    
                     const diffText = it.selisih > 0 ? `+${it.selisih}` : it.selisih;
                     
                     const row = document.createElement('tr');
@@ -1025,40 +1836,94 @@
                             <div style="font-weight: 600;">${it.product ? it.product.nama_produk : 'Produk Terhapus'}</div>
                             <div style="font-size: 11px; color: #888;">${it.product ? (it.product.barcode || '-') : '-'}</div>
                         </td>
-                        <td>${it.stok_sistem}</td>
-                        <td>${it.stok_fisik}</td>
-                        <td style="font-weight: 700; color: ${diffColor}">${diffText}</td>
+                        <td style="text-align: center; font-weight: 600;">${it.stok_sistem}</td>
+                        <td style="text-align: center; font-weight: 600;">${it.stok_fisik}</td>
+                        <td style="text-align: center; font-weight: 800; color: ${diffColor}; background: ${diffColor}10;">${diffText}</td>
+                        <td>
+                            <div style="font-weight: 500;">${it.alasan_selisih || '-'}</div>
+                            <div style="font-size: 11px; color: #888;">${it.keterangan || ''}</div>
+                        </td>
                     `;
                     tbody.appendChild(row);
                 });
                 
+                const isOwner = {{ Auth::user()->isOwner() ? 'true' : 'false' }};
+                const finalizeArea = document.getElementById('opnameFinalizeArea');
+                const closeArea = document.getElementById('opnameDetailCloseArea');
+                const finalizeBtn = document.getElementById('btnFinalizeOpnameAction');
+                
+                if (finalizeArea && closeArea) {
+                    if (isOwner && d.status === 'Pending') {
+                        finalizeArea.style.display = 'block';
+                        closeArea.style.display = 'none';
+                        finalizeBtn.onclick = () => confirmFinalizeOpname(uuid);
+                    } else {
+                        finalizeArea.style.display = 'none';
+                        closeArea.style.display = 'flex';
+                    }
+                }
+                
                 openModal('opnameDetailModal');
             })
-            .catch(() => Swal.fire('Error', 'Gagal memuat detail opname.', 'error'));
+            .catch(() => {
+                hideLoading();
+                Swal.fire('Error', 'Gagal memuat detail opname.', 'error');
+            });
     }
 
-    function openEditModal(product) {
+    function confirmFinalizeOpname(uuid) {
+        Swal.fire({
+            title: 'Finalisasi Opname?',
+            text: "Stok produk akan di-update sesuai data fisik yang diinput petugas. Tindakan ini tidak bisa dibatalkan.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#2E7D32',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Finalisasi & Update Stok',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/products/opname/${uuid}/finalize`;
+                form.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}">`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    function openEditModal(productUuid) {
+        const product = allProductsMap[productUuid];
+        if (!product) {
+            console.error('openEditModal: Product not found for UUID:', productUuid);
+            Swal.fire('Error', 'Data produk tidak ditemukan.', 'error');
+            return;
+        }
         const form = document.getElementById('editForm');
         form.action = `/products/${product.uuid}`;
-        document.getElementById('edit_nama').value = product.nama_produk;
-        document.getElementById('edit_barcode').value = product.barcode;
-        document.getElementById('edit_kategori').value = product.kategori_id;
-        document.getElementById('edit_modal').value = product.harga_modal;
-        document.getElementById('edit_jual').value = product.harga_jual;
+        document.getElementById('edit_nama').value = product.nama_produk || '';
+        document.getElementById('edit_barcode').value = product.barcode || '';
+        document.getElementById('edit_kategori').value = product.kategori_id || '';
+        document.getElementById('edit_modal').value = product.harga_modal || 0;
+        document.getElementById('edit_jual').value = product.harga_jual || 0;
         
-        // Reset hidden image input to prevent old data persistence
         const resultInput = document.getElementById('editCroppedImageResult');
         if (resultInput) resultInput.value = '';
 
-        // Clear and Populate Price Levels (Grosir)
         const tbody = document.getElementById('editPriceLevelBody');
         tbody.innerHTML = '';
         if (product.price_levels && product.price_levels.length > 0) {
             product.price_levels.forEach(level => addPriceLevelRow('editPriceLevelBody', level));
         }
 
-        if (product.resolved_image_url) {
-            document.getElementById('editImagePreviewContainer').innerHTML = `<img src="${product.resolved_image_url}" style="width:100%; height:100%; object-fit:cover;">`;
+        const previewContainer = document.getElementById('editImagePreviewContainer');
+        if (previewContainer) {
+            if (product.resolved_image_url) {
+                previewContainer.innerHTML = `<img src="${product.resolved_image_url}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                previewContainer.innerHTML = `<span style="color: #999; font-size: 12px;">+ Pilih/Foto</span>`;
+            }
         }
 
         openModal('editModal');
@@ -1078,34 +1943,7 @@
         });
     }
 
-    // --- Custom Scanner & Unified Brain ---
-    let html5Qrcode = null;
-    let deepScanTimer = null;
-    let cyclicIndex = 0;
-    let scanStartTime = 0;
-    const scanPasses = [
-        { msg: "Menyeimbangkan cahaya...", t: 140, a: 0, s: true },
-        { msg: "Menajamkan garis...", t: 170, a: 0, s: true },
-        { msg: "Mengoreksi lengkungan...", t: 150, a: 5, s: false },
-        { msg: "Mengoreksi lengkungan...", t: 150, a: -5, s: false },
-        { msg: "Mendeteksi barcode...", t: 190, a: 0, s: true }
-    ];
-
-    function openScannerModal() {
-        document.getElementById('scannerModal').style.display = 'flex';
-        if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
-    }
-
-    let isDigitalZoom = false;
-    function toggleDigitalZoom() {
-        isDigitalZoom = !isDigitalZoom;
-        const btn = document.getElementById('zoomBtn');
-        const badge = document.getElementById('zoomBadge');
-        btn.style.background = isDigitalZoom ? '#2E7D32' : '#555';
-        btn.innerHTML = isDigitalZoom ? '<iconify-icon icon="solar:magnifer-zoom-out-bold-duotone"></iconify-icon> Zoom 1X' : '<iconify-icon icon="solar:magnifer-zoom-in-bold-duotone"></iconify-icon> Zoom 2X';
-        badge.style.display = isDigitalZoom ? 'block' : 'none';
-    }
-
+    // --- Smart Multi-Pass Image Scanner Logic ---
     const processImage = (file, filter = 'none', cropCenter = false, threshold = 0, angle = 0, stripCrop = false) => {
         return new Promise((r) => {
             const img = new Image();
@@ -1143,7 +1981,7 @@
             reader.onload = () => {
                 Quagga.decodeSingle({
                     src: reader.result, numOfWorkers: 0,
-                    decoder: { readers: ["ean_reader", "upc_reader", "upc_e_reader", "code_128_reader"] },
+                    decoder: { readers: ["ean_reader", "upc_reader", "upc_e_reader", "code_128_reader", "code_39_reader"] },
                     locate: true
                 }, res => (res && res.codeResult) ? r(res.codeResult.code) : j());
             };
@@ -1151,161 +1989,263 @@
         });
     }
 
-    async function tryScannerBrain(blob, isExperimental = false) {
-        const F = window.Html5QrcodeSupportedFormats || (window.Html5Qrcode ? Html5Qrcode.SupportedFormats : null);
-        const config = isExperimental ? true : (F ? { formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128] } : {});
-        try { const res = await html5Qrcode.scanFile(blob, config); if (res) return res; } catch(e) {}
-        try { return await quaggaScan(blob); } catch(e) { return null; }
-    }
-
-    function startCameraScan() {
-        document.getElementById('camera-placeholder').style.display = 'none';
-        document.getElementById('scannerLine').style.display = 'block';
-        document.getElementById('scannerTarget').style.display = 'block';
-        scanStartTime = Date.now();
-        Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#reader'), constraints: { facingMode: "environment", width: 1280, height: 720 } },
-            decoder: { readers: ["ean_reader", "upc_reader", "upc_e_reader", "code_128_reader"] },
-            locate: true
-        }, err => {
-            if (err) return Swal.fire('Error', 'Gagal kamera.', 'error');
-            Quagga.start(); deepScanTimer = setInterval(captureAndScanFrame, 800);
-        });
-        Quagga.onDetected(res => res && res.codeResult && handleSuccessfulDetection(res.codeResult.code));
-    }
-
-    async function captureAndScanFrame() {
-        const video = document.querySelector('#reader video');
-        if (!video || !video.videoWidth) return;
-        const pass = scanPasses[cyclicIndex % scanPasses.length];
-        const indicator = document.getElementById('deepScanIndicator');
-        indicator.innerHTML = `<div class="spinner-border spinner-border-sm"></div> ${pass.msg}`;
-        indicator.style.display = 'flex';
+    async function tryBothScanners(file, decoder) {
+        // Try Html5Qrcode first
         try {
-            const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            if (isDigitalZoom) { ctx.drawImage(video, video.videoWidth/4, video.videoHeight/4, video.videoWidth/2, video.videoHeight/2, 0, 0, video.videoWidth, video.videoHeight); }
-            else ctx.drawImage(video, 0, 0);
-            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            const res = await tryScannerBrain(await processImage(blob, 'none', false, pass.t, pass.a, pass.s));
-            if (res) handleSuccessfulDetection(res);
-            cyclicIndex++;
+            const res = await decoder.scanFile(file, true);
+            if (res) return res;
         } catch(e) {}
-    }
 
-    async function captureHighResAndScan() {
-        const video = document.querySelector('#reader video');
-        if (!video) return Swal.fire('Info', 'Aktifkan kamera.', 'info');
-        Swal.fire({ title: 'Analisis Mendalam...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0,0);
-        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-        for (let t of [130, 160, 200]) {
-            for (let a of [0, -5, 5]) {
-                const res = await tryScannerBrain(await processImage(blob, 'none', false, t, a, true));
-                if (res) { Swal.close(); handleSuccessfulDetection(res); return; }
-            }
-        }
-        Swal.fire({ title: 'Belum Terbaca', text: 'Ketik manual:', input: 'text' }).then(r => r.value && onScanSuccess(r.value));
-    }
-
-    function handleSuccessfulDetection(code) {
-        if (deepScanTimer) clearInterval(deepScanTimer);
-        document.getElementById('deepScanIndicator').style.display = 'none';
-        try { Quagga.stop(); } catch(e) {}
-        onScanSuccess(code);
-    }
-
-    async function scanImageFile(event) {
-        const file = event.target.files[0]; if (!file) return;
-        Swal.fire({ title: 'Scanner Brain: Analyzing...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
+        // Fallback to Quagga
         try {
-            let res = await tryScannerBrain(await processImage(file)); 
-            if (!res) res = await tryScannerBrain(await processImage(file, 'none', true, 150));
-            if (!res) res = await tryScannerBrain(await processImage(file, 'contrast(2) grayscale(1)', true));
-            if (res) { onScanSuccess(res); return; }
-            throw 0;
-        } catch(e) { Swal.fire({ title: 'Gagal', text: 'Barcode sulit dibaca. Ketik manual:', input: 'text' }).then(r => r.value && onScanSuccess(r.value)); }
-        event.target.value = '';
+            return await quaggaScan(file);
+        } catch(e) {
+            return null;
+        }
     }
 
-    function closeScannerModal() {
-        document.getElementById('scannerModal').style.display = 'none';
-        if (deepScanTimer) clearInterval(deepScanTimer);
-        document.getElementById('deepScanIndicator').style.display = 'none';
-        try { Quagga.stop(); } catch(e) {}
-        if (html5Qrcode && html5Qrcode.isScanning) html5Qrcode.stop();
-        document.getElementById('camera-placeholder').style.display = 'block';
+    async function handleBarcodeImageScan(event, targetInputId) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        showLoading('Menganalisis Gambar (Unified Scan)...');
+        
+        try {
+            const tempDecoder = new Html5Qrcode(targetInputId);
+            let result = null;
+
+            // PASS 1: Original
+            result = await tryBothScanners(file, tempDecoder);
+
+            // PASS 2: High Contrast Grayscale
+            if (!result) {
+                const b = await processImage(file, 'contrast(1.6) grayscale(1)');
+                result = await tryBothScanners(new File([b], "p2.png"), tempDecoder);
+            }
+
+            // PASS 3: Brightness + Sharpness
+            if (!result) {
+                const b = await processImage(file, 'brightness(1.1) contrast(1.3)', true);
+                result = await tryBothScanners(new File([b], "p3.png"), tempDecoder);
+            }
+
+            // PASS 4: Rotation passes
+            if (!result) {
+                for (let angle of [-8, 8, -15, 15]) {
+                    const b = await processImage(file, 'none', false, 0, angle);
+                    result = await tryBothScanners(new File([b], `p4_${angle}.png`), tempDecoder);
+                    if (result) break;
+                }
+            }
+            
+            if (result) {
+                hideLoading();
+                const input = document.getElementById(targetInputId);
+                input.value = result;
+                if (targetInputId === 'barcodeAdd') lookupProductByBarcode(result);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Barcode Terbaca!',
+                    text: result,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                throw new Error("No barcode found");
+            }
+        } catch (err) {
+            hideLoading();
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Membaca',
+                text: 'Barcode sulit dibaca. Pastikan gambar jelas, tidak silau, dan posisi barcode mendatar.',
+            });
+        }
+        event.target.value = ''; 
     }
 
     function lookupProductByBarcode(barcode) {
         if (!barcode) return;
+        showLoading('Mencari Detail Produk (Brand & Volume)...');
         
-        Swal.fire({ 
-            title: 'Mencari Data...', 
-            html: `Barcode: <b>${barcode}</b>`, 
-            allowOutsideClick: false, 
-            didOpen: () => Swal.showLoading() 
-        });
-
         fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`)
             .then(r => r.json())
             .then(d => {
+                hideLoading();
                 if (d.status === 1 && d.product) {
                     const p = d.product;
-                    const fullName = `${p.brands || ''} ${p.product_name || ''} ${p.quantity || ''}`.trim().replace(/\s+/g, ' ');
-                    document.getElementById('addNamaProduk').value = fullName;
-                    Swal.fire({ 
-                        title: 'Ditemukan!', 
-                        html: `<b>${fullName}</b>`, 
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+                    
+                    // Ambil Brand, Nama, dan Volume
+                    const brand = p.brands ? p.brands.split(',')[0].trim() : '';
+                    const name = p.product_name || '';
+                    const volume = p.quantity || '';
+                    
+                    // Gabungkan menjadi satu nama lengkap yang rapi
+                    const fullName = `${brand} ${name} ${volume}`.trim().replace(/\s+/g, ' ');
+                    
+                    const inputNama = document.getElementById('addNamaProduk');
+                    if (inputNama) {
+                        inputNama.value = fullName;
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Data Ditemukan!',
+                            html: `Detail Produk:<br><b>${fullName}</b>`,
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    }
                 } else {
-                    Swal.fire({ 
-                        title: 'Info', 
-                        text: 'Data tidak ditemukan di database global, silakan isi manual.', 
+                    Swal.fire({
                         icon: 'info',
-                        timer: 2500
+                        title: 'Info Produk',
+                        text: 'Data produk tidak ditemukan di database global, silakan isi manual.',
+                        timer: 3000,
+                        showConfirmButton: false
                     });
                 }
             })
-            .catch(() => {
-                Swal.fire({ 
-                    title: 'Selesai', 
-                    text: 'Pencarian selesai, silakan lengkapi data.', 
-                    icon: 'success',
-                    timer: 1500
+            .catch(err => {
+                hideLoading();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan',
+                    text: 'Gagal menghubungi database produk global.'
                 });
             });
     }
 
-    function onScanSuccess(text) {
-        closeScannerModal();
-        document.getElementById('addBarcode').value = text;
-        lookupProductByBarcode(text);
+    function openAddCategoryModal() {
+        openModal('addCategoryModal', 30000); // Higher z-index to stay on top
     }
 
-    // Add listener for manual barcode entry (Enter key)
+    // --- AJAX Category Submission ---
     document.addEventListener('DOMContentLoaded', function() {
-        const barcodeInput = document.getElementById('addBarcode');
-        if (barcodeInput) {
-            barcodeInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // Prevent form submission
-                    lookupProductByBarcode(this.value);
-                }
+        const catForm = document.getElementById('addCategoryForm');
+        if (catForm) {
+            catForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Menyimpan...';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const newCat = data.category;
+                        // Update all category dropdowns
+                        document.querySelectorAll('select[name="kategori_id"]').forEach(select => {
+                            const opt = new Option(newCat.nama_category, newCat.uuid);
+                            select.add(opt);
+                            select.value = newCat.uuid; // Auto select in current modal
+                        });
+
+                        closeModal('addCategoryModal');
+                        this.reset();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Kategori baru telah ditambahkan dan dipilih.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(data.message || 'Gagal menyimpan kategori');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Gagal!', err.message || 'Terjadi kesalahan sistem.', 'error');
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                });
             });
         }
     });
+
+    function openEditAlertModal(alertUuid) {
+        const alertData = stockAlertsMap[alertUuid];
+        if (!alertData) {
+            console.error('openEditAlertModal: Alert data not found for UUID:', alertUuid);
+            Swal.fire('Error', 'Data stok tidak ditemukan.', 'error');
+            return;
+        }
+
+        const product = alertData.product || {};
+        const form = document.getElementById('editAlertForm');
+        if (!form) return;
+        
+        form.action = `/products/store-data/${alertUuid}`;
+        
+        const alertImg = document.getElementById('editAlertImage');
+        if (alertImg) {
+            const imgUrl = product.resolved_image_url || (product.image_url ? `/storage/${product.image_url}` : 'https://placehold.co/200x200?text=No+Image');
+            alertImg.src = imgUrl;
+        }
+        
+        const alertName = document.getElementById('editAlertName');
+        if (alertName) alertName.innerText = product.nama_produk || 'Produk Tidak Diketahui';
+        
+        const alertBarcode = document.getElementById('editAlertBarcode');
+        if (alertBarcode) alertBarcode.innerText = product.barcode || '-';
+        
+        const alertStore = document.getElementById('editAlertStoreName');
+        if (alertStore) {
+            const storeName = (alertData.store ? alertData.store.nama : null) || alertData.store_name || '-';
+            alertStore.innerText = storeName;
+        }
+        
+        const alertDate = document.getElementById('editAlertDateMasuk');
+        if (alertDate) alertDate.innerText = alertData.tanggal_masuk || '-';
+        
+        const inputStok = document.getElementById('alert_stok');
+        if (inputStok) inputStok.value = alertData.stok || 0;
+
+        const inputExp = document.getElementById('alert_kadaluarsa');
+        if (inputExp) inputExp.value = alertData.kadaluarsa ? alertData.kadaluarsa.split(' ')[0] : '';
+
+        const inputMin = document.getElementById('alert_stok_minimum');
+        if (inputMin) inputMin.value = alertData.stok_minimum || 10;
+        
+        const statusCheck = document.getElementById('alert_status_aktif');
+        if (statusCheck) {
+            statusCheck.checked = alertData.status_aktif !== false;
+            const statusLabel = document.getElementById('statusLabel');
+            if (statusLabel) {
+                statusLabel.innerText = statusCheck.checked ? 'Aktif' : 'Nonaktif';
+                statusLabel.style.color = statusCheck.checked ? '#2E7D32' : '#64748b';
+            }
+        }
+        openModal('editAlertModal');
+    }
+
+    function openAddProductModal() {
+        openModal('addModal');
+        setTimeout(() => {
+            const input = document.getElementById('barcodeAdd');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }, 400);
+    }
 
     // --- Generic Cropper Logic ---
     let cropper = null;
     let currentActiveInput = null;
 
     function initCropper(inputElement, previewContainer, resultInput) {
+        if (!inputElement || !previewContainer || !resultInput) return; // Prevent errors if elements missing
         inputElement.addEventListener('change', e => {
             const f = e.target.files[0]; if (!f) return;
             currentActiveInput = { preview: previewContainer, result: resultInput };
@@ -1358,86 +2298,84 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                if (form.id === 'filterForm') return;
-                
-                Swal.fire({
-                    title: 'Memproses Data...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+        @if(session('success'))
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: @json(session('success')), timer: 3000, showConfirmButton: false });
+        @endif
+        @if(session('error'))
+            Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')) });
+        @endif
+        @if($errors->any())
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Kesalahan Input', 
+                html: '<ul style="text-align: left;">@foreach($errors->all() as $error)<li>{!! addslashes(e($error)) !!}</li>@endforeach</ul>'
             });
-        });
+        @endif
     });
 
+    // Global Form Submit Listener removed to prevent 'ghost' loading triggers.
+    // We now use specific 'onsubmit' handlers on each form for better control.
+
     let searchTimer;
+    let abortController = null;
+
     function debounceSearch() {
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
             updateTableContent();
-        }, 500);
+        }, 200); // Super snappy
     }
+
 
     async function updateTableContent(url = null) {
         const form = document.getElementById('filterForm');
+        const tableContainer = document.querySelector('.table-container');
+
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
+
         if (!url) {
             const formData = new FormData(form);
             const params = new URLSearchParams(formData);
             url = form.action + '?' + params.toString();
         }
 
-        // Show a subtle loading indicator
-        const tableContainer = document.querySelector('.table-container');
-        tableContainer.style.opacity = '0.5';
-        tableContainer.style.pointerEvents = 'none';
+        if (tableContainer) {
+            tableContainer.style.opacity = '0.5'; 
+            showLoading(); // Show loading animation
+        }
 
         try {
             const response = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: abortController.signal
             });
             const html = await response.text();
             
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Update table content
-            const newTable = doc.querySelector('.table-container');
-            if (newTable && tableContainer) {
-                tableContainer.innerHTML = newTable.innerHTML;
+            if (html.includes('menu-nav') || html.includes('sidebar')) {
+                window.location.reload();
+                return;
             }
 
-            // Update action bar filters if they changed (for active states)
-            const newActionBar = doc.querySelector('.left-actions-group');
-            const currentActionBar = document.querySelector('.left-actions-group');
-            if (newActionBar && currentActionBar) {
-                // We only want to update the dropdown labels and active classes, not the input itself
-                const newDropdowns = newActionBar.querySelectorAll('.dropdown');
-                const currentDropdowns = currentActionBar.querySelectorAll('.dropdown');
-                newDropdowns.forEach((nd, i) => {
-                    if (currentDropdowns[i]) {
-                        currentDropdowns[i].innerHTML = nd.innerHTML;
-                    }
-                });
+            if (tableContainer) {
+                tableContainer.innerHTML = html;
+                syncDataMaps();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             }
 
-            // Update URL without reload
             window.history.pushState({ path: url }, '', url);
-
-            // Re-attach pagination listeners if necessary (though onclick should work)
-            // If there's any summary or count that needs updating
-            const newSummaries = doc.querySelectorAll('.discounts-container, .main-content-box .summary-box, [style*="margin-bottom: 20px"]');
-            // ... apply if needed
             
         } catch (error) {
+            if (error.name === 'AbortError') return;
             console.error('Search failed:', error);
         } finally {
-            tableContainer.style.opacity = '1';
-            tableContainer.style.pointerEvents = 'auto';
+            hideLoading(); // Hide loading animation
+            if (tableContainer) {
+                tableContainer.style.opacity = '1';
+                tableContainer.style.pointerEvents = 'auto';
+            }
         }
     }
 
@@ -1450,69 +2388,102 @@
         }
     });
 
-    // Handle filter dropdown changes without reload
-    function setCategory(id) {
-        document.getElementById('hiddenCategoryId').value = id;
+    // Duplicate filter functions removed (already defined above)
+
+    function applyDateFilter() {
+        const start = document.getElementById('inputStartDate').value;
+        const end = document.getElementById('inputEndDate').value;
+        
+        document.getElementById('hiddenStartDate').value = start;
+        document.getElementById('hiddenEndDate').value = end;
+        
         updateTableContent();
         document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
     }
 
-    function setStore(id) {
-        document.getElementById('hiddenStoreId').value = id;
+    function clearDateFilter() {
+        document.getElementById('inputStartDate').value = '';
+        document.getElementById('inputEndDate').value = '';
+        document.getElementById('hiddenStartDate').value = '';
+        document.getElementById('hiddenEndDate').value = '';
+        
         updateTableContent();
         document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
     }
     async function scanFromProductImage() {
         const b64 = document.getElementById('croppedImageResult').value;
         if (!b64) return;
-        Swal.fire({ title: 'Analyzing...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        showLoading('Menganalisis Foto...');
         if (!html5Qrcode) html5Qrcode = new Html5Qrcode("reader");
         try {
             const blob = await (await fetch(b64)).blob();
             const res = await tryScannerBrain(await processImage(blob));
+            hideLoading();
             if (res) onScanSuccess(res); else throw 0;
-        } catch(e) { Swal.fire('Gagal', 'Barcode tidak terdeteksi.', 'warning'); }
+        } catch(e) { 
+            hideLoading();
+            Swal.fire('Gagal', 'Barcode tidak terdeteksi.', 'warning'); 
+        }
     }
 
-    let productsList = JSON.parse('@json($all_products ?? [])');
     function openAddOpnameModal() {
         const form = document.getElementById('opnameForm');
         form.action = "{{ route('products.opname.store') }}";
         document.getElementById('opnameMethod').innerHTML = '';
         document.querySelector('#addOpnameModal h3').innerText = 'Input Opname Stok';
         document.getElementById('opnameItemsTable').innerHTML = '';
-        addOpnameRow(); openModal('addOpnameModal');
+        if (document.getElementById('opnameKategoriFilter')) document.getElementById('opnameKategoriFilter').value = '';
+        window.currentFilteredProducts = productsList; // Reset to full list
+        addOpnameRow(); 
+        openModal('addOpnameModal');
     }
+
+    function filterOpnameProducts(kategoriId) {
+        window.currentFilteredProducts = kategoriId 
+            ? productsList.filter(p => p.kategori_id === kategoriId)
+            : productsList;
+        
+        // Refresh all existing selects in the table
+        const selects = document.querySelectorAll('#opnameItemsTable select');
+        const opts = (window.currentFilteredProducts || productsList).map(p => `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk}</option>`).join('');
+        
+        selects.forEach(select => {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">-- Pilih Produk --</option>' + opts;
+            select.value = currentVal; // Restore value if possible
+        });
+    }
+
     function addOpnameRow() {
         const tbody = document.getElementById('opnameItemsTable');
-        const i = tbody.children.length; const row = document.createElement('tr');
+        const i = tbody.children.length; 
+        const row = document.createElement('tr');
+        
+        const list = window.currentFilteredProducts || productsList;
         let opts = '<option value="">-- Pilih Produk --</option>';
-        productsList.forEach(p => opts += `<option value="${p.uuid}">${p.nama_produk}</option>`);
-        row.innerHTML = `<td><select name="items[${i}][product_id]" class="form-control" required>${opts}</select></td>
-            <td><input type="number" name="items[${i}][stok_sistem]" class="form-control" value="0"></td>
-            <td><input type="number" name="items[${i}][stok_fisik]" class="form-control" value="0"></td>
-            <td><input type="text" name="items[${i}][keterangan]" class="form-control"></td>
-            <td><button type="button" class="btn-filter" onclick="this.closest('tr').remove()"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button></td>`;
+        list.forEach(p => opts += `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk}</option>`);
+        
+        row.innerHTML = `
+            <td>
+                <select name="items[${i}][product_id]" class="form-control select2-opname" required onchange="updateSistemStok(this, ${i})">
+                    ${opts}
+                </select>
+            </td>
+            <td><input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" value="0" readonly style="background: #f8f9fa;"></td>
+            <td><input type="number" name="items[${i}][stok_fisik]" class="form-control" value="0" required></td>
+            <td><input type="text" name="items[${i}][alasan_selisih]" id="alasan_${i}" class="form-control" placeholder="Wajib jika selisih"></td>
+            <td style="text-align: center;">
+                <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
+                    <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+                </button>
+            </td>`;
         tbody.appendChild(row);
     }
-    function continueOpname(uuid) {
-        fetch(`/products/${uuid}`).then(r => r.json()).then(d => {
-            const form = document.getElementById('opnameForm');
-            form.action = `/products/opname/${uuid}`;
-            document.getElementById('opnameMethod').innerHTML = '@method("PUT")';
-            document.querySelector('#addOpnameModal h3').innerText = 'Lanjutkan Opname';
-            const tbody = document.getElementById('opnameItemsTable'); tbody.innerHTML = '';
-            d.details.forEach((it, idx) => {
-                const r = document.createElement('tr');
-                r.innerHTML = `<td><select name="items[${idx}][product_id]" class="form-control"><option value="${it.product_id}">${it.product.nama_produk}</option></select></td>
-                    <td><input type="number" name="items[${idx}][stok_sistem]" class="form-control" value="${it.stok_sistem}" readonly></td>
-                    <td><input type="number" name="items[${idx}][stok_fisik]" class="form-control" value="${it.stok_fisik}"></td>
-                    <td><input type="text" name="items[${idx}][keterangan]" class="form-control" value="${it.keterangan||''}"></td>
-                    <td><button type="button" class="btn-filter" onclick="this.closest('tr').remove()"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button></td>`;
-                tbody.appendChild(r);
-            });
-            openModal('addOpnameModal');
-        });
+
+    function updateSistemStok(select, idx) {
+        const selected = select.options[select.selectedIndex];
+        const stok = selected.dataset.stok || 0;
+        document.getElementById(`sistem_${idx}`).value = stok;
     }
 
     function confirmShipRequest(uuid) {
@@ -1555,50 +2526,592 @@
             confirmButtonText: 'Ya, Hapus!'
         }).then((result) => {
             if (result.isConfirmed) {
-                submitHiddenForm(`/products/opname/${uuid}`, 'DELETE');
+                showLoading(); // Show loading feedback
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/products/opname/${uuid}`;
+                form.innerHTML = `
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="_method" value="DELETE">
+                `;
+                document.body.appendChild(form);
+                form.submit();
             }
         });
     }
 
-    function openEditAlertModal(uuid, stok, kadaluarsa, productName) {
-        const modal = document.getElementById('editAlertModal');
-        const form = document.getElementById('editAlertForm');
-        
-        document.getElementById('alert_product_name').value = productName;
-        document.getElementById('alert_stok').value = stok;
-        document.getElementById('alert_kadaluarsa').value = kadaluarsa || '';
-        
-        form.action = `/products/store-data/${uuid}`;
-        modal.style.display = 'flex';
-    }
-
-    function submitHiddenForm(url, method) {
+    function submitHiddenForm(action, method = 'POST') {
+        showLoading(); // Show loading feedback
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = url;
+        form.action = action;
         form.innerHTML = `
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="_method" value="${method}">
+            ${method !== 'POST' ? `<input type="hidden" name="_method" value="${method}">` : ''}
         `;
         document.body.appendChild(form);
         form.submit();
     }
 
-    (() => {
-        const success = '{{ session("success") }}';
-        const error = '{{ session("error") }}';
-        if (success) Swal.fire({ icon: 'success', title: 'Berhasil!', text: success, timer: 2500, showConfirmButton: false });
-        if (error) Swal.fire({ icon: 'error', title: 'Gagal!', text: error });
-    })();
 
     window.onclick = e => { 
-        if (e.target.className === 'modal-overlay') e.target.style.display = 'none'; 
-        if (e.target.className === 'modal') e.target.style.display = 'none'; 
-
-        // Close dropdowns if clicking outside any dropdown
+        if (e.target.classList.contains('modal-overlay')) {
+            console.log('Overlay clicked, closing modal:', e.target.id);
+            e.target.style.setProperty('display', 'none', 'important');
+        }
+        
+        // Close dropdowns if clicking outside
         if (!e.target.closest('.dropdown')) {
             document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
         }
     }
+
+    // RESTOK LOGIC
+    function openRestokModal() {
+        document.getElementById('restokItemsTable').innerHTML = '';
+        addRestokRow();
+        document.getElementById('restokModal').style.display = 'flex';
+        calculateRestokTotal();
+    }
+
+    const rupiahFormatter = new Intl.NumberFormat('id-ID');
+
+    function viewPurchaseDetail(uuid) {
+        showLoading('Memuat Detail...');
+
+        fetch(`/products/restok/${uuid}`)
+            .then(res => res.json())
+            .then(data => {
+                hideLoading();
+                const content = document.getElementById('purchaseDetailContent');
+                
+                let itemsHtml = '';
+                data.details.forEach(item => {
+                    itemsHtml += `
+                        <tr>
+                            <td>${item.product ? item.product.nama_produk : 'Produk Terhapus'}<br><small class="text-muted">${item.product ? (item.product.barcode || '-') : '-'}</small></td>
+                            <td>${item.jmlh}</td>
+                            <td>Rp ${rupiahFormatter.format(item.harga_modal)}</td>
+                            <td>Rp ${rupiahFormatter.format(item.harga_jual)}</td>
+                            <td>Rp ${rupiahFormatter.format(item.jmlh * item.harga_modal)}</td>
+                        </tr>
+                    `;
+                });
+
+                content.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Tanggal Transaksi</div>
+                            <div style="font-weight: 600;">${new Date(data.tanggal).toLocaleString('id-ID')}</div>
+                            <div style="font-size: 12px; color: #888; margin-top: 10px;">Supplier</div>
+                            <div style="font-weight: 600;">${data.contact ? data.contact.nama : 'Umum'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #888;">Outlet / Toko</div>
+                            <div style="font-weight: 600;">${data.store ? data.store.nama : '-'}</div>
+                            <div style="font-size: 12px; color: #888; margin-top: 10px;">Petugas</div>
+                            <div style="font-weight: 600;">${data.user ? data.user.username : '-'}</div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="fitur-table">
+                            <thead>
+                                <tr>
+                                    <th>Produk</th>
+                                    <th>Qty</th>
+                                    <th>H. Beli</th>
+                                    <th>H. Jual</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                            <tfoot>
+                                <tr style="background: #f8fafc; font-weight: 700;">
+                                    <td colspan="4" style="text-align: right; padding: 12px;">TOTAL</td>
+                                    <td style="padding: 12px; color: var(--primary-blue);">Rp ${rupiahFormatter.format(data.total)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    ${data.catatan ? `<div style="margin-top: 15px; font-size: 13px; color: #666;"><strong>Catatan:</strong> ${data.catatan}</div>` : ''}
+                `;
+                
+                openModal('purchaseDetailModal');
+            })
+            .catch(err => {
+                hideLoading();
+                Swal.fire('Error', 'Gagal memuat detail pembelian.', 'error');
+            });
+    }
+
+    function updatePaymentLabel() {
+        const toggle = document.getElementById('paymentMethodToggle');
+        const label = document.getElementById('paymentLabel');
+        const hidden = document.getElementById('paymentMethodValue');
+        if (toggle.checked) {
+            label.innerText = 'Tunai (Kas)';
+            label.style.color = '#2E7D32';
+            hidden.value = 'Tunai';
+        } else {
+            label.innerText = 'Kredit (Hutang)';
+            label.style.color = '#C53030';
+            hidden.value = 'Kredit';
+        }
+    }
+
+    function addRestokRow() {
+        const tbody = document.getElementById('restokItemsTable');
+        const i = tbody.children.length;
+        const row = document.createElement('tr');
+        
+        let productOptions = '<option value="">-- Pilih Produk --</option>';
+        productsList.forEach(p => {
+            productOptions += `<option value="${p.uuid}" data-price="${p.harga_modal}" data-sell="${p.harga_jual}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`;
+        });
+
+        row.innerHTML = `
+            <td>
+                <select name="items[${i}][product_id]" class="form-control select2-restok" required onchange="handleRestokProductChange(this, ${i})">
+                    ${productOptions}
+                </select>
+            </td>
+            <td>
+                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" required oninput="calculateRestokTotal()" style="min-width: 80px;">
+            </td>
+            <td>
+                <input type="number" name="items[${i}][harga_beli]" class="form-control" value="0" required oninput="calculateRestokTotal()" style="min-width: 120px;">
+            </td>
+            <td>
+                <input type="number" name="items[${i}][harga_jual_baru]" class="form-control" value="0" placeholder="Opsional" style="min-width: 120px;">
+            </td>
+            <td>
+                <input type="date" name="items[${i}][kadaluarsa]" class="form-control" style="min-width: 130px;">
+            </td>
+            <td>
+                <button type="button" class="btn-filter" onclick="removeRestokRow(this)" style="color: #D9534F;">
+                    <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+
+    function handleRestokProductChange(select, index) {
+        const option = select.options[select.selectedIndex];
+        const price = option.getAttribute('data-price') || 0;
+        const sell = option.getAttribute('data-sell') || 0;
+        
+        const row = select.closest('tr');
+        row.querySelector(`input[name="items[${index}][harga_beli]"]`).value = price;
+        row.querySelector(`input[name="items[${index}][harga_jual_baru]"]`).value = sell;
+        calculateRestokTotal();
+    }
+
+    function removeRestokRow(btn) {
+        btn.closest('tr').remove();
+        calculateRestokTotal();
+        if (document.getElementById('restokItemsTable').children.length === 0) {
+            addRestokRow();
+        }
+    }
+
+    function calculateRestokTotal() {
+        const rows = document.getElementById('restokItemsTable').querySelectorAll('tr');
+        let grandTotal = 0;
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('input[name*="[qty]"]').value) || 0;
+            const price = parseFloat(row.querySelector('input[name*="[harga_beli]"]').value) || 0;
+            grandTotal += (qty * price);
+        });
+        document.getElementById('restokGrandTotal').innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+    }
+
+    // Filter functions consolidated above (setTransferStatus, setTransferStore, etc)
+
+    function applyDateFilter(tab = '') {
+        const start = document.getElementById('inputStartDate' + tab).value;
+        const end = document.getElementById('inputEndDate' + tab).value;
+        document.getElementById('hiddenStartDate').value = start;
+        document.getElementById('hiddenEndDate').value = end;
+        updateTableContent();
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+    }
+
+    let currentStoreProducts = [];
+
+    function openTransferModal() {
+        const table = document.getElementById('transferItemsTable');
+        if (!table) return;
+        
+        table.innerHTML = '';
+        currentStoreProducts = []; 
+        
+        const sourceSelect = document.getElementById('sourceStoreSelect');
+        if (sourceSelect) {
+            handleSourceStoreChange(sourceSelect.value);
+        }
+
+        openModal('transferModal', 50000);
+    }
+
+    async function handleSourceStoreChange(storeId) {
+        if (!storeId) {
+            currentStoreProducts = [];
+            return;
+        }
+
+        // Rule 4: Filter destination options to exclude source
+        const destSelect = document.querySelector('select[name="tujuan_store_id"]');
+        if (destSelect) {
+            Array.from(destSelect.options).forEach(opt => {
+                if (opt.value === storeId) {
+                    opt.disabled = true;
+                    opt.style.display = 'none';
+                } else {
+                    opt.disabled = false;
+                    opt.style.display = 'block';
+                }
+            });
+            if (destSelect.value === storeId) destSelect.value = '';
+        }
+
+        try {
+            const response = await fetch(`/products/by-store/${storeId}`);
+            currentStoreProducts = await response.json();
+            
+            // Refresh existing rows if any
+            const table = document.getElementById('transferItemsTable');
+            if (table) {
+                table.innerHTML = '';
+                addTransferRow();
+            }
+        } catch (error) {
+            console.error('Error loading products for store:', error);
+            Swal.fire('Error', 'Gagal memuat produk untuk toko ini', 'error');
+        }
+    }
+
+    function addTransferRow() {
+        const table = document.getElementById('transferItemsTable');
+        if (!table) return;
+        const i = table.rows.length;
+        const row = table.insertRow();
+        
+        let productOptions = '<option value="">-- Pilih Produk --</option>';
+        if (currentStoreProducts.length > 0) {
+            currentStoreProducts.forEach(p => {
+                productOptions += `<option value="${p.uuid}">${p.nama_produk} (Stok: ${p.stok})</option>`;
+            });
+        } else {
+            productOptions = '<option value="">-- Tidak ada produk tersedia --</option>';
+        }
+
+        row.innerHTML = `
+            <td>
+                <select name="items[${i}][product_id]" class="form-control" required>
+                    ${productOptions}
+                </select>
+            </td>
+            <td>
+                <input type="number" name="items[${i}][qty]" class="form-control" value="1" min="1" step="0.01" required>
+            </td>
+            <td>
+                <button type="button" class="btn-filter" onclick="removeTransferRow(this)" style="color: #D9534F;">
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                </button>
+            </td>
+        `;
+    }
+
+    function removeTransferRow(btn) {
+        const row = btn.closest('tr');
+        if (document.getElementById('transferItemsTable').rows.length > 1) {
+            row.remove();
+        }
+    }
+
+    // AJAX Handler for Transfer Form
+    document.addEventListener('DOMContentLoaded', function() {
+        const transferForm = document.getElementById('transferForm');
+        if (transferForm) {
+            transferForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalContent = submitBtn.innerHTML;
+                
+                // Show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<iconify-icon icon="line-md:loading-twotone-loop" style="margin-right: 8px;"></iconify-icon> Memproses...';
+                
+                showLoading('Memproses Transfer...');
+
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message || 'Transfer stok berhasil dikirim.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            closeModal('transferModal');
+                            location.reload(); // Refresh to update stock data
+                        });
+                    } else {
+                        throw new Error(data.message || 'Terjadi kesalahan saat memproses transfer.');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Transfer Error:', error);
+                    let errorMsg = error.message || 'Gagal mengirim transfer stok.';
+                    if (error.errors) {
+                        errorMsg = Object.values(error.errors).flat().join('<br>');
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        html: errorMsg
+                    });
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalContent;
+                });
+            });
+        }
+    });
+
+    async function viewTransferDetail(uuid) {
+        showLoading('Memuat Detail...');
+        try {
+            console.log('Fetching detail for transfer:', uuid);
+            const response = await fetch(`/products/restok/${uuid}`);
+            const data = await response.json();
+            hideLoading();
+            console.log('Transfer Data Received:', data);
+            
+            if (!data || !data.details) {
+                console.error('Invalid data received from server:', data);
+                Swal.fire('Error', 'Data detail tidak ditemukan', 'error');
+                return;
+            }
+
+            let itemsHtml = '';
+            data.details.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td style="padding: 12px;">
+                            <div style="font-weight: 600; color: #334155;">${item.product ? item.product.nama_produk : 'Produk Terhapus'}</div>
+                            <div style="font-size: 11px; color: #64748b;">${item.product ? (item.product.barcode || '-') : '-'}</div>
+                        </td>
+                        <td style="padding: 12px; text-align: center; font-weight: 700; color: var(--primary-blue);">${item.jmlh}</td>
+                    </tr>
+                `;
+            });
+
+            const body = document.getElementById('transferDetailBody_v2');
+            if (!body) {
+                console.error('CRITICAL: transferDetailBody_v2 element NOT FOUND!');
+                return;
+            }
+
+            body.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                    <div>
+                        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Informasi Transfer</div>
+                        <div style="font-size: 14px; font-weight: 600; color: #334155;">Tanggal: ${new Date(data.tanggal).toLocaleString('id-ID', {day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</div>
+                        <div style="margin-top: 8px;">
+                            <span style="font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; background: ${data.status == 'Selesai' ? '#E6FFFA' : '#FFF5F5'}; color: ${data.status == 'Selesai' ? '#2F855A' : '#C53030'}; border: 1px solid ${data.status == 'Selesai' ? '#B2F5EA' : '#FEB2B2'};">
+                                ${data.status || 'Pending'}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Lokasi & Petugas</div>
+                        <div style="font-size: 13px; color: #475569;">
+                            <iconify-icon icon="solar:shop-2-bold" style="vertical-align: middle; margin-right: 4px; color: var(--primary-blue);"></iconify-icon>
+                            <strong>${data.store ? data.store.nama : '-'}</strong> 
+                            <iconify-icon icon="solar:arrow-right-bold" style="margin: 0 4px; vertical-align: middle; color: #94a3b8;"></iconify-icon> 
+                            <strong>${(data.tujuanStore || data.tujuan_store) ? (data.tujuanStore || data.tujuan_store).nama : '-'}</strong>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; margin-top: 6px;">
+                            <iconify-icon icon="solar:user-bold" style="vertical-align: middle; margin-right: 4px;"></iconify-icon>
+                            Oleh: ${data.user ? data.user.username : '-'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+                        <iconify-icon icon="solar:box-minimalistic-bold" style="color: var(--primary-blue);"></iconify-icon>
+                        Daftar Produk yang Dipindah
+                    </div>
+                    <div class="table-container" style="background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden;">
+                        <table class="fitur-table" style="margin: 0; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f1f5f9;">
+                                    <th style="padding: 12px;">Produk</th>
+                                    <th style="padding: 12px; text-align: center;">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+                    </div>
+                </div>
+
+                ${data.catatan ? `
+                <div style="margin-top: 15px; padding: 12px; background: #fffbeb; border-radius: 8px; border: 1px solid #fef3c7; font-size: 13px; color: #92400e;">
+                    <iconify-icon icon="solar:info-circle-bold" style="vertical-align: middle; margin-right: 6px;"></iconify-icon>
+                    <strong>Catatan:</strong> ${data.catatan}
+                </div>
+                ` : ''}
+            `;
+            openModal('transferDetailModal_v2');
+        } catch (error) {
+            hideLoading();
+            console.error('Error fetching transfer detail:', error);
+            Swal.fire('Error', 'Gagal memuat detail transfer', 'error');
+        }
+    }
+
+    function approveTransfer(uuid) {
+        Swal.fire({
+            title: 'Setujui Transfer?',
+            text: "Permintaan transfer stok ini akan disetujui.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0081C9',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Setujui!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading(); // Show global loading
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/transfer/approve/${uuid}`;
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = '{{ csrf_token() }}';
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    function shipTransfer(uuid) {
+        Swal.fire({
+            title: 'Kirim Barang?',
+            text: "Konfirmasi bahwa barang sedang dikirim. Stok outlet asal akan dikurangi.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#E65100',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Kirim Sekarang!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading(); // Show global loading
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/transfer/ship/${uuid}`;
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = '{{ csrf_token() }}';
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    function confirmReceiveTransfer(uuid) {
+        Swal.fire({
+            title: 'Konfirmasi Penerimaan',
+            text: "Apakah Anda yakin barang sudah diterima dan ingin menambah stok di toko ini?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2F855A',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Saya Terima!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading(); // Show global loading
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/transfer/confirm/${uuid}`;
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = '{{ csrf_token() }}';
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    // --- Global Notifications (SweetAlert2) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: @json(session('success')),
+                timer: 3000,
+                showConfirmButton: false
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan',
+                text: @json(session('error'))
+            });
+        @endif
+
+        @if($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal',
+                html: `{!! implode('<br>', $errors->all()) !!}`
+            });
+        @endif
+    });
 </script>
+{{-- Duplicate modal removed --}}
+
+{{-- GLOBAL LOADING OVERLAY --}}
+<div id="globalLoading" class="global-loader-overlay" style="display: none !important;">
+    <div class="loader-card">
+        <div class="loading-text">Sedang Memproses Data...</div>
+        <div class="loading-spinner"></div>
+        <div style="font-size: 12px; color: #64748b;">Mohon tunggu sebentar</div>
+    </div>
+</div>
+
 @endsection

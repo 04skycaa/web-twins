@@ -11,12 +11,19 @@ use App\Models\StockCard;
 use App\Models\Category;
 use App\Models\ProductStore;
 use App\Models\PriceLevel;
+use Illuminate\Support\Facades\Schema;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\LandingController;
+use App\Models\Transaction;
+use App\Models\TransactionDetail;
+use App\Models\Contact;
+use App\Models\CashFlow;
+use App\Models\Debt;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -38,6 +45,12 @@ class ProductController extends Controller
 
         if ($request->has('category_id') && $request->category_id != '') {
             $query->where('kategori_id', $request->category_id);
+        }
+
+        if ($selectedStoreId && $selectedStoreId !== 'all') {
+            $query->whereHas('stores', function($q) use ($selectedStoreId) {
+                $q->where('store_id', $selectedStoreId);
+            });
         }
 
         if ($request->has('search') && $request->search != '') {
@@ -76,7 +89,7 @@ class ProductController extends Controller
             'categories' => $categories,
             'stores' => $stores,
             'selected_store_id' => $selectedStoreId,
-            'all_products' => Product::all()
+            'all_products' => $this->mapProductsForJs(Product::all(), $user, $selectedStoreId)
         ]);
     }
 
@@ -91,91 +104,59 @@ class ProductController extends Controller
 
         if (!$user->isOwner()) {
             $query->where('store_id', $user->store_id);
+        } elseif ($request->has('store_id') && $request->store_id != '') {
+            $query->where('store_id', $request->store_id);
         }
 
         if ($request->has('category_id') && $request->category_id != '') {
-            $query->whereHas('details.product', function($q) use ($request) {
-                $q->where('kategori_id', $request->category_id);
-            });
+            $query->where('kategori_id', $request->category_id);
         }
 
         if ($request->has('status') && $request->status != '') {
-            $status = $request->status;
-            if ($status == 'Draft') {
-                $query->whereDoesntHave('details', function($q) {
-                    $q->where('stok_fisik', '>', 0);
-                });
-            } elseif ($status == 'Proses') {
-                $query->whereHas('details', function($q) {
-                    $q->where('stok_fisik', '>', 0);
-                })->whereHas('details', function($q) {
-                    $q->where('stok_fisik', 0);
-                });
-            } elseif ($status == 'Selesai') {
-                // items_filled == total_items
-                $query->whereDoesntHave('details', function($q) {
-                    $q->where('stok_fisik', 0);
-                })->whereHas('details');
-            }
+            $query->where('status', $request->status);
         }
 
         if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
+            $search = strtolower($request->search);
             $query->where(function($q) use ($search) {
                 $q->whereHas('details.product', function($sq) use ($search) {
-                    $sq->where('nama_produk', 'ilike', '%' . $search . '%');
+                    $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
                 })->orWhereHas('store', function($sq) use ($search) {
-                    $sq->where('nama', 'ilike', '%' . $search . '%');
+                    $sq->whereRaw('LOWER(nama) LIKE ?', ["%{$search}%"]);
                 });
             });
         }
 
+        // Calculate totals for cards before pagination
+        $summaryQuery = clone $query;
+        $all_opnames = $summaryQuery->get();
+        $pending_count = $all_opnames->where('status', 'Pending')->count();
+        $selesai_count = $all_opnames->where('status', 'Selesai')->count();
+        $total_loss = $all_opnames->sum('total_kerugian');
+
         $opnames = $query->paginate(10);
         $categories = Category::all();
-        $unfinishedCountQuery = Opname::whereDate('tanggal', today())
-            ->whereHas('details', function($q) {
-                $q->where('stok_fisik', 0);
-            });
-        
-        if (!$user->isOwner()) {
-            $unfinishedCountQuery->where('store_id', $user->store_id);
-        }
-        $unfinished_count = $unfinishedCountQuery->count();
-
-        $total_selisih_today = 0;
-        $completed_today_count = 0;
-        
-        if ($user->isOwner()) {
-            $total_selisih_today = OpnameDetail::whereHas('opname', function($q) {
-                $q->whereDate('tanggal', today());
-            })->sum('selisih');
-
-            $completed_today_count = Opname::whereDate('tanggal', today())
-                ->whereDoesntHave('details', function($q) {
-                    $q->where('stok_fisik', 0);
-                })->whereHas('details')->count();
-        }
-
-        if (!$user->isOwner()) {
-            $stores = Outlet::where('uuid', $user->store_id)->get();
-            $products = Product::whereHas('stores', function($q) use ($user) {
-                $q->where('store_id', $user->store_id);
-            })->get();
-        } else {
-            $stores = Outlet::all();
-            $products = Product::all();
-        }
+        $outlets = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
         return view('product.index', [
             'active_tab' => 'opname',
             'opnames' => $opnames,
-            'stores' => $stores,
-            'products' => $products,
-            'all_products' => Product::all(),
+            'pending_count' => $pending_count,
+            'selesai_count' => $selesai_count,
+            'total_loss' => $total_loss,
             'categories' => $categories,
-            'unfinished_count' => $unfinished_count,
-            'total_selisih_today' => $total_selisih_today,
-            'completed_today_count' => $completed_today_count
+            'outlets' => $outlets,
+            'stores' => $outlets,
+            'selected_store_id' => $request->store_id,
+            'all_products' => $this->mapProductsForJs(
+                Product::whereHas('stores', function($q) use ($user) {
+                    if (!$user->isOwner()) {
+                        $q->where('store_id', $user->store_id);
+                    }
+                })->get(), 
+                $user, 
+                $request->store_id
+            )
         ]);
     }
 
@@ -187,10 +168,7 @@ class ProductController extends Controller
         /** @var User $user */
         $user = Auth::user();
         
-        $query = ProductStore::with(['product.category', 'store'])
-            ->where(function($q) {
-                $q->where('status_aktif', true)->orWhereNull('status_aktif');
-            });
+        $query = ProductStore::with(['product.category', 'store']);
 
         if (!$user->isOwner()) {
             $query->where('store_id', $user->store_id);
@@ -201,27 +179,16 @@ class ProductController extends Controller
             }
         }
 
-        // Filter based on type
         $type = $request->get('type');
+
+        // Apply Type Filter
         if ($type == 'stok_habis') {
-            $query->where(function($q) {
-                $q->where('stok', '<=', 10)->orWhereNull('stok');
-            });
+            $query->whereRaw('stok <= COALESCE(stok_minimum, 10)');
         } elseif ($type == 'expired') {
             $query->whereNotNull('kadaluarsa')
                   ->where('kadaluarsa', '<=', now()->addDays(30));
-        } else {
-            // Default: Show both alerts
-            $query->where(function($q) {
-                $q->where(function($sq) {
-                    $sq->where('stok', '<=', 10)->orWhereNull('stok');
-                })
-                ->orWhere(function($sq) {
-                    $sq->whereNotNull('kadaluarsa')
-                       ->where('kadaluarsa', '<=', now()->addDays(30));
-                });
-            });
         }
+        // If no type filter, show all products for that store/category
 
         if ($request->has('search') && $request->search != '') {
             $search = strtolower($request->search);
@@ -237,10 +204,17 @@ class ProductController extends Controller
         }
         $alerts = $query->paginate(10)->withQueryString();
         
-        // Count for stats
-        $baseStatsQuery = ProductStore::where(function($q) {
-            $q->where('status_aktif', true)->orWhereNull('status_aktif');
+        // Resolve image URLs for products in alerts
+        $alerts->getCollection()->each(function($alert) {
+            if ($alert->product) {
+                $alert->product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($alert->product->image_url);
+                // Also ensure it has priceLevels for the modal
+                $alert->product->load('priceLevels');
+            }
         });
+        
+        // Count for stats
+        $baseStatsQuery = ProductStore::query();
 
         if (!$user->isOwner()) {
             $baseStatsQuery->where('store_id', $user->store_id);
@@ -251,25 +225,556 @@ class ProductController extends Controller
             }
         }
         
-        $stok_habis_count = (clone $baseStatsQuery)->where(function($q) {
-            $q->where('stok', '<=', 10)->orWhereNull('stok');
-        })->count();
+        $allRecords = (clone $baseStatsQuery)->get();
+        $stok_habis_count = 0;
+        foreach($allRecords as $rec) {
+            $min = $rec->stok_minimum ?? 10;
+            if ($rec->stok <= $min) {
+                $stok_habis_count++;
+            }
+        }
         $expired_count = (clone $baseStatsQuery)->whereNotNull('kadaluarsa')
                                                ->where('kadaluarsa', '<=', now()->addDays(30))->count();
 
         $categories = Category::all();
         $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
 
-        return view('product.index', [
-            'active_tab' => 'request',
+        $data = [
+            'active_tab' => 'stok',
             'alerts' => $alerts,
             'categories' => $categories,
             'stores' => $stores,
             'selected_store_id' => $selectedStoreId ?? 'all',
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
-            'all_products' => Product::all()
+            'all_products' => Product::all(),
+            'type' => $type
+        ];
+
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
+    }
+
+    public function restok(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        
+        $query = Transaction::where('jenis', 'pembelian')
+            ->with(['contact', 'store', 'user'])
+            ->orderBy('tanggal', 'desc');
+
+        if ($request->search) {
+            $query->whereHas('contact', function($q) use ($request) {
+                $q->where('nama', 'ilike', "%{$request->search}%");
+            });
+        }
+        if ($request->supplier_id) {
+            $query->where('contact_id', $request->supplier_id);
+        }
+
+        if (!$user->isOwner()) {
+            $query->where('store_id', $user->store_id);
+        } elseif ($request->store_id && $request->store_id != 'all') {
+            $query->where('store_id', $request->store_id);
+        }
+
+        // Filters
+        if ($request->start_date) {
+            $query->where('tanggal', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->where('tanggal', '<=', $request->end_date);
+        }
+
+        if ($request->filter == 'today') {
+            $query->whereDate('tanggal', today());
+        } elseif ($request->filter == 'week') {
+            $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]);
+        }
+
+        if ($request->status_bayar == 'Lunas') {
+            $query->whereRaw('bayar >= total');
+        } elseif ($request->status_bayar == 'Hutang') {
+            $query->whereRaw('bayar < total');
+        }
+
+        $purchases = $query->paginate(10);
+        $suppliers = Contact::where('tipe', 'ilike', 'supplier')->get();
+        $categories = Category::all();
+        $stores = $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]);
+        $products = Product::all();
+
+        $data = [
+            'active_tab' => 'restok',
+            'purchases' => $purchases,
+            'suppliers' => $suppliers,
+            'categories' => $categories,
+            'stores' => $stores,
+            'all_products' => $products,
+            'filter' => $request->filter,
+            'status_bayar' => $request->status_bayar,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'supplier_id' => $request->supplier_id
+        ];
+
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
+    }
+
+    public function transfer(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        
+        $query = Transaction::where('jenis', 'transfer')
+            ->with(['store', 'tujuanStore', 'user'])
+            ->orderBy('tanggal', 'desc');
+
+        // Rule 5: History visibility
+        if (!$user->isOwner()) {
+            $query->where(function($q) use ($user) {
+                $q->where('store_id', $user->store_id)
+                  ->orWhere('tujuan_store_id', $user->store_id);
+            });
+        }
+
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('uuid', 'ilike', "%{$search}%")
+                  ->orWhere('catatan', 'ilike', "%{$search}%");
+
+                if (Schema::hasColumn('transactions', 'status')) {
+                    $q->orWhere('status', 'ilike', "%{$search}%");
+                }
+
+                $q->orWhereHas('tujuanStore', function($sq) use ($search) {
+                    $sq->where('nama', 'ilike', "%{$search}%");
+                })
+                ->orWhereHas('user', function($sq) use ($search) {
+                    $sq->where('username', 'ilike', "%{$search}%");
+                })
+                ->orWhereHas('store', function($sq) use ($search) {
+                    $sq->where('nama', 'ilike', "%{$search}%");
+                })
+                ->orWhereHas('details.product', function($sq) use ($search) {
+                    $sq->where('nama_produk', 'ilike', "%{$search}%")
+                      ->orWhere('barcode', 'ilike', "%{$search}%");
+                });
+            });
+        }
+
+        if ($request->status && Schema::hasColumn('transactions', 'status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->store_id) {
+            $storeId = $request->store_id;
+            $query->where(function($q) use ($storeId) {
+                $q->where('store_id', $storeId)
+                  ->orWhere('tujuan_store_id', $storeId);
+            });
+        }
+
+        if ($request->start_date) {
+            $query->where('tanggal', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->where('tanggal', '<=', $request->end_date);
+        }
+
+        $transfers = $query->paginate(10);
+        $categories = Category::all();
+        $stores = Outlet::where('status_aktif', true)->get();
+        
+        // Rule 1 & 2: Source store and products
+        $sourceStoreId = $user->isOwner() ? ($request->source_store_id ?? $user->store_id) : $user->store_id;
+        if ($user->isOwner() && !$sourceStoreId && $stores->count() > 0) {
+            $sourceStoreId = $stores->first()->uuid;
+        }
+
+        $products = [];
+        if ($sourceStoreId) {
+            $products = ProductStore::where('store_id', $sourceStoreId)
+                ->where('stok', '>', 0)
+                ->where('status_aktif', true)
+                ->with('product')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'uuid' => $item->product->uuid,
+                        'nama_produk' => $item->product->nama_produk,
+                        'barcode' => $item->product->barcode,
+                        'stok' => $item->stok
+                    ];
+                });
+        }
+
+        $data = [
+            'active_tab' => 'transfer',
+            'transfers' => $transfers,
+            'categories' => $categories,
+            'stores' => $stores,
+            'current_source_store' => $sourceStoreId,
+            'all_products' => $products
+        ];
+
+        if ($request->ajax()) {
+            return view('product.index', $data)->fragment('dashboard-content');
+        }
+
+        return view('product.index', $data);
+    }
+
+    public function getProductsByStore($store_id)
+    {
+        $products = ProductStore::where('store_id', $store_id)
+            ->where('stok', '>', 0)
+            ->where('status_aktif', true)
+            ->with('product')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'uuid' => $item->product->uuid,
+                    'nama_produk' => $item->product->nama_produk,
+                    'barcode' => $item->product->barcode,
+                    'stok' => $item->stok
+                ];
+            });
+
+        return response()->json($products);
+    }
+
+    public function storeTransfer(Request $request)
+    {
+        $request->validate([
+            'tujuan_store_id' => 'required|uuid',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|uuid',
+            'items.*.qty' => 'required|numeric|min:0.01',
         ]);
+
+        /** @var User $user */
+        $user = Auth::user();
+        $sourceStoreId = $user->store_id; 
+        
+        if ($user->isOwner()) {
+             $sourceStoreId = $request->store_id ?: $user->store_id;
+        }
+
+        if (!$sourceStoreId) {
+            return back()->with('error', 'Toko asal tidak diketahui.');
+        }
+
+        if ($sourceStoreId == $request->tujuan_store_id) {
+            return back()->with('error', 'Toko tujuan tidak boleh sama dengan toko asal.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $insertData = [
+                'uuid' => Str::uuid(),
+                'jenis' => 'transfer',
+                'store_id' => $sourceStoreId,
+                'tujuan_store_id' => $request->tujuan_store_id,
+                'user_id' => $user->uuid,
+                'tanggal' => now(),
+                'catatan' => $request->catatan,
+            ];
+
+            $insertData['status'] = 'Pending';
+
+            $transaction = Transaction::create($insertData);
+
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                
+                TransactionDetail::create([
+                    'uuid' => Str::uuid(),
+                    'transaction_id' => $transaction->uuid,
+                    'product_id' => $item['product_id'],
+                    'jmlh' => $item['qty'],
+                    'harga_modal' => $product->harga_modal,
+                    'harga_jual' => $product->harga_jual,
+                ]);
+            }
+
+            DB::commit();
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Permintaan transfer stok berhasil dibuat dan menunggu persetujuan.'
+                ]);
+            }
+            
+            return back()->with('success', 'Permintaan transfer stok berhasil dibuat dan menunggu persetujuan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
+            
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function approveTransfer($uuid)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user->isOwner()) {
+            return back()->with('error', 'Hanya Owner yang diperbolehkan menyetujui transfer stok.');
+        }
+
+        $transaction = Transaction::where('uuid', $uuid)->firstOrFail();
+        
+        $currentStatus = trim($transaction->status ?: 'Pending');
+        if (strcasecmp($currentStatus, 'Pending') !== 0) {
+            return back()->with('error', 'Status: ' . $currentStatus . '. Hanya transfer pending yang bisa disetujui.');
+        }
+
+        $transaction->update(['status' => 'Disetujui']);
+        return back()->with('success', 'Transfer stok telah disetujui.');
+    }
+
+    public function shipTransfer($uuid)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $transaction = Transaction::with('details')->where('uuid', $uuid)->firstOrFail();
+
+        // Security: ONLY Source Store (Owner cannot ship unless assigned to store)
+        if ($user->store_id != $transaction->store_id) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk mengirim barang dari outlet ini.');
+        }
+
+        if (strcasecmp($transaction->status, 'Disetujui') !== 0) {
+            return back()->with('error', 'Hanya transfer yang sudah disetujui yang bisa dikirim.');
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($transaction->details as $detail) {
+                $sourceStock = ProductStore::where('product_id', $detail->product_id)
+                    ->where('store_id', $transaction->store_id)
+                    ->first();
+
+                if (!$sourceStock || $sourceStock->stok < $detail->jmlh) {
+                    $product = Product::find($detail->product_id);
+                    throw new \Exception("Stok produk " . ($product->nama_produk ?? '') . " tidak mencukupi di toko asal.");
+                }
+
+                $sourceStock->decrement('stok', $detail->jmlh);
+
+                // Audit Trail Asal
+                StockCard::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => $detail->product_id,
+                    'store_id' => $transaction->store_id,
+                    'jmlh' => -$detail->jmlh,
+                    'keterangan' => "Transfer (Dikirim) ke " . ($transaction->tujuanStore->nama ?? 'Toko Tujuan'),
+                ]);
+            }
+
+            $transaction->update(['status' => 'Dikirim']);
+            DB::commit();
+            return back()->with('success', 'Barang berhasil ditandai sebagai dikirim.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function confirmTransfer($uuid)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $transaction = Transaction::with('details')->where('uuid', $uuid)->firstOrFail();
+
+        // Security: ONLY Target Store (Owner cannot receive unless assigned to store)
+        if ($user->store_id != $transaction->tujuan_store_id) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menerima barang di outlet ini.');
+        }
+
+        if (strcasecmp($transaction->status, 'Dikirim') !== 0) {
+            return back()->with('error', 'Hanya transfer yang sudah dikirim yang bisa diterima.');
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($transaction->details as $detail) {
+                $targetStock = ProductStore::firstOrCreate(
+                    ['product_id' => $detail->product_id, 'store_id' => $transaction->tujuan_store_id],
+                    ['stok' => 0, 'status_aktif' => true]
+                );
+
+                $targetStock->increment('stok', $detail->jmlh);
+
+                // Audit Trail Tujuan
+                StockCard::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => $detail->product_id,
+                    'store_id' => $transaction->tujuan_store_id,
+                    'jmlh' => $detail->jmlh,
+                    'keterangan' => "Terima Transfer dari " . ($transaction->store->nama ?? 'Toko Asal'),
+                ]);
+            }
+
+            $transaction->update(['status' => 'Selesai']);
+            DB::commit();
+            return back()->with('success', 'Barang berhasil diterima dan stok tujuan telah diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function viewPurchaseDetail($uuid)
+    {
+        $transaction = Transaction::with([
+            'details' => function($q) {
+                $q->select('uuid', 'transaction_id', 'product_id', 'jmlh', 'harga_modal', 'harga_jual');
+            },
+            'details.product' => function($q) {
+                $q->select('uuid', 'nama_produk', 'barcode');
+            },
+            'contact' => function($q) { $q->select('uuid', 'nama'); },
+            'store' => function($q) { $q->select('uuid', 'nama'); },
+            'user' => function($q) { $q->select('uuid', 'username'); },
+            'tujuanStore' => function($q) { $q->select('uuid', 'nama'); }
+        ])
+        ->where('uuid', $uuid)
+        ->firstOrFail();
+
+        // Speed up: remove unnecessary appends that calculate URLs
+        $transaction->details->each(function($detail) {
+            if ($detail->product) {
+                $detail->product->setAppends([]);
+            }
+        });
+
+        return response()->json($transaction);
+    }
+
+    public function storeRestok(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $request->validate([
+            'contact_id' => 'required|exists:contacts,uuid',
+            'metode_pembayaran' => 'required|in:Tunai,Kredit',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,uuid',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.harga_beli' => 'required|numeric|min:0',
+            'items.*.harga_jual_baru' => 'nullable|numeric|min:0',
+            'items.*.kadaluarsa' => 'nullable|date',
+        ]);
+
+        $store_id = $user->store_id; 
+        if ($user->isOwner()) {
+            $store_id = $user->store_id ?: Outlet::first()->uuid;
+        }
+
+        DB::beginTransaction();
+        try {
+            $total = 0;
+            foreach ($request->items as $item) {
+                $total += ($item['qty'] * $item['harga_beli']);
+            }
+
+            // 1. Pencatatan Transaksi
+            $transaction = Transaction::create([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'total' => $total,
+                'bayar' => $request->metode_pembayaran == 'Tunai' ? $total : 0,
+                'kembalian' => 0,
+                'jenis' => 'pembelian',
+                'store_id' => $store_id,
+                'user_id' => $user->uuid,
+                'contact_id' => $request->contact_id,
+                'catatan' => $request->catatan,
+                'tanggal' => now(),
+            ]);
+
+            foreach ($request->items as $item) {
+                // 2. Simpan Transaction Detail
+                TransactionDetail::create([
+                    'transaction_id' => $transaction->uuid,
+                    'product_id' => $item['product_id'],
+                    'jmlh' => $item['qty'],
+                    'harga_modal' => $item['harga_beli'],
+                    'harga_jual' => $item['harga_jual_baru'] ?? 0,
+                ]);
+
+                // 3. Update Stok di Toko
+                $productStore = ProductStore::firstOrCreate(
+                    ['product_id' => $item['product_id'], 'store_id' => $store_id],
+                    ['stok' => 0, 'status_aktif' => true]
+                );
+                $productStore->increment('stok', $item['qty']);
+                if ($item['kadaluarsa']) {
+                    $productStore->update(['kadaluarsa' => $item['kadaluarsa']]);
+                }
+
+                // 4. Update Harga di Master Produk
+                $product = Product::findOrFail($item['product_id']);
+                $productUpdate = ['harga_modal' => $item['harga_beli']];
+                if (!empty($item['harga_jual_baru']) && $item['harga_jual_baru'] > 0) {
+                    $productUpdate['harga_jual'] = $item['harga_jual_baru'];
+                }
+                $product->update($productUpdate);
+
+                // 5. Stock Card
+                StockCard::create([
+                    'product_id' => $item['product_id'],
+                    'store_id' => $store_id,
+                    'jmlh' => $item['qty'],
+                    'keterangan' => "Restok dari Supplier (Trx: {$transaction->uuid})",
+                ]);
+            }
+
+            // 6. Keuangan
+            if ($request->metode_pembayaran == 'Tunai') {
+                CashFlow::create([
+                    'store_id' => $store_id,
+                    'user_id' => $user->uuid,
+                    'jenis' => 'pengeluaran',
+                    'nominal' => $total,
+                    'keterangan' => "Pembelian stok / Restok (Trx: {$transaction->uuid})",
+                    'tanggal' => now(),
+                ]);
+            } else {
+                Debt::create([
+                    'store_id' => $store_id,
+                    'kontak_id' => $request->contact_id,
+                    'tipe' => 'utang',
+                    'nominal' => $total,
+                    'sisa' => $total,
+                    'jatuh_tempo' => now()->addDays(30), 
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->route('products.restok')->with('success', 'Restok berhasil disimpan dan stok telah diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menyimpan restok: ' . $e->getMessage());
+        }
     }
 
     public function updateStoreData(Request $request, $uuid)
@@ -279,13 +784,18 @@ class ProductController extends Controller
         $request->validate([
             'stok' => 'required|integer',
             'kadaluarsa' => 'nullable|date',
+            'stok_minimum' => 'nullable|integer|min:0',
         ]);
 
         $oldStok = $productStore->stok;
-        $productStore->update([
+        $updateData = [
             'stok' => $request->stok,
             'kadaluarsa' => $request->kadaluarsa,
-        ]);
+            'stok_minimum' => $request->stok_minimum,
+            'status_aktif' => $request->has('status_aktif') ? true : false,
+        ];
+
+        $productStore->update($updateData);
 
         // Log to stock card if stock changed
         if ($oldStok != $request->stok) {
@@ -469,109 +979,101 @@ class ProductController extends Controller
 
         $request->validate([
             'store_id' => 'required|exists:store,uuid',
+            'kategori_id' => 'nullable|exists:category,uuid',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,uuid',
-            'items.*.stok_sistem' => 'required|integer',
-            'items.*.stok_fisik' => 'nullable|integer',
+            'items.*.stok_sistem' => 'required|numeric',
+            'items.*.stok_fisik' => 'nullable|numeric',
+            'items.*.alasan_selisih' => 'nullable|string',
+            'items.*.keterangan' => 'nullable|string',
         ]);
 
-        $store_id = $request->store_id;
-        if (!$user->isOwner()) {
-            $store_id = $user->store_id;
-        }
+        $storeId = $user->isOwner() ? $request->store_id : $user->store_id;
 
         DB::beginTransaction();
         try {
             $opname = Opname::create([
+                'uuid' => (string) \Illuminate\Support\Str::uuid(),
                 'tanggal' => now(),
-                'store_id' => $store_id,
+                'store_id' => $storeId,
                 'user_id' => $user->uuid,
+                'status' => 'Pending',
+                'kategori_id' => $request->kategori_id
             ]);
 
             foreach ($request->items as $item) {
                 $fisik = $item['stok_fisik'] ?? 0;
-                $selisih = $fisik - $item['stok_sistem'];
+                $sistem = $item['stok_sistem'];
+                $selisih = $fisik - $sistem;
+                
+                
 
                 OpnameDetail::create([
+                    'uuid' => (string) \Illuminate\Support\Str::uuid(),
                     'opname_id' => $opname->uuid,
                     'product_id' => $item['product_id'],
-                    'stok_sistem' => $item['stok_sistem'],
+                    'stok_sistem' => $sistem,
                     'stok_fisik' => $fisik,
                     'selisih' => $selisih,
-                    'keterangan' => $item['keterangan'] ?? null,
+                    'keterangan' => $item['alasan_selisih'] ?? null,
                 ]);
-
-                if ($selisih != 0 && $fisik > 0) {
-                    StockCard::create([
-                        'product_id' => $item['product_id'],
-                        'store_id' => $store_id,
-                        'jmlh' => $selisih,
-                        'keterangan' => 'Penyesuaian stok melalui Opname',
-                    ]);
-                }
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Opname produk berhasil disimpan!');
+            return redirect()->back()->with('success', 'Sesi Opname berhasil dibuat (Status: Pending)!');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Opname Store Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal menyimpan opname: ' . $e->getMessage());
         }
     }
 
-    public function updateOpname(Request $request, $id)
+    public function finalizeOpname($id)
     {
-        $opname = Opname::findOrFail($id);
-        
-        $request->validate([
-            'store_id' => 'required|exists:store,uuid',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,uuid',
-            'items.*.stok_sistem' => 'required|integer',
-            'items.*.stok_fisik' => 'nullable|integer',
-        ]);
+        /** @var User $user */
+        $user = Auth::user();
+        if (!$user->isOwner()) {
+            return redirect()->back()->with('error', 'Hanya Owner yang bisa melakukan finalisasi opname.');
+        }
+
+        $opname = Opname::with('details')->findOrFail($id);
+        if ($opname->status == 'Selesai') {
+            return redirect()->back()->with('error', 'Opname ini sudah difinalisasi sebelumnya.');
+        }
 
         DB::beginTransaction();
         try {
-            $opname->update(['store_id' => $request->store_id]);
-            OpnameDetail::where('opname_id', $opname->uuid)->delete();
-            $productIds = collect($request->items)->pluck('product_id')->toArray();
-            StockCard::whereIn('product_id', $productIds)
-                ->where('store_id', $request->store_id)
-                ->where('keterangan', 'Penyesuaian stok melalui Opname')
-                ->whereDate('created_at', '>=', $opname->tanggal) 
-                ->delete();
+            foreach ($opname->details as $detail) {
+                if ($detail->selisih != 0) {
+                    $ps = ProductStore::where('product_id', $detail->product_id)
+                        ->where('store_id', $opname->store_id)
+                        ->first();
+                    
+                    if ($ps) {
+                        $ps->update(['stok' => $detail->stok_fisik]);
+                    }
 
-            foreach ($request->items as $item) {
-                $fisik = $item['stok_fisik'] ?? 0;
-                $selisih = $fisik - $item['stok_sistem'];
-
-                OpnameDetail::create([
-                    'opname_id' => $opname->uuid,
-                    'product_id' => $item['product_id'],
-                    'stok_sistem' => $item['stok_sistem'],
-                    'stok_fisik' => $fisik,
-                    'selisih' => $selisih,
-                    'keterangan' => $item['keterangan'] ?? null,
-                ]);
-
-                if ($selisih != 0 && $fisik > 0) {
                     StockCard::create([
-                        'product_id' => $item['product_id'],
-                        'store_id' => $request->store_id,
-                        'jmlh' => $selisih,
-                        'keterangan' => 'Penyesuaian stok melalui Opname',
+                        'product_id' => $detail->product_id,
+                        'store_id' => $opname->store_id,
+                        'jmlh' => $detail->selisih,
+                        'keterangan' => "Opname: {$opname->uuid}",
+                        'created_at' => now()
                     ]);
                 }
             }
 
+            $opname->update(['status' => 'Selesai']);
+
             DB::commit();
-            return redirect()->back()->with('success', 'Opname produk berhasil diperbarui!');
+            return redirect()->back()->with('success', 'Opname berhasil difinalisasi dan stok telah diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal memperbarui opname: ' . $e->getMessage());
+            \Log::error('Opname Finalize Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal finalisasi opname: ' . $e->getMessage());
         }
     }
+
 
     public function show($id)
     {
@@ -805,9 +1307,62 @@ class ProductController extends Controller
     private function getExportColumns($tab)
     {
         if ($tab == 'produk') return ['Nama Produk', 'Barcode', 'Kategori', 'Harga Modal', 'Harga Jual', 'Stok'];
-        if ($tab == 'opname') return ['No Ref', 'Tanggal', 'User', 'Outlet', 'Total Item', 'Total Selisih', 'Status'];
+        if ($tab == 'opname') return ['No Ref', 'Tanggal', 'Petugas', 'Outlet', 'Total Item', 'Total Selisih', 'Potensi Kerugian (Rp)', 'Status'];
         if ($tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
         return [];
+    }
+
+    private function mapProductsForJs($products, $user, $selectedStoreId = null)
+    {
+        return $products->map(function($p) use ($user, $selectedStoreId) {
+            $stok = 0;
+            if ($user->isOwner()) {
+                if ($selectedStoreId && $selectedStoreId !== 'all') {
+                    $storeRelation = $p->stores->where('store_id', $selectedStoreId)->first();
+                    $stok = $storeRelation ? $storeRelation->stok : 0;
+                } else {
+                    $stok = $p->stores->sum('stok');
+                }
+            } else {
+                $storeRelation = $p->stores->where('store_id', $user->store_id)->first();
+                $stok = $storeRelation ? $storeRelation->stok : 0;
+            }
+
+            return [
+                'uuid' => $p->uuid,
+                'nama_produk' => $p->nama_produk,
+                'barcode' => $p->barcode,
+                'kategori_id' => $p->kategori_id,
+                'current_stok' => $stok,
+                'nama_category' => $p->category ? $p->category->nama_category : null,
+                'harga_modal' => $p->harga_modal,
+                'harga_jual' => $p->harga_jual,
+                'resolved_image_url' => \App\Http\Controllers\LandingController::resolveImageUrl($p->image_url),
+                'price_levels' => $p->priceLevels ? $p->priceLevels->toArray() : [],
+                'stores' => $user->isOwner() ? $p->stores->map(fn($s) => ['stok' => $s->stok, 'store' => ['nama' => $s->store->nama ?? 'Cabang']]) : []
+            ];
+        });
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $request->validate([
+            'nama_category' => 'required|string|max:255|unique:category,nama_category',
+        ]);
+
+        $category = Category::create([
+            'nama_category' => $request->nama_category,
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Kategori berhasil ditambahkan!',
+                'category' => $category
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Kategori berhasil ditambahkan!');
     }
 
     private function formatExportRow($item, $tab)
@@ -842,10 +1397,11 @@ class ProductController extends Controller
             return [
                 $item->uuid,
                 ' ' . \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y'),
-                $item->user->name ?? '-',
+                $item->user->name ?? $item->user->username ?? '-',
                 $item->store->nama ?? '-',
                 $item->total_items,
                 $item->total_selisih,
+                number_format(abs($item->total_kerugian), 0, ',', '.'),
                 $item->status
             ];
         }
