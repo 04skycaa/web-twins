@@ -42,6 +42,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     Route::post('/products/opname', [ProductController::class, 'storeOpname'])->name('products.opname.store');
     Route::put('/products/opname/{id}', [ProductController::class, 'updateOpname'])->name('products.opname.update');
     Route::delete('/products/opname/{id}', [ProductController::class, 'destroyOpname'])->name('products.opname.destroy');
+    Route::post('/products/opname/{id}/finalize', [ProductController::class, 'finalizeOpname'])->name('products.opname.finalize');
 
     // Request Routes
     Route::post('/products/request', [ProductController::class, 'storeRequest'])->name('products.request.store');
@@ -56,6 +57,16 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(functio
     // Export Routes
     Route::get('/products/export/excel', [ProductController::class, 'exportExcel'])->name('products.export.excel');
     Route::get('/products/export/pdf', [ProductController::class, 'exportPdf'])->name('products.export.pdf');
+    Route::post('/products/category', [ProductController::class, 'storeCategory'])->name('products.category.store');
+    Route::post('/products/restok', [ProductController::class, 'storeRestok'])->name('products.restok.store');
+
+Route::get('/products/restok/{uuid}', [ProductController::class, 'viewPurchaseDetail'])->name('products.restok.detail');
+    Route::get('/transfer', [ProductController::class, 'transfer'])->name('products.transfer');
+    Route::get('/products/by-store/{store_id}', [ProductController::class, 'getProductsByStore'])->name('products.by_store');
+    Route::post('/transfer', [ProductController::class, 'storeTransfer'])->name('products.transfer.store');
+    Route::post('/transfer/approve/{uuid}', [ProductController::class, 'approveTransfer'])->name('products.transfer.approve');
+    Route::post('/transfer/ship/{uuid}', [ProductController::class, 'shipTransfer'])->name('products.transfer.ship');
+    Route::post('/transfer/confirm/{uuid}', [ProductController::class, 'confirmTransfer'])->name('products.transfer.confirm');
 });
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OutletController;
