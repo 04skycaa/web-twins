@@ -40,6 +40,7 @@ return [
         'client_key' => env('MIDTRANS_CLIENT_KEY'),
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
         'callback_base_url' => env('MIDTRANS_CALLBACK_BASE_URL'),
+        'notification_url' => env('MIDTRANS_NOTIFICATION_URL'),
     ],
 
 ];

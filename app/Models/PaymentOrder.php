@@ -34,6 +34,7 @@ class PaymentOrder extends Model
         'midtrans_transaction_id',
         'midtrans_fraud_status',
         'paid_at',
+        'stock_processed_at',
         'expired_at',
         'meta',
         'midtrans_response',
@@ -43,6 +44,7 @@ class PaymentOrder extends Model
         'meta' => 'array',
         'midtrans_response' => 'array',
         'paid_at' => 'datetime',
+        'stock_processed_at' => 'datetime',
         'expired_at' => 'datetime',
     ];
 
