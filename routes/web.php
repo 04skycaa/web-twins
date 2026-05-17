@@ -18,7 +18,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 Route::get('/', [LandingController::class, 'index'])->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'role:admin'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -27,7 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/stok', [ProductController::class, 'request'])->name('products.stok');
     Route::get('/products/restok', [ProductController::class, 'restok'])->name('products.restok');
@@ -79,7 +79,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\OutletController;
 
-Route::prefix('users')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('users')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [UserController::class, 'index'])->name('users.index');
     Route::post('/', [UserController::class, 'store'])->name('users.store');
     Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
@@ -88,7 +88,7 @@ Route::prefix('users')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 });
 
-Route::prefix('outlet')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(function () {
     Route::get('/', [OutletController::class, 'index'])->name('outlet.index');
     Route::get('/kinerja', [OutletController::class, 'kinerja'])->name('outlet.kinerja');
     Route::get('/riwayat', [OutletController::class, 'riwayat'])->name('outlet.riwayat');
@@ -98,7 +98,7 @@ Route::prefix('outlet')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/{id}/toggle-status', [OutletController::class, 'toggleStatus'])->name('outlet.toggle-status');
 });
 
-Route::prefix('transaksi')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [TransaksiController::class, 'index'])->name('transaksi.index');
     Route::get('/riwayat', [TransaksiController::class, 'riwayat'])->name('transaksi.riwayat');
     Route::get('/diskon', [TransaksiController::class, 'diskon'])->name('transaksi.diskon');
@@ -107,7 +107,7 @@ Route::prefix('transaksi')->middleware(['auth', 'role:admin'])->group(function (
     Route::delete('/diskon/{id}', [TransaksiController::class, 'destroyDiskon'])->name('transaksi.diskon.destroy');
 });
 
-Route::prefix('keuangan')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KeuanganController::class, 'index'])->name('keuangan.index');
     Route::post('/cashbox', [KeuanganController::class, 'storeCashbox'])->name('keuangan.cashbox.store');
     Route::put('/cashbox/{id}', [KeuanganController::class, 'updateCashbox'])->name('keuangan.cashbox.update');
@@ -118,7 +118,7 @@ Route::prefix('keuangan')->middleware(['auth', 'role:admin'])->group(function ()
     Route::post('/transfer', [KeuanganController::class, 'transferSaldo'])->name('keuangan.transfer.store');
 });
 
-Route::prefix('kontak')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KontakController::class, 'index'])->name('kontak.index');
     Route::post('/sync', [KontakController::class, 'syncFromOrders'])->name('kontak.sync');
     Route::post('/', [KontakController::class, 'store'])->name('kontak.store');
@@ -126,7 +126,7 @@ Route::prefix('kontak')->middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/{id}', [KontakController::class, 'destroy'])->name('kontak.destroy');
 });
 
-Route::prefix('buku-kas')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('buku-kas')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [BukuKasController::class, 'pengeluaran'])->name('keuangan.transaksi');
     Route::get('/pengeluaran', [BukuKasController::class, 'pengeluaran'])->name('keuangan.pengeluaran');
     Route::get('/pemasukan', [BukuKasController::class, 'pemasukan'])->name('keuangan.pemasukan');
@@ -151,15 +151,15 @@ Route::prefix('buku-kas')->middleware(['auth', 'role:admin'])->group(function ()
 });
 
 Route::get('/laporan', [LaporanController::class, 'index'])
-    ->middleware(['auth', 'role:admin'])
+    ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('laporan.index');
 
-Route::middleware(['auth', 'role:admin'])->prefix('laporan/export')->group(function () {
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/export')->group(function () {
     Route::get('/excel', [LaporanController::class, 'exportExcel'])->name('laporan.export.excel');
     Route::get('/pdf', [LaporanController::class, 'exportPdf'])->name('laporan.export.pdf');
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('laporan/api')->group(function () {
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/api')->group(function () {
     Route::get('/daily/summary', [LaporanController::class, 'dailySummary'])->name('laporan.api.daily.summary');
     Route::get('/daily/operators', [LaporanController::class, 'dailyOperators'])->name('laporan.api.daily.operators');
     Route::get('/daily/cashbox', [LaporanController::class, 'dailyCashbox'])->name('laporan.api.daily.cashbox');
@@ -170,11 +170,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('laporan/api')->group(function
     Route::get('/monthly/daily', [LaporanController::class, 'monthlyDaily'])->name('laporan.api.monthly.daily');
     Route::get('/annual/summary', [LaporanController::class, 'annualSummary'])->name('laporan.api.annual.summary');
     Route::get('/annual/operators', [LaporanController::class, 'annualOperators'])->name('laporan.api.annual.operators');
+    Route::get('/annual/debt-summary', [LaporanController::class, 'annualDebtSummary'])->name('laporan.api.annual.debt-summary');
     Route::get('/annual/monthly', [LaporanController::class, 'annualMonthly'])->name('laporan.api.annual.monthly');
     Route::get('/annual/cashbox', [LaporanController::class, 'annualCashbox'])->name('laporan.api.annual.cashbox');
 });
 
-Route::prefix('absensi')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [AbsensiController::class, 'index'])->name('absensi.index');
 
     // Master Shift
@@ -191,7 +192,7 @@ Route::prefix('absensi')->middleware(['auth', 'role:admin'])->group(function () 
     Route::put('/riwayat/{uuid}/status', [AbsensiController::class, 'updateAbsensiStatus'])->name('absensi.riwayat.update-status');
 });
 
-Route::prefix('perilaku')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('perilaku')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [PerilakuController::class, 'index'])->name('perilaku.index');
     Route::get('/customer/{contact_id}', [PerilakuController::class, 'detailCustomer'])->name('perilaku.customer.detail');
     Route::get('/produk/{product_id}', [PerilakuController::class, 'detailProduk'])->name('perilaku.produk.detail');
