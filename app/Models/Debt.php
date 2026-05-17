@@ -16,7 +16,7 @@ class Debt extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo', 'keterangan', 'reference_id', 'reference_type'
+        'store_id', 'kontak_id', 'tipe', 'nominal', 'sisa', 'jatuh_tempo', 'keterangan', 'reference_id', 'reference_type', 'transaction_id'
     ];
 
     protected static function boot()
@@ -41,11 +41,16 @@ class Debt extends Model
 
     public function transaction()
     {
-        return $this->belongsTo(Transaction::class, 'reference_id', 'uuid');
+        return $this->belongsTo(Transaction::class, 'transaction_id', 'uuid');
     }
 
     public function paymentOrder()
     {
         return $this->belongsTo(PaymentOrder::class, 'reference_id', 'uuid');
+    }
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class, 'store_id', 'uuid');
     }
 }

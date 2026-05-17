@@ -13,7 +13,7 @@ class DetailDebt extends Model
     protected $primaryKey = 'uuid';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'debts_id', 'sebelum', 'bayar', 'sisa', 'metode_pembayaran', 'tanggal', 'user_id'

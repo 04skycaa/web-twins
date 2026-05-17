@@ -56,19 +56,21 @@ class ProductController extends Controller
             if ($selectedStoreId && $selectedStoreId !== 'all') {
                 $query->with(['stores' => function($q) use ($selectedStoreId) {
                     $q->where('store_id', $selectedStoreId);
-                }]);
-                // We'll still need the relation for the specific store info, 
-                // but for the sum we can be more efficient.
+                }, 'stores.store']);
+                
                 $query->withSum(['stores as current_stok' => function($q) use ($selectedStoreId) {
                     $q->where('store_id', $selectedStoreId);
                 }], 'stok');
             } else {
+                $query->with(['stores.store']);
                 $query->withSum('stores as current_stok', 'stok');
             }
         } else {
             $query->withSum(['stores as current_stok' => function($q) use ($user) {
                 $q->where('store_id', $user->store_id);
-            }], 'stok');
+            }], 'stok')->with(['stores' => function($q) use ($user) {
+                $q->where('store_id', $user->store_id);
+            }, 'stores.store']);
         }
 
         if ($request->has('category_id') && $request->category_id != '') {
@@ -111,7 +113,17 @@ class ProductController extends Controller
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
             'selected_store_id' => $selectedStoreId,
-            'all_products' => $this->mapProductsForJs(Product::with(['category', 'priceLevels', 'stores.store'])->get(), $user, $selectedStoreId),
+            'all_products' => $this->mapProductsForJs(
+                Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
+                    if (!$user->isOwner()) {
+                        $q->where('store_id', $user->store_id);
+                    } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                        $q->where('store_id', $selectedStoreId);
+                    }
+                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
+                $user, 
+                $selectedStoreId
+            ),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
     }
@@ -164,7 +176,7 @@ class ProductController extends Controller
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
             if (!$user->isOwner()) {
                 $query->where('store_id', $user->store_id);
-            } elseif ($request->has('store_id') && $request->store_id != '') {
+            } elseif ($request->has('store_id') && $request->store_id != '' && $request->store_id != 'all') {
                 $query->where('store_id', $request->store_id);
             }
             if ($request->has('category_id') && $request->category_id != '') {
@@ -200,9 +212,11 @@ class ProductController extends Controller
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
             'selected_store_id' => $request->store_id,
             'all_products' => $this->mapProductsForJs(
-                Product::whereHas('stores', function($q) use ($user) {
+                Product::whereHas('stores', function($q) use ($user, $request) {
                     if (!$user->isOwner()) {
                         $q->where('store_id', $user->store_id);
+                    } elseif ($request->store_id && $request->store_id != 'all') {
+                        $q->where('store_id', $request->store_id);
                     }
                 })->get(), 
                 $user, 
@@ -279,7 +293,17 @@ class ProductController extends Controller
             'selected_store_id' => $selectedStoreId,
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
-            'all_products' => Product::all(),
+            'all_products' => $this->mapProductsForJs(
+                Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
+                    if (!$user->isOwner()) {
+                        $q->where('store_id', $user->store_id);
+                    } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                        $q->where('store_id', $selectedStoreId);
+                    }
+                })->get(), 
+                $user, 
+                $selectedStoreId
+            ),
             'type' => $type,
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
@@ -437,7 +461,7 @@ class ProductController extends Controller
         }
 
         if ($request->status && Schema::hasColumn('transactions', 'status')) { $query->where('status', $request->status); }
-        if ($request->store_id) {
+        if ($request->store_id && $request->store_id != 'all') {
             $storeId = $request->store_id;
             $query->where(function($q) use ($storeId) { $q->where('store_id', $storeId)->orWhere('tujuan_store_id', $storeId); });
         }
@@ -699,10 +723,43 @@ class ProductController extends Controller
             'contact' => function($q) { $q->select('uuid', 'nama'); },
             'store' => function($q) { $q->select('uuid', 'nama'); },
             'user' => function($q) { $q->select('uuid', 'username'); },
-            'tujuanStore' => function($q) { $q->select('uuid', 'nama'); }
+            'tujuanStore' => function($q) { $q->select('uuid', 'nama'); },
+            'paymentMethod' => function($q) { $q->select('uuid', 'nama_metode'); }
         ])
         ->where('uuid', $uuid)
         ->firstOrFail();
+
+        // Fetch related debt and history of payments using multiple fallback approaches
+        $debt = \App\Models\Debt::with(['detailDebts.paymentMethod'])->where('transaction_id', $uuid)->first();
+        
+        if (!$debt && \Illuminate\Support\Facades\Schema::hasColumn('debts', 'reference_id')) {
+            $debt = \App\Models\Debt::with(['detailDebts.paymentMethod'])
+                        ->where('reference_id', $uuid)
+                        ->where('tipe', 'utang')
+                        ->first();
+        }
+
+        if (!$debt && \Illuminate\Support\Facades\Schema::hasColumn('debts', 'keterangan')) {
+            $debt = \App\Models\Debt::with(['detailDebts.paymentMethod'])
+                        ->where('keterangan', 'like', "%{$uuid}%")
+                        ->where('tipe', 'utang')
+                        ->first();
+        }
+
+        if (!$debt) {
+            // Highly robust fallback by matching store, supplier contact, tipe, and remaining debt amount
+            $debtAmount = $transaction->total - $transaction->bayar;
+            $debt = \App\Models\Debt::with(['detailDebts.paymentMethod'])
+                        ->where('store_id', $transaction->store_id)
+                        ->where('kontak_id', $transaction->contact_id)
+                        ->where('tipe', 'utang')
+                        ->where(function($q) use ($debtAmount) {
+                            $q->where('nominal', $debtAmount)
+                              ->orWhere('sisa', $debtAmount);
+                        })
+                        ->first();
+        }
+        $transaction->debt = $debt;
 
         // Speed up: remove unnecessary appends that calculate URLs
         $transaction->details->each(function($detail) {
@@ -821,9 +878,7 @@ class ProductController extends Controller
                         'nominal' => $debt_amount,
                         'sisa' => $debt_amount,
                         'jatuh_tempo' => now()->addDays(30), 
-                        'keterangan' => "Sisa pembayaran restok (Trx: {$transaction->uuid})",
-                        'reference_id' => $transaction->uuid,
-                        'reference_type' => 'transaction'
+                        'transaction_id' => $transaction->uuid,
                     ]);
                 }
             }
@@ -1452,7 +1507,15 @@ class ProductController extends Controller
     {
         $tab = $request->active_tab ?? 'produk';
         $data = $this->getExportData($request, $tab);
-        $title = "Laporan " . ($tab == 'produk' ? 'Produk' : ($tab == 'opname' ? 'Stock Opname' : 'Stok & Expired'));
+        
+        $titles = [
+            'produk' => 'Produk',
+            'stok' => 'Katalog & Stok',
+            'restok' => 'Restok Produk',
+            'transfer' => 'Transfer Stok',
+            'opname' => 'Stock Opname'
+        ];
+        $title = "Laporan " . ($titles[$tab] ?? 'Produk');
 
         $pdf = Pdf::loadView('exports.pdf', [
             'title' => $title,
@@ -1488,7 +1551,10 @@ class ProductController extends Controller
             }
 
             if ($request->category_id) $query->where('kategori_id', $request->category_id);
-            if ($request->search) $query->where('nama_produk', 'ilike', '%' . $request->search . '%');
+            if ($request->search) {
+                $search = strtolower($request->search);
+                $query->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
+            }
             return $query->get();
         } 
         
@@ -1515,29 +1581,113 @@ class ProductController extends Controller
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
             if (!$user->isOwner()) $query->where('store_id', $user->store_id);
             if ($request->search) {
-                $query->where(function($q) use ($request) {
-                    $q->where('uuid', 'ilike', '%' . $request->search . '%')
-                      ->orWhereHas('user', function($uq) use ($request) {
-                          $uq->where('name', 'ilike', '%' . $request->search . '%');
+                $search = strtolower($request->search);
+                $query->where(function($q) use ($search) {
+                    $q->whereRaw('LOWER(uuid) LIKE ?', ["%{$search}%"])
+                      ->orWhereHas('user', function($uq) use ($search) {
+                          $uq->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"])
+                            ->orWhereRaw('LOWER(username) LIKE ?', ["%{$search}%"]);
                       });
                 });
             }
             return $query->get();
         }
 
-        if ($tab == 'request') {
+        if ($tab == 'stok' || $tab == 'request') {
             $query = ProductStore::with(['product.category', 'store'])->where('status_aktif', true);
-            if (!$user->isOwner()) $query->where('store_id', $user->store_id);
+            if (!$user->isOwner()) {
+                $query->where('store_id', $user->store_id);
+            } elseif ($request->store_id && $request->store_id !== 'all') {
+                $query->where('store_id', $request->store_id);
+            }
+
             if ($request->search) {
-                $query->whereHas('product', function($q) use ($request) {
-                    $q->where('nama_produk', 'ilike', '%' . $request->search . '%');
+                $search = strtolower($request->search);
+                $query->whereHas('product', function($q) use ($search) {
+                    $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
                 });
             }
+
+            if ($request->category_id) {
+                $query->whereHas('product', function($q) use ($request) {
+                    $q->where('kategori_id', $request->category_id);
+                });
+            }
+
             if ($request->type == 'stok_habis') {
-                $query->where('stok', '<=', 0);
+                $query->whereRaw('stok <= COALESCE(stok_minimum, 10)');
             } elseif ($request->type == 'expired') {
                 $query->whereNotNull('kadaluarsa')->where('kadaluarsa', '<=', now()->addDays(30));
             }
+            return $query->get();
+        }
+
+        if ($tab == 'restok') {
+            $query = Transaction::where('jenis', 'pembelian')->with(['contact', 'store', 'user'])->orderBy('tanggal', 'desc');
+
+            if ($request->search) {
+                $query->whereHas('contact', function($q) use ($request) {
+                    $q->where('nama', 'ilike', "%{$request->search}%");
+                });
+            }
+            if ($request->supplier_id) { $query->where('contact_id', $request->supplier_id); }
+
+            if (!$user->isOwner()) {
+                $query->where('store_id', $user->store_id);
+            } elseif ($request->store_id && $request->store_id != 'all') {
+                $query->where('store_id', $request->store_id);
+            }
+
+            if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
+            if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
+
+            if ($request->filter == 'today') {
+                $query->whereDate('tanggal', today());
+            } elseif ($request->filter == 'week') {
+                $query->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()]);
+            }
+
+            if ($request->status_bayar == 'Lunas') {
+                $query->whereRaw('bayar >= total');
+            } elseif ($request->status_bayar == 'Hutang') {
+                $query->whereRaw('bayar < total');
+            }
+
+            return $query->get();
+        }
+
+        if ($tab == 'transfer') {
+            $query = Transaction::where('jenis', 'transfer')->with(['store', 'tujuanStore', 'user'])->orderBy('tanggal', 'desc');
+
+            if (!$user->isOwner()) {
+                $query->where(function($q) use ($user) {
+                    $q->where('store_id', $user->store_id)->orWhere('tujuan_store_id', $user->store_id);
+                });
+            }
+
+            if ($request->search) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('uuid', 'ilike', "%{$search}%")->orWhere('catatan', 'ilike', "%{$search}%");
+                    if (Schema::hasColumn('transactions', 'status')) { $q->orWhere('status', 'ilike', "%{$search}%"); }
+                    $q->orWhereHas('tujuanStore', function($sq) use ($search) { $sq->where('nama', 'ilike', "%{$search}%"); })
+                      ->orWhereHas('user', function($sq) use ($search) { $sq->where('username', 'ilike', "%{$search}%"); })
+                      ->orWhereHas('store', function($sq) use ($search) { $sq->where('nama', 'ilike', "%{$search}%"); })
+                      ->orWhereHas('details.product', function($sq) use ($search) {
+                          $sq->where('nama_produk', 'ilike', "%{$search}%")->orWhere('barcode', 'ilike', "%{$search}%");
+                      });
+                });
+            }
+
+            if ($request->status && Schema::hasColumn('transactions', 'status')) { $query->where('status', $request->status); }
+            if ($request->store_id && $request->store_id != 'all') {
+                $storeId = $request->store_id;
+                $query->where(function($q) use ($storeId) { $q->where('store_id', $storeId)->orWhere('tujuan_store_id', $storeId); });
+            }
+
+            if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
+            if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
+
             return $query->get();
         }
 
@@ -1553,7 +1703,9 @@ class ProductController extends Controller
             }
             return ['No Ref', 'Tanggal', 'Petugas', 'Outlet', 'Total Item', 'Total Selisih', 'Potensi Kerugian (Rp)', 'Status'];
         }
-        if ($tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
+        if ($tab == 'stok' || $tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
+        if ($tab == 'restok') return ['Tanggal', 'Supplier', 'Total', 'Status', 'Petugas'];
+        if ($tab == 'transfer') return ['Tanggal', 'Dari', 'Tujuan', 'Status', 'Petugas'];
         return [];
     }
 
@@ -1679,13 +1831,32 @@ class ProductController extends Controller
                 $item->status
             ];
         }
-        if ($tab == 'request') {
+        if ($tab == 'stok' || $tab == 'request') {
             return [
                 $item->product->nama_produk ?? '-',
                 $item->store->nama ?? '-',
                 $item->stok,
                 $item->kadaluarsa ? \Carbon\Carbon::parse($item->kadaluarsa)->format('d-m-Y') : '-',
                 $item->product->category->nama_category ?? '-'
+            ];
+        }
+        if ($tab == 'restok') {
+            $isHutang = $item->bayar < $item->total;
+            return [
+                \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y H:i'),
+                $item->contact->nama ?? 'Umum',
+                $item->total,
+                $isHutang ? 'Hutang' : 'Lunas',
+                $item->user->name ?? $item->user->username ?? '-'
+            ];
+        }
+        if ($tab == 'transfer') {
+            return [
+                \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y H:i'),
+                $item->store->nama ?? '-',
+                $item->tujuanStore->nama ?? '-',
+                $item->status ?: 'Pending',
+                $item->user->username ?? '-'
             ];
         }
         return [];
@@ -1703,10 +1874,35 @@ class ProductController extends Controller
         try {
             $transaction = Transaction::findOrFail($request->transaction_id);
             
-            // Find associated debt
-            $debt = Debt::where('keterangan', 'like', "%{$transaction->uuid}%")
+            // Find associated debt using transaction_id to match the existing schema (with fallback strategies)
+            $debt = Debt::where('transaction_id', $transaction->uuid)
                         ->where('tipe', 'utang')
                         ->first();
+
+            if (!$debt && Schema::hasColumn('debts', 'reference_id')) {
+                $debt = Debt::where('reference_id', $transaction->uuid)
+                            ->where('tipe', 'utang')
+                            ->first();
+            }
+
+            if (!$debt && Schema::hasColumn('debts', 'keterangan')) {
+                $debt = Debt::where('keterangan', 'like', "%{$transaction->uuid}%")
+                            ->where('tipe', 'utang')
+                            ->first();
+            }
+
+            if (!$debt) {
+                // Highly robust fallback: search by matching contact, store, tipe, and remaining debt amount
+                $debtAmount = $transaction->total - $transaction->bayar;
+                $debt = Debt::where('store_id', $transaction->store_id)
+                            ->where('kontak_id', $transaction->contact_id)
+                            ->where('tipe', 'utang')
+                            ->where(function($q) use ($debtAmount) {
+                                $q->where('nominal', $debtAmount)
+                                  ->orWhere('sisa', $debtAmount);
+                            })
+                            ->first();
+            }
 
             if (!$debt) {
                 if ($transaction->bayar < $transaction->total) {
@@ -1784,8 +1980,29 @@ class ProductController extends Controller
             // Mencari cashflow yang mencantumkan UUID transaksi di keterangannya
             CashFlow::where('keterangan', 'like', "%{$uuid}%")->delete();
 
-            // 4. Hapus catatan Hutang (Debt) dan Detail Pembayarannya jika ada
-            $debt = Debt::where('keterangan', 'like', "%{$uuid}%")->first();
+            // 4. Hapus catatan Hutang (Debt) dan Detail Pembayarannya jika ada (using robust multi-strategy lookup)
+            $debt = Debt::where('transaction_id', $uuid)->first();
+            
+            if (!$debt && Schema::hasColumn('debts', 'reference_id')) {
+                $debt = Debt::where('reference_id', $uuid)->first();
+            }
+            
+            if (!$debt && Schema::hasColumn('debts', 'keterangan')) {
+                $debt = Debt::where('keterangan', 'like', "%{$uuid}%")->first();
+            }
+            
+            if (!$debt) {
+                $debtAmount = $transaction->total - $transaction->bayar;
+                $debt = Debt::where('store_id', $transaction->store_id)
+                            ->where('kontak_id', $transaction->contact_id)
+                            ->where('tipe', 'utang')
+                            ->where(function($q) use ($debtAmount) {
+                                $q->where('nominal', $debtAmount)
+                                  ->orWhere('sisa', $debtAmount);
+                            })
+                            ->first();
+            }
+            
             if ($debt) {
                 DetailDebt::where('debts_id', $debt->uuid)->delete();
                 $debt->delete();

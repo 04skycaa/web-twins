@@ -44,4 +44,9 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionDetail::class, 'transaction_id', 'uuid');
     }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'metode_pembayaran', 'uuid');
+    }
 }

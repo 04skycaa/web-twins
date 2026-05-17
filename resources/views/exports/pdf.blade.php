@@ -38,23 +38,49 @@
                     <th>Harga Jual</th>
                     <th>Stok</th>
                 @elseif($tab == 'opname')
+                    @if(request('sub_tab') == 'produk_rugi')
+                        <th>No</th>
+                        <th>Nama Produk</th>
+                        <th>Barcode</th>
+                        <th>Outlet</th>
+                        <th>Tanggal Opname</th>
+                        <th>Stok Sistem</th>
+                        <th>Stok Fisik</th>
+                        <th>Selisih</th>
+                        <th>Kerugian (Rp)</th>
+                    @else
+                        <th>No</th>
+                        <th>No Ref</th>
+                        <th>Tanggal</th>
+                        <th>Petugas</th>
+                        <th>Outlet</th>
+                        <th>Total Item</th>
+                        <th>Total Selisih</th>
+                        <th>Potensi Kerugian (Rp)</th>
+                        <th>Status</th>
+                    @endif
+                @elseif($tab == 'stok' || $tab == 'request')
                     <th>No</th>
-                    <th>No Ref</th>
-                    <th>Tanggal</th>
-                    <th>User</th>
+                    <th>Nama Produk</th>
+                    <th>Barcode</th>
                     <th>Outlet</th>
-                    <th>Total Item</th>
-                    <th>Selisih</th>
-                    <th>Status</th>
-                @elseif($tab == 'request')
+                    <th>Stok</th>
+                    <th>Kadaluarsa</th>
+                    <th>Kategori</th>
+                @elseif($tab == 'restok')
                     <th>No</th>
-                    <th>Produk</th>
-                    <th>Pemohon</th>
-                    <th>Outlet</th>
-                    <th>Jumlah</th>
-                    <th>Prioritas</th>
-                    <th>Status</th>
                     <th>Tanggal</th>
+                    <th>Supplier</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Petugas</th>
+                @elseif($tab == 'transfer')
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>Dari</th>
+                    <th>Tujuan</th>
+                    <th>Status</th>
+                    <th>Petugas</th>
                 @endif
             </tr>
         </thead>
@@ -68,23 +94,61 @@
                         <td>{{ $item->category->nama_category ?? '-' }}</td>
                         <td>Rp {{ number_format($item->harga_modal, 0, ',', '.') }}</td>
                         <td>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
-                        <td>{{ Auth::user()->isOwner() ? $item->stores->sum('stok') : ($item->stores->where('store_id', Auth::user()->store_id)->first()->stok ?? 0) }}</td>
+                        @php
+                            $selectedStoreId = request('store_id');
+                            if (!Auth::user()->isOwner()) {
+                                $selectedStoreId = Auth::user()->store_id;
+                            }
+                            if ($selectedStoreId && $selectedStoreId !== 'all') {
+                                $stok = $item->stores->where('store_id', $selectedStoreId)->first()->stok ?? 0;
+                            } else {
+                                $stok = $item->stores->sum('stok');
+                            }
+                        @endphp
+                        <td>{{ $stok }}</td>
                     @elseif($tab == 'opname')
-                        <td>{{ $item->uuid }}</td>
-                        <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d F Y') }}</td>
-                        <td>{{ $item->user->name ?? '-' }}</td>
-                        <td>{{ $item->store->nama ?? '-' }}</td>
-                        <td>{{ $item->total_items }}</td>
-                        <td>{{ $item->total_selisih }}</td>
-                        <td>{{ $item->status }}</td>
-                    @elseif($tab == 'request')
+                        @if(request('sub_tab') == 'produk_rugi')
+                            @php
+                                $modal = $item->product->harga_modal ?? 0;
+                                $kerugian = abs($item->selisih * $modal);
+                            @endphp
+                            <td>{{ $item->product->nama_produk ?? '-' }}</td>
+                            <td>{{ $item->product->barcode ?? '-' }}</td>
+                            <td>{{ $item->opname->store->nama ?? '-' }}</td>
+                            <td>{{ \Carbon\Carbon::parse($item->opname->tanggal)->format('d-m-Y') }}</td>
+                            <td>{{ $item->stok_sistem }}</td>
+                            <td>{{ $item->stok_fisik }}</td>
+                            <td>{{ $item->selisih }}</td>
+                            <td>Rp {{ number_format($kerugian, 0, ',', '.') }}</td>
+                        @else
+                            <td>{{ $item->uuid }}</td>
+                            <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</td>
+                            <td>{{ $item->user->name ?? $item->user->username ?? '-' }}</td>
+                            <td>{{ $item->store->nama ?? '-' }}</td>
+                            <td>{{ $item->total_items }}</td>
+                            <td>{{ $item->total_selisih }}</td>
+                            <td>Rp {{ number_format(abs($item->total_kerugian), 0, ',', '.') }}</td>
+                            <td>{{ $item->status }}</td>
+                        @endif
+                    @elseif($tab == 'stok' || $tab == 'request')
                         <td>{{ $item->product->nama_produk ?? '-' }}</td>
-                        <td>{{ $item->pemohon }}</td>
+                        <td>{{ $item->product->barcode ?? '-' }}</td>
                         <td>{{ $item->store->nama ?? '-' }}</td>
-                        <td>{{ $item->jumlah_minta }}</td>
-                        <td>{{ $item->prioritas }}</td>
-                        <td>{{ $item->status }}</td>
-                        <td>-</td>
+                        <td>{{ $item->stok }}</td>
+                        <td>{{ $item->kadaluarsa ? \Carbon\Carbon::parse($item->kadaluarsa)->format('d-m-Y') : '-' }}</td>
+                        <td>{{ $item->product->category->nama_category ?? '-' }}</td>
+                    @elseif($tab == 'restok')
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y H:i') }}</td>
+                        <td>{{ $item->contact->nama ?? 'Umum' }}</td>
+                        <td style="font-weight: bold;">Rp {{ number_format($item->total, 0, ',', '.') }}</td>
+                        <td>{{ $item->bayar < $item->total ? 'Hutang' : 'Lunas' }}</td>
+                        <td>{{ $item->user->name ?? $item->user->username ?? '-' }}</td>
+                    @elseif($tab == 'transfer')
+                        <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y H:i') }}</td>
+                        <td>{{ $item->store->nama ?? '-' }}</td>
+                        <td>{{ $item->tujuanStore->nama ?? '-' }}</td>
+                        <td>{{ $item->status ?: 'Pending' }}</td>
+                        <td>{{ $item->user->username ?? '-' }}</td>
                     @endif
                 </tr>
             @endforeach
@@ -92,7 +156,7 @@
     </table>
 
     <div class="footer">
-        Dicetak otomatis oleh Sistem Manajemen Produk TWINS pada {{ date('d/m/Y H:i') }}
+        Dicetak otomatis oleh Point of Sale Toko Bahan Kue Twins pada {{ date('d/m/Y H:i') }}
     </div>
 </body>
 </html>

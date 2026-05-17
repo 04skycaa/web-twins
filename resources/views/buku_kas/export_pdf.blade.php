@@ -210,7 +210,7 @@
     @endif
 
     <div class="footer">
-        Dicetak otomatis oleh Sistem Manajemen Produk TWINS pada {{ date('d/m/Y H:i') }}
+        Dicetak otomatis oleh Point of Sale Toko Bahan Kue Twins pada {{ date('d/m/Y H:i') }}
     </div>
 
 </body>

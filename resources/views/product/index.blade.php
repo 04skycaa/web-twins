@@ -125,32 +125,38 @@
     .table-scroll-container::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
     }
-    /* Validation Error Styles */
+    /* Premium Validation Error Styles */
     .form-control.is-invalid,
+    select.is-invalid,
+    textarea.is-invalid,
     .ts-wrapper.is-invalid .ts-control,
     #restokModal .ts-wrapper.is-invalid .ts-control,
     #transferModal .ts-wrapper.is-invalid .ts-control,
     #addOpnameModal .ts-wrapper.is-invalid .ts-control {
-        border-color: #ef4444 !important;
-        background-color: #fffafb !important;
+        border: 1.5px solid #dc3545 !important;
+        background-color: #fdf2f2 !important;
+        color: #b91c1c !important;
+        border-radius: 8px !important;
     }
     .form-control.is-invalid:focus,
+    select.is-invalid:focus,
+    textarea.is-invalid:focus,
     .ts-wrapper.is-invalid.focus .ts-control,
     #restokModal .ts-wrapper.is-invalid.focus .ts-control,
     #transferModal .ts-wrapper.is-invalid.focus .ts-control,
     #addOpnameModal .ts-wrapper.is-invalid.focus .ts-control {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+        border-color: #dc3545 !important;
     }
     .invalid-feedback {
-        color: #ef4444;
-        font-size: 12px;
-        margin-top: 4px;
-        font-weight: 500;
+        color: #dc3545 !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        margin-top: 4px !important;
         display: none;
     }
     .is-invalid + .invalid-feedback {
-        display: block;
+        display: block !important;
     }
 
     /* Premium Shimmer Loading Effect */
@@ -184,6 +190,43 @@
     }
 </style>
 <script>
+    function parseDateTimeString(dateStr) {
+        if (!dateStr) return '-';
+        // If it contains T and Z (like ISO UTC string: 2026-05-17T12:24:32.000000Z)
+        // we parse it with native Date to shift to local WIB time correctly
+        if (dateStr.includes('T') && dateStr.endsWith('Z')) {
+            const d = new Date(dateStr);
+            return d.toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
+        }
+        
+        // Otherwise, if it is a raw SQL datetime like "2026-05-17 19:24:32"
+        // we parse it directly to avoid any browser timezone offset shifts
+        const parts = dateStr.split(/[\sT]+/);
+        if (parts.length >= 2) {
+            const datePart = parts[0]; // "2026-05-17"
+            const timePart = parts[1]; // "19:24:32"
+            
+            const dParts = datePart.split('-');
+            if (dParts.length === 3) {
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                const day = dParts[2];
+                const monthIndex = parseInt(dParts[1], 10) - 1;
+                const month = months[monthIndex] || '';
+                const year = dParts[0];
+                
+                const tParts = timePart.split(':');
+                const hour = tParts[0] || '00';
+                const minute = tParts[1] || '00';
+                
+                return `${day} ${month} ${year} ${hour}:${minute}`;
+            }
+        }
+        
+        // Fallback
+        const fallbackDate = new Date(dateStr);
+        return fallbackDate.toLocaleString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
+    }
+
     function showLoading(text = 'Sedang Memproses Data...') {
         Swal.fire({
             title: text,
@@ -852,16 +895,16 @@
 
 <!-- Detail Restok Modal -->
 <div id="purchaseDetailModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content" style="max-width: 800px; width: 95%;">
-        <div class="modal-header">
-            <h3>Detail Pembelian / Restok</h3>
+    <div class="modal-content" style="max-width: 800px; width: 95%; max-height: 90vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
+        <div class="modal-header" style="flex-shrink: 0; padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">Detail Pembelian / Restok</h3>
             <button class="close-modal" onclick="closeModal('purchaseDetailModal')">&times;</button>
         </div>
-        <div id="purchaseDetailContent" class="modal-body" style="padding: 20px;">
+        <div id="purchaseDetailContent" class="modal-body" style="padding: 24px; overflow-y: auto; flex: 1;">
             {{-- Content injected via JS --}}
         </div>
-        <div style="margin-top: 24px; display: flex; justify-content: center; padding: 0 20px 20px;">
-            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center;" onclick="closeModal('purchaseDetailModal')">Tutup</button>
+        <div style="flex-shrink: 0; display: flex; justify-content: center; padding: 16px 24px 24px; border-top: 1px solid #f1f5f9; background: #fafafa;">
+            <button type="button" class="btn-action" style="background: var(--primary-blue); color: white; padding: 10px 40px; min-width: 150px; justify-content: center; border-radius: 12px;" onclick="closeModal('purchaseDetailModal')">Tutup</button>
         </div>
     </div>
 </div>
@@ -883,26 +926,28 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label>Metode Pembayaran</label>
-                    <select name="metode_pembayaran" class="form-control" required>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569;">Metode Pembayaran</label>
+                    <select name="metode_pembayaran" id="pay_metode_pembayaran" class="form-control" style="transition: all 0.2s ease; border-radius: 12px;">
                         <option value="">-- Pilih Metode --</option>
                         @foreach($payment_methods ?? [] as $pm)
                             <option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>
                         @endforeach
                     </select>
+                    <div id="pm_error_msg" style="color: #dc2626; font-size: 12px; margin-top: 6px; display: none; font-weight: 500; padding-left: 2px;">Pilih Metode Pembayaran Anda</div>
                 </div>
 
                 <div class="form-group">
-                    <label>Jumlah Bayar</label>
+                    <label style="font-weight: 600; font-size: 13px; color: #475569;">Jumlah Bayar</label>
                     <div style="position: relative;">
                         <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600; z-index: 5;">Rp</span>
-                        <input type="number" name="nominal" id="pay_nominal" class="form-control" style="padding-left: 48px;" required placeholder="">
+                        <input type="number" name="nominal" id="pay_nominal" class="form-control" style="padding-left: 48px; transition: all 0.2s ease; border-radius: 12px;" placeholder="">
                     </div>
+                    <div id="nominal_error_msg" style="color: #dc2626; font-size: 12px; margin-top: 6px; display: none; font-weight: 500; padding-left: 2px;">Masukkan Jumlah Bayar Anda</div>
                 </div>
             </div>
             <div style="padding: 0 24px 24px; display: flex; gap: 12px;">
-                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('payDebtModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 2; background: #E53E3E; color: white; justify-content: center;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center; border-radius: 12px;" onclick="closeModal('payDebtModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 2; background: #E53E3E; color: white; justify-content: center; border-radius: 12px;">
                     <iconify-icon icon="solar:check-circle-bold-duotone" style="margin-right: 8px;"></iconify-icon> Konfirmasi Bayar
                 </button>
             </div>
@@ -980,23 +1025,23 @@
 <div class="fitur-container">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}" onclick="switchTab('produk', event)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'produk' ? 'active' : '' }}" data-tab="produk" onclick="switchTab('produk', event)">
             <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
             <span>Produk</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}" onclick="switchTab('stok', event)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'stok' ? 'active' : '' }}" data-tab="stok" onclick="switchTab('stok', event)">
             <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
             <span>Katalog & Stok</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}" onclick="switchTab('restok', event)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'restok' ? 'active' : '' }}" data-tab="restok" onclick="switchTab('restok', event)">
             <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
             <span>Restok</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}" onclick="switchTab('transfer', event)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'transfer' ? 'active' : '' }}" data-tab="transfer" onclick="switchTab('transfer', event)">
             <iconify-icon icon="solar:transfer-vertical-bold-duotone"></iconify-icon>
             <span>Transfer Stok</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}" onclick="switchTab('opname', event)">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab == 'opname' ? 'active' : '' }}" data-tab="opname" onclick="switchTab('opname', event)">
             <iconify-icon icon="solar:clipboard-list-bold-duotone"></iconify-icon>
             <span>Stok Opname</span>
         </a>
@@ -1019,18 +1064,18 @@
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="searchInput-{{ $tab }}" class="search-input" 
                         placeholder="Cari di {{ $tab }}..." 
-                        onkeyup="realtimeSearch('{{ $tab }}')">
+                        onkeyup="realtimeSearch('{{ $tab }}'); debounceSearch();">
                 </div>
 
                 @if($tab == 'produk' || $tab == 'stok' || $tab == 'opname')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Kategori">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Kategori" data-filter-key="category_id">
                             <iconify-icon icon="solar:filter-bold-duotone" style="font-size: 24px;" class="{{ request('category_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyFilter('category_id', '')">Semua Kategori</a>
+                            <a href="{{ request()->fullUrlWithQuery(['category_id' => null, 'tab' => $tab]) }}" onclick="applyFilter('category_id', '', event)">Semua Kategori</a>
                             @foreach($categories as $cat)
-                                <a href="javascript:void(0)" onclick="applyFilter('category_id', '{{ $cat->uuid }}')">{{ $cat->nama_category }}</a>
+                                <a href="{{ request()->fullUrlWithQuery(['category_id' => $cat->uuid, 'tab' => $tab]) }}" onclick="applyFilter('category_id', '{{ $cat->uuid }}', event)">{{ $cat->nama_category }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -1038,13 +1083,13 @@
 
                 @if($tab == 'restok')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Supplier">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Supplier" data-filter-key="supplier_id">
                             <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;" class="{{ request('supplier_id') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyFilter('supplier_id', '')">Semua Supplier</a>
+                            <a href="{{ request()->fullUrlWithQuery(['supplier_id' => null, 'tab' => $tab]) }}" onclick="applyFilter('supplier_id', '', event)">Semua Supplier</a>
                             @foreach($suppliers as $sup)
-                                <a href="javascript:void(0)" onclick="applyFilter('supplier_id', '{{ $sup->uuid }}')">{{ $sup->nama }}</a>
+                                <a href="{{ request()->fullUrlWithQuery(['supplier_id' => $sup->uuid, 'tab' => $tab]) }}" onclick="applyFilter('supplier_id', '{{ $sup->uuid }}', event)">{{ $sup->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -1052,28 +1097,28 @@
 
                 @if($tab == 'transfer')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Status Transfer">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Status Transfer" data-filter-key="status">
                             <iconify-icon icon="solar:checklist-bold-duotone" style="font-size: 24px;" class="{{ request('status') ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyFilter('status', '')">Semua Status</a>
-                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Pending')">Menunggu</a>
-                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Disetujui')">Disetujui</a>
-                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Dikirim')">Dikirim</a>
-                            <a href="javascript:void(0)" onclick="applyFilter('status', 'Selesai')">Selesai</a>
+                            <a href="{{ request()->fullUrlWithQuery(['status' => null, 'tab' => $tab]) }}" onclick="applyFilter('status', '', event)">Semua Status</a>
+                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Pending', 'tab' => $tab]) }}" onclick="applyFilter('status', 'Pending', event)">Menunggu</a>
+                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Disetujui', 'tab' => $tab]) }}" onclick="applyFilter('status', 'Disetujui', event)">Disetujui</a>
+                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Dikirim', 'tab' => $tab]) }}" onclick="applyFilter('status', 'Dikirim', event)">Dikirim</a>
+                            <a href="{{ request()->fullUrlWithQuery(['status' => 'Selesai', 'tab' => $tab]) }}" onclick="applyFilter('status', 'Selesai', event)">Selesai</a>
                         </div>
                     </div>
                 @endif
 
                 @if(Auth::user()->isOwner())
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Toko">
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Toko" data-filter-key="store_id">
                             <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') && request('store_id') != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyFilter('store_id', 'all')">Semua Toko</a>
+                            <a href="{{ request()->fullUrlWithQuery(['store_id' => 'all', 'tab' => $tab]) }}" onclick="applyFilter('store_id', 'all', event)">Semua Toko</a>
                             @foreach($stores as $s)
-                                <a href="javascript:void(0)" onclick="applyFilter('store_id', '{{ $s->uuid }}')">{{ $s->nama }}</a>
+                                <a href="{{ request()->fullUrlWithQuery(['store_id' => $s->uuid, 'tab' => $tab]) }}" onclick="applyFilter('store_id', '{{ $s->uuid }}', event)">{{ $s->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -1087,8 +1132,8 @@
                         <span>Extract</span>
                     </button>
                     <div class="dropdown-content" style="right: 0; left: auto;">
-                        <a href="{{ route('products.export.excel', ['active_tab' => $tab]) }}">Excel</a>
-                        <a href="{{ route('products.export.pdf', ['active_tab' => $tab]) }}" target="_blank">PDF</a>
+                        <a href="javascript:void(0)" onclick="triggerExport('excel')">Excel</a>
+                        <a href="javascript:void(0)" onclick="triggerExport('pdf')">PDF</a>
                     </div>
                 </div>
 
@@ -2114,6 +2159,7 @@
 
     let searchTimer;
     let abortController = null;
+    window.currentTab = '{{ $active_tab }}';
 
     function realtimeSearch(tab = 'produk') {
         const inputId = `searchInput-${tab}`;
@@ -2239,19 +2285,22 @@
             target.classList.add('active');
         }
         
-        // Update pills
-        document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
-        const pills = document.querySelectorAll('.tab-pill');
-        pills.forEach(p => {
-            if (p.getAttribute('onclick').includes(`'${tabName}'`)) {
+        // Update pills using data-tab attribute for exact matching
+        document.querySelectorAll('.tab-pill').forEach(p => {
+            if (p.getAttribute('data-tab') === tabName) {
                 p.classList.add('active');
+            } else {
+                p.classList.remove('active');
             }
         });
         
-        // Update URL
+        // Update URL and trigger AJAX refresh to ensure filtered data
         const url = new URL(window.location);
         url.searchParams.set('tab', tabName);
         window.history.pushState({ tab: tabName }, '', url);
+        
+        // Refresh the table content for the newly active tab
+        updateTableContent(url.toString());
     }
 
     // Handle initial load and back/forward buttons
@@ -2265,13 +2314,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
         if (tab) {
-            // Find pill
-            const pills = document.querySelectorAll('.tab-pill');
-            pills.forEach(p => {
-                if (p.innerText.toLowerCase().includes(tab)) {
-                    p.click(); // This will trigger switchTab correctly
-                }
-            });
+            // Find pill using exact data-tab matching to avoid partial name match issues (like 'stok' matching 'Stok Opname')
+            const pill = document.querySelector(`.tab-pill[data-tab="${tab}"]`);
+            if (pill) {
+                pill.click(); // This will trigger switchTab correctly
+            }
         }
     });
 
@@ -2365,16 +2412,20 @@
         }
     }
 
-    function applyFilter(key, value) {
+    function applyFilter(key, value, event) {
+        if (event) event.preventDefault();
         const params = new URLSearchParams(window.location.search);
         const tab = window.currentTab || 'produk';
         params.set('tab', tab);
         
-        if (value && value !== 'all') {
+        if (value && value !== 'all' && value !== '') {
             params.set(key, value);
         } else {
             params.delete(key);
         }
+
+        // Close all dropdowns for clean UI
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
 
         // Also preserve current search if applicable
         const searchInput = document.getElementById(`searchInput-${tab}`);
@@ -2382,36 +2433,32 @@
             params.set('search', searchInput.value);
         }
 
+        // Clear cache for other tabs if global filters (store, search) change
+        if (key === 'store_id' || key === 'search') {
+            pageCache.clear();
+        }
+
         const newUrl = window.location.pathname + '?' + params.toString();
         
-        // Update icon color immediately for feedback
-        const activeSection = document.getElementById(`section-${tab}`);
-        if (activeSection) {
-            const btn = activeSection.querySelector(`button[title*="${key.split('_')[0].charAt(0).toUpperCase() + key.split('_')[0].slice(1)}"] iconify-icon`);
-            if (btn) {
-                if (value && value !== 'all') btn.classList.add('text-primary-blue');
-                else btn.classList.remove('text-primary-blue');
+        // Update icon color in ALL sections immediately for visual feedback
+        document.querySelectorAll('.view-section').forEach(section => {
+            const btnIcon = section.querySelector(`button[data-filter-key="${key}"] iconify-icon`);
+            if (btnIcon) {
+                if (value && value !== 'all' && value !== '') btnIcon.classList.add('text-primary-blue');
+                else btnIcon.classList.remove('text-primary-blue');
             }
-        }
+        });
 
         updateTableContent(newUrl);
     }
 
-    // Intercept Pagination & Dropdown Filters for High Performance
+    // Intercept Pagination for High Performance
     document.addEventListener('click', function(e) {
-        // Pagination links
+        // Pagination links (intercept for AJAX)
         const paginationLink = e.target.closest('.pagination a');
-        if (paginationLink) {
+        if (paginationLink && !paginationLink.href.includes('javascript:')) {
             e.preventDefault();
             updateTableContent(paginationLink.href);
-            return;
-        }
-
-        // Dropdown Filter links
-        const filterLink = e.target.closest('.dropdown-content a');
-        if (filterLink && !filterLink.target) {
-            e.preventDefault();
-            updateTableContent(filterLink.href);
             return;
         }
     });
@@ -2453,6 +2500,30 @@
         
         updateTableContent();
         document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+    }
+
+    // --- Export Handling ---
+    function triggerExport(type) {
+        const params = new URLSearchParams(window.location.search);
+        
+        // Pastikan active_tab terkirim dengan benar
+        const tab = window.currentTab || '{{ $active_tab }}';
+        params.set('active_tab', tab);
+
+        // Ambil nilai dari kotak pencarian (jika ada)
+        const searchInput = document.getElementById(`searchInput-${tab}`);
+        if (searchInput && searchInput.value) {
+            params.set('search', searchInput.value);
+        }
+
+        const baseUrl = type === 'excel' ? "{{ route('products.export.excel') }}" : "{{ route('products.export.pdf') }}";
+        const finalUrl = baseUrl + '?' + params.toString();
+
+        if (type === 'pdf') {
+            window.open(finalUrl, '_blank');
+        } else {
+            window.location.href = finalUrl;
+        }
     }
 
     function clearDateFilter() {
@@ -2832,12 +2903,68 @@
         openModal('payDebtModal');
     }
 
-    // Update form submission to use AJAX for better experience
+    // Update form submission to use AJAX for better experience with beautiful premium validation
     document.addEventListener('DOMContentLoaded', function() {
         const payForm = document.getElementById('payDebtForm');
         if (payForm) {
+            const pmSelect = document.getElementById('pay_metode_pembayaran');
+            const nominalInput = document.getElementById('pay_nominal');
+
+            function clearError(inputEl, errorEl) {
+                inputEl.style.borderColor = '';
+                inputEl.style.backgroundColor = '';
+                inputEl.style.boxShadow = '';
+                errorEl.style.display = 'none';
+            }
+
+            function setError(inputEl, errorEl, message) {
+                inputEl.style.borderColor = '#dc2626';
+                inputEl.style.backgroundColor = '#fef2f2';
+                inputEl.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.15)';
+                errorEl.innerText = message;
+                errorEl.style.display = 'block';
+            }
+
+            if (pmSelect) {
+                pmSelect.addEventListener('change', () => clearError(pmSelect, document.getElementById('pm_error_msg')));
+            }
+            if (nominalInput) {
+                nominalInput.addEventListener('input', () => clearError(nominalInput, document.getElementById('nominal_error_msg')));
+            }
+
             payForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                let hasError = false;
+
+                // Validate Payment Method
+                const pmVal = pmSelect ? pmSelect.value : '';
+                if (!pmVal) {
+                    setError(pmSelect, document.getElementById('pm_error_msg'), 'Pilih Metode Pembayaran Anda');
+                    hasError = true;
+                } else {
+                    clearError(pmSelect, document.getElementById('pm_error_msg'));
+                }
+
+                // Validate Nominal
+                const nominalVal = nominalInput ? parseFloat(nominalInput.value) : 0;
+                const maxVal = nominalInput ? parseFloat(nominalInput.max) : 0;
+                if (!nominalInput || nominalInput.value.trim() === '') {
+                    setError(nominalInput, document.getElementById('nominal_error_msg'), 'Masukkan Jumlah Bayar Anda');
+                    hasError = true;
+                } else if (nominalVal <= 0) {
+                    setError(nominalInput, document.getElementById('nominal_error_msg'), 'Jumlah Bayar harus lebih besar dari Rp 0');
+                    hasError = true;
+                } else if (maxVal > 0 && nominalVal > maxVal) {
+                    setError(nominalInput, document.getElementById('nominal_error_msg'), `Jumlah Bayar tidak boleh melebihi sisa hutang (Rp ${maxVal.toLocaleString('id-ID')})`);
+                    hasError = true;
+                } else {
+                    clearError(nominalInput, document.getElementById('nominal_error_msg'));
+                }
+
+                if (hasError) {
+                    return false;
+                }
+
                 showLoading('Memproses Pembayaran...');
                 
                 const formData = new FormData(this);
@@ -2925,23 +3052,135 @@
                     `;
                 });
 
+                const totalVal = parseFloat(data.total) || 0;
+                const bayarVal = parseFloat(data.bayar) || 0;
+                const sisaVal = Math.max(0, totalVal - bayarVal);
+                const percentVal = totalVal > 0 ? Math.round((bayarVal / totalVal) * 100) : 100;
+                const isLunasVal = sisaVal <= 0;
+
+                let historyHtml = '';
+                const dpAmount = data.debt ? Math.max(0, totalVal - (parseFloat(data.debt.nominal) || 0)) : totalVal;
+                const dpMethod = data.payment_method ? data.payment_method.nama_metode : 'Kas';
+                const listInstallments = (data.debt ? (data.debt.detail_debts || data.debt.detailDebts) : null) || [];
+                const hasInstallments = listInstallments.length > 0;
+
+                if (dpAmount > 0 || hasInstallments) {
+                    historyHtml += `
+                        <div style="margin-top: 20px;">
+                            <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 10px;">Riwayat Pembayaran Cicilan / Pelunasan:</div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                    `;
+
+                    // 1. Render Pembayaran Awal / DP if any
+                    if (dpAmount > 0) {
+                        const dpDate = data.debt ? (data.debt.updated_at || data.debt.created_at || data.tanggal) : (data.updated_at || data.created_at || data.tanggal);
+                        historyHtml += `
+                                <div style="background: #f8fafc; border-radius: 8px; padding: 10px 15px; border-left: 3px solid #2e7d32; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                                    <div>
+                                        <div style="font-weight: 700; color: #1e293b;">Rp ${rupiahFormatter.format(dpAmount)}</div>
+                                        <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Pembayaran Awal / DP (${dpMethod})</div>
+                                    </div>
+                                    <div style="text-align: right; color: #64748b; font-size: 11px;">
+                                        <div>${parseDateTimeString(dpDate)}</div>
+                                    </div>
+                                </div>
+                        `;
+                    }
+
+                    // 2. Render subsequent installments
+                    if (hasInstallments) {
+                        listInstallments.forEach(payment => {
+                            const dateFormatted = parseDateTimeString(payment.updated_at || payment.created_at || payment.tanggal);
+                            const method = payment.payment_method ? payment.payment_method.nama_metode : 'Kas';
+                            historyHtml += `
+                                    <div style="background: #f8fafc; border-radius: 8px; padding: 10px 15px; border-left: 3px solid #2e7d32; display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                                        <div>
+                                            <div style="font-weight: 700; color: #1e293b;">Rp ${rupiahFormatter.format(payment.bayar)}</div>
+                                            <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Angsuran / Cicilan (${method})</div>
+                                        </div>
+                                        <div style="text-align: right; color: #64748b; font-size: 11px;">
+                                            <div>${dateFormatted}</div>
+                                            <div style="font-style: italic; margin-top: 2px; color: #94a3b8;">Sisa: Rp ${rupiahFormatter.format(payment.sisa)}</div>
+                                        </div>
+                                    </div>
+                            `;
+                        });
+                    }
+
+                    historyHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const displayTrxDate = data.debt ? (data.debt.updated_at || data.debt.created_at || data.tanggal) : (data.updated_at || data.created_at || data.tanggal);
+                const isCashFromStart = !data.debt;
+
+                // Define context-specific labels and styling
+                let paymentStatusHtml = '';
+                if (isCashFromStart) {
+                    paymentStatusHtml = `
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Status Pembayaran</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #2E7D32;">Lunas (Cash / Tunai)</div>
+                        </div>
+                    `;
+                } else {
+                    paymentStatusHtml = `
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Sisa Tagihan (Hutang)</div>
+                            <div style="font-size: 18px; font-weight: 700; color: ${isLunasVal ? '#2E7D32' : '#dc2626'};">${isLunasVal ? 'Rp 0 (Lunas)' : `Rp ${rupiahFormatter.format(sisaVal)}`}</div>
+                        </div>
+                    `;
+                }
+
                 content.innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;">
                         <div>
-                            <div style="font-size: 12px; color: #888;">Tanggal Transaksi</div>
-                            <div style="font-weight: 600;">${new Date(data.tanggal).toLocaleString('id-ID')}</div>
-                            <div style="font-size: 12px; color: #888; margin-top: 10px;">Supplier</div>
-                            <div style="font-weight: 600;">${data.contact ? data.contact.nama : 'Umum'}</div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Nama Supplier</div>
+                            <div style="font-size: 18px; font-weight: 700; color: #1e293b;">${data.contact ? data.contact.nama : 'Umum'}</div>
+                        </div>
+                        ${paymentStatusHtml}
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Total Belanja</div>
+                            <div style="font-weight: 600; color: #1e293b;">Rp ${rupiahFormatter.format(totalVal)}</div>
                         </div>
                         <div>
-                            <div style="font-size: 12px; color: #888;">Outlet / Toko</div>
-                            <div style="font-weight: 600;">${data.store ? data.store.nama : '-'}</div>
-                            <div style="font-size: 12px; color: #888; margin-top: 10px;">Petugas</div>
-                            <div style="font-weight: 600;">${data.user ? data.user.username : '-'}</div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Tanggal Transaksi</div>
+                            <div style="font-weight: 600; color: #1e293b;">${parseDateTimeString(displayTrxDate)}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 2px;">Outlet / Toko</div>
+                            <div style="font-weight: 600; color: #1e293b;">${data.store ? data.store.nama : '-'}</div>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table class="fitur-table">
+
+                    <!-- Restok Progress & Status Section -->
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #475569;">Progress Pembayaran</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; font-weight: 700; color: ${isLunasVal ? '#2E7D32' : '#c62828'};">${percentVal}%</span>
+                                <span class="status-badge" style="font-size: 10px; padding: 2px 8px; ${isLunasVal ? 'background: #E8F5E9; color: #2E7D32;' : 'background: #FFF3E0; color: #E65100;'}">
+                                    ${isCashFromStart ? 'Lunas (Cash)' : (isLunasVal ? 'Lunas' : 'Belum Lunas')}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="background: #e2e8f0; border-radius: 10px; height: 8px; overflow: hidden; display: flex; width: 100%;">
+                            <div style="background: ${isLunasVal ? '#2E7D32' : '#ef4444'}; width: ${percentVal}%; height: 100%; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 500;">
+                            <span style="color: #2E7D32;">Terbayar: Rp ${rupiahFormatter.format(bayarVal)}</span>
+                            <span style="color: ${isCashFromStart ? '#64748b' : '#c62828'};">Sisa: Rp ${rupiahFormatter.format(sisaVal)}</span>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 10px;">Daftar Produk:</div>
+                    <div class="table-container" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <table class="fitur-table" style="margin-bottom: 0;">
                             <thead>
                                 <tr>
                                     <th>Produk</th>
@@ -2952,37 +3191,10 @@
                                 </tr>
                             </thead>
                             <tbody>${itemsHtml}</tbody>
-                            <tfoot>
-                                <tr style="background: #f8fafc; font-weight: 700;">
-                                    <td colspan="4" style="text-align: right; padding: 12px;">TOTAL</td>
-                                    <td style="padding: 12px; color: var(--primary-blue);">Rp ${rupiahFormatter.format(data.total)}</td>
-                                </tr>
-                                ${data.bayar < data.total ? `
-                                <tr style="background: #fff5f5; font-weight: 700;">
-                                    <td colspan="4" style="text-align: right; padding: 12px; color: #c53030;">TERBAYAR (DP/ANGSURAN)</td>
-                                    <td style="padding: 12px; color: #c53030;">Rp ${rupiahFormatter.format(data.bayar)}</td>
-                                </tr>
-                                <tr style="background: #fff5f5; font-weight: 700;">
-                                    <td colspan="4" style="text-align: right; padding: 12px; color: #c53030;">SISA HUTANG</td>
-                                    <td style="padding: 12px; color: #c53030;">Rp ${rupiahFormatter.format(data.total - data.bayar)}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="5" style="padding: 15px; background: #fff5f5;">
-                                        <div style="font-size: 11px; color: #c53030; margin-bottom: 6px; font-weight: 700;">PROGRES PELUNASAN</div>
-                                        <div style="width: 100%; height: 12px; background: #fed7d7; border-radius: 20px; overflow: hidden; border: 1px solid #feb2b2;">
-                                            <div style="width: ${Math.round((data.bayar / data.total) * 100)}%; height: 100%; background: #f56565; border-radius: 20px; transition: width 1s ease;"></div>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: #c53030; font-weight: 600;">
-                                            <span>Terbayar: ${Math.round((data.bayar / data.total) * 100)}%</span>
-                                            <span>Kekurangan: Rp ${rupiahFormatter.format(data.total - data.bayar)}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                ` : ''}
-                            </tfoot>
                         </table>
                     </div>
-                    ${data.catatan ? `<div style="margin-top: 15px; font-size: 13px; color: #666;"><strong>Catatan:</strong> ${data.catatan}</div>` : ''}
+                    ${historyHtml}
+                    ${data.catatan ? `<div style="margin-top: 15px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 3px solid var(--primary-blue);"><strong>Catatan:</strong> ${data.catatan}</div>` : ''}
                 `;
                 
                 openModal('purchaseDetailModal');
@@ -3517,17 +3729,24 @@
                 }
             }
 
+            // A more robust lookup for invalid-feedback
+            let feedback = targetEl.nextElementSibling;
+            if (!feedback || !feedback.classList.contains('invalid-feedback')) {
+                const parent = targetEl.closest('.form-group') || targetEl.closest('td');
+                if (parent) {
+                    feedback = parent.querySelector('.invalid-feedback');
+                }
+            }
+
             if (!val || !val.trim()) {
                 targetEl.classList.add('is-invalid');
-                const feedback = targetEl.nextElementSibling;
-                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                if (feedback) {
                     feedback.style.display = 'block';
                 }
                 isValid = false;
             } else {
                 targetEl.classList.remove('is-invalid');
-                const feedback = targetEl.nextElementSibling;
-                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                if (feedback) {
                     feedback.style.display = 'none';
                 }
             }
