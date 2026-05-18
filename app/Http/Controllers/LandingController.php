@@ -69,12 +69,17 @@ class LandingController extends Controller
             ])
             ->get();
 
-        // 2. Map produk ke diskon (Ambil diskon terbesar jika ada multiple)
+        // 2. Map produk ke diskon (Hanya abaikan tipe Voucer karena diskon voucher baru aktif saat checkout)
         $productDiscounts = [];
         foreach ($activePromos as $promo) {
+            if (in_array(strtolower($promo->tipe), ['voucer', 'voucher'])) {
+                continue;
+            }
             foreach ($promo->products as $p) {
-                $tipe = strtolower($p->pivot->tipe_diskon); // Paksa huruf kecil sesuai skema
                 $nilai = (int) $p->pivot->nilai_diskon;
+                
+                // Smart Tipe Diskon Detector: jika nilai <= 100 anggap persen, jika > 100 anggap nominal
+                $tipe = $nilai <= 100 ? 'persen' : 'nominal';
 
                 $productDiscounts[$p->uuid] = [
                     'tipe' => $tipe,
@@ -169,10 +174,33 @@ class LandingController extends Controller
             ];
         }
 
-        // Ambil promo untuk banner (Sama seperti activePromos tapi dengan relasi lengkap)
-        $discounts = $activePromos;
+        // Ambil promo untuk banner (Kecuali tipe voucher agar tidak tampil di penawaran diskon hari ini)
+        $discounts = $activePromos->reject(function ($promo) {
+            return in_array(strtolower($promo->tipe), ['voucer', 'voucher']);
+        });
 
-        return view('user', compact('outlet', 'products', 'categories', 'reviews', 'discounts', 'stockMap', 'deliveryPreference'));
+        // Buat list semua promo aktif (termasuk voucher) yang dapat diinput user di halaman depan
+        $activePromosList = $activePromos->map(function ($p) {
+            // Ambil tipe diskon dari pivot produk pertama yang terhubung
+            $firstProduct = $p->products->first();
+            $tipeDiskon = $firstProduct && $firstProduct->pivot ? strtolower($firstProduct->pivot->tipe_diskon) : null;
+            
+            // Fallback cerdas: jika nilai <= 100 anggap persen (seperti 10 atau 20), jika > 100 anggap nominal Rupiah
+            if (!$tipeDiskon) {
+                $tipeDiskon = $p->nilai <= 100 ? 'persen' : 'nominal';
+            }
+
+            return [
+                'kode' => strtoupper($p->kode_promo),
+                'tipe' => $tipeDiskon, // 'persen' atau 'nominal'
+                'nilai' => (float) $p->nilai,
+                'nama' => $p->nama_promo
+            ];
+        })->filter(function ($p) {
+            return !empty($p['kode']);
+        })->values()->all();
+
+        return view('user', compact('outlet', 'products', 'categories', 'reviews', 'discounts', 'stockMap', 'deliveryPreference', 'activePromosList'));
     }
 
     public function saveDeliveryAddress(Request $request, $id)

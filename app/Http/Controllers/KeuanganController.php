@@ -20,15 +20,28 @@ class KeuanganController extends Controller
     {
         $user = auth()->user();
         
-        // 1. Data Cashbox with Balances
-        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get()->map(function($cb) use ($user) {
-            $query = \App\Models\CashFlow::where('metode_pembayaran', $cb->uuid);
-            if ($user->role !== 'owner' && $user->store_id) {
-                $query->where('store_id', $user->store_id);
+        // 1. Data Cashbox with Balances (Optimized with a single grouped query to prevent N+1 queries)
+        $cashFlowQuery = \App\Models\CashFlow::select('metode_pembayaran', 'jenis', \DB::raw('SUM(nominal) as total'));
+        if ($user->role !== 'owner' && $user->store_id) {
+            $cashFlowQuery->where('store_id', $user->store_id);
+        }
+        $cashFlowTotals = $cashFlowQuery->groupBy('metode_pembayaran', 'jenis')->get();
+
+        $balances = [];
+        foreach ($cashFlowTotals as $flow) {
+            $metode = $flow->metode_pembayaran;
+            if (!isset($balances[$metode])) {
+                $balances[$metode] = 0;
             }
-            $pemasukan = (clone $query)->where('jenis', 'pemasukan')->sum('nominal');
-            $pengeluaran = (clone $query)->where('jenis', 'pengeluaran')->sum('nominal');
-            $cb->saldo = $pemasukan - $pengeluaran;
+            if ($flow->jenis === 'pemasukan') {
+                $balances[$metode] += floatval($flow->total);
+            } elseif ($flow->jenis === 'pengeluaran') {
+                $balances[$metode] -= floatval($flow->total);
+            }
+        }
+
+        $cashboxes = PaymentMethod::orderBy('nama_metode', 'asc')->get()->map(function($cb) use ($balances) {
+            $cb->saldo = $balances[$cb->uuid] ?? 0;
             return $cb;
         });
 
@@ -70,21 +83,28 @@ class KeuanganController extends Controller
             });
         }
 
-        // Clone query for history with pagination
+        // Clone query for history with pagination (Arus Uang) - paginated to 10 items
         $historyQuery = clone $query;
-        if ($request->filled('type') && $request->type !== 'semua') {
-            $historyQuery->where('jenis', $request->type);
-        }
-        $history = $historyQuery->orderBy('tanggal', 'desc')->paginate(100)->appends($request->query());
+        $history = $historyQuery->orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page')->appends($request->query());
 
-        // Calculate Summaries
-        $pemasukan = (clone $query)->where('jenis', 'pemasukan')->sum('nominal');
-        $pengeluaran = (clone $query)->where('jenis', 'pengeluaran')->sum('nominal');
+        // Clone query for transfers with pagination (Pemindahan Saldo) - paginated to 10 items
+        $transfersQuery = clone $query;
+        $transfersQuery->where('keterangan', 'like', '%transfer%');
+        $transfers = $transfersQuery->orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page_transfer')->appends($request->query());
+
+        // Calculate Summaries in a single high-performance grouped query
+        $summaryTotals = (clone $query)
+            ->select('jenis', \DB::raw('SUM(nominal) as total'))
+            ->groupBy('jenis')
+            ->pluck('total', 'jenis');
+
+        $pemasukan = floatval($summaryTotals->get('pemasukan', 0));
+        $pengeluaran = floatval($summaryTotals->get('pengeluaran', 0));
         $saldo_bersih = $pemasukan - $pengeluaran;
 
         return view('keuangan.manage', compact(
             'cashboxes', 
-            'history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'outlets', 'store_id', 'start_date', 'end_date'
+            'history', 'transfers', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'outlets', 'store_id', 'start_date', 'end_date'
         ));
     }
 

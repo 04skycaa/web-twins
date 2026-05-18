@@ -290,6 +290,9 @@
 <script type="application/json" id="products-data">
     {!! json_encode($products) !!}
 </script>
+<script type="application/json" id="promos-data">
+    {!! json_encode($activePromosList) !!}
+</script>
 
 <body id="body">
 
@@ -529,10 +532,13 @@
                                     @php
                                         $shownProducts[] = $p->uuid;
                                         $originalPrice = (int) $p->harga_jual;
-                                        $tipeDiskon = $p->pivot->tipe_diskon ?? $discount->tipe;
                                         $nilaiDiskon = (int) ($p->pivot->nilai_diskon ?? $discount->nilai);
+                                        
+                                        // Smart Tipe Diskon Detector
+                                        $tipeDiskon = $nilaiDiskon <= 100 ? 'persen' : 'nominal';
+                                        
                                         $newPrice =
-                                            $tipeDiskon == 'persen' || $tipeDiskon == 'Promo'
+                                            $tipeDiskon == 'persen'
                                                 ? $originalPrice * (1 - $nilaiDiskon / 100)
                                                 : $originalPrice - $nilaiDiskon;
                                         if ($newPrice < 0) {
@@ -554,7 +560,7 @@
                                                 referrerpolicy="no-referrer-when-downgrade">
                                             <div
                                                 style="position: absolute; top: 8px; left: 8px; background: #ff4d4d; color: white; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; z-index: 3;">
-                                                -{{ $tipeDiskon == 'persen' ? $nilaiDiskon . '%' : 'Rp' . number_format($nilaiDiskon / 1000, 0) . 'k' }}
+                                                -{{ $tipeDiskon == 'persen' ? $nilaiDiskon . '%' : 'Rp ' . number_format($nilaiDiskon, 0, ',', '.') }}
                                             </div>
                                             @if ($isOutOfStock)
                                                 <div
@@ -922,6 +928,7 @@
         let cart = [];
         let historyData = [];
         let discountPercent = 0;
+        let appliedPromo = null;
         const isAuthenticated = document.querySelector('meta[name="auth-check"]').content === 'true';
         const loginUrl = document.querySelector('meta[name="login-url"]').content;
         const storeHours = document.querySelector('meta[name="store-hours"]').content || '';
@@ -1955,7 +1962,21 @@
             const productDiscountAmount = originalSubtotal - subtotal;
             
             const shippingFee = calculateTemporaryShippingFee(deliveryDistanceKm);
-            const promoDiscountAmount = subtotal > 0 ? subtotal * discountPercent : 0;
+            
+            // Hitung potongan promo secara dinamis berdasarkan tipe voucher/diskon
+            let promoDiscountAmount = 0;
+            let calculatedDiscountPercent = 0;
+            if (appliedPromo) {
+                if (appliedPromo.tipe === 'persen') {
+                    calculatedDiscountPercent = parseFloat(appliedPromo.nilai) / 100;
+                    promoDiscountAmount = subtotal * calculatedDiscountPercent;
+                } else {
+                    promoDiscountAmount = Math.min(subtotal, parseFloat(appliedPromo.nilai));
+                    calculatedDiscountPercent = subtotal > 0 ? (promoDiscountAmount / subtotal) : 0;
+                }
+            }
+            
+            discountPercent = calculatedDiscountPercent; // update global variable for checkout payload
             const discountedSubtotal = subtotal - promoDiscountAmount;
             
             const totalDiscountAmount = productDiscountAmount + promoDiscountAmount;
@@ -2216,19 +2237,29 @@
             const code = inputEl.value.trim().toUpperCase();
             const messageEls = target === 'mobile' ? document.querySelectorAll('.promoMessage') : [document.getElementById('promoMessage')];
             
-            if (code === 'TWINS20') {
-                discountPercent = 0.20;
+            const promosEl = document.getElementById('promos-data');
+            const activePromos = promosEl ? JSON.parse(promosEl.textContent || '[]') : [];
+            
+            const foundPromo = activePromos.find(p => p.kode === code);
+            
+            if (foundPromo) {
+                appliedPromo = foundPromo;
                 messageEls.forEach(el => {
                     if (!el) return;
-                    el.innerText = "Promo TWINS20 applied! (20% Off)";
+                    if (foundPromo.tipe === 'persen') {
+                        el.innerText = `Promo ${foundPromo.kode} berhasil digunakan! (Diskon ${foundPromo.nilai}%)`;
+                    } else {
+                        const formattedNominal = "Rp " + Math.floor(foundPromo.nilai).toLocaleString('id-ID');
+                        el.innerText = `Promo ${foundPromo.kode} berhasil digunakan! (Potongan ${formattedNominal})`;
+                    }
                     el.style.color = "#10b981";
                     el.style.display = 'block';
                 });
             } else {
-                discountPercent = 0;
+                appliedPromo = null;
                 messageEls.forEach(el => {
                     if (!el) return;
-                    el.innerText = code === "" ? "" : "Invalid promo code.";
+                    el.innerText = code === "" ? "" : "Kode promo tidak valid.";
                     el.style.color = "#ef4444";
                     el.style.display = code === "" ? 'none' : 'block';
                 });
@@ -2507,6 +2538,7 @@
 
                     cart = [];
                     discountPercent = 0;
+                    appliedPromo = null;
                     savePersistence();
                     
                     // Reload otomatis ke halaman riwayat

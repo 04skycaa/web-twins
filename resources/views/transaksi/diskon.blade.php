@@ -630,9 +630,7 @@
 
     // Auto-reopen add modal if there are errors (likely from storeDiskon)
     @if($errors->any() && !old('_method'))
-        window.addEventListener('DOMContentLoaded', () => {
-            openModal('addModalDiskon');
-        });
+        openModal('addModalDiskon');
     @endif
     
     // Auto-reopen edit modal if there are errors and it was an update attempt

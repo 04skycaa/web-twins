@@ -422,6 +422,104 @@
         from { transform: translateY(0); }
         to { transform: translateY(-3px); }
     }
+
+    @media (max-width: 720px) {
+        .dashboard-wrapper {
+            padding: 0.5rem 0.75rem !important;
+        }
+        .welcome-section {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.75rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .welcome-title {
+            font-size: 1.25rem !important;
+            display: block !important;
+            text-align: left !important;
+            line-height: 1.4 !important;
+        }
+        .welcome-title .user-name-gradient {
+            display: inline !important;
+        }
+        .welcome-title .user-name-gradient::after {
+            bottom: 0px !important;
+        }
+        .welcome-title .waving-hand {
+            display: inline-block !important;
+            font-size: 1.25rem !important;
+            margin-left: 4px !important;
+        }
+        /* Mobile filters layout */
+        .welcome-section > .flex {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+        }
+        .filter-group-minimal {
+            width: 100% !important;
+            justify-content: center !important;
+            padding: 8px 12px !important;
+            box-sizing: border-box !important;
+        }
+        .filter-group-minimal select {
+            width: 100% !important;
+            text-align: center !important;
+        }
+        /* Stat cards optimized for mobile side-by-side */
+        .stat-card {
+            border-radius: 20px !important;
+            padding: 0.85rem 0.75rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        }
+        .stat-card .stat-header {
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+        .stat-card .stat-label {
+            font-size: 0.65rem !important;
+            line-height: 1.2 !important;
+            margin: 0 !important;
+        }
+        .stat-card .stat-value {
+            font-size: 1.25rem !important;
+            margin: 0.35rem 0 !important;
+            line-height: 1.2 !important;
+        }
+        .stat-card .stat-trend {
+            font-size: 0.6rem !important;
+            margin-top: 0 !important;
+        }
+        .icon-box {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 6px !important;
+        }
+        .icon-box iconify-icon {
+            font-size: 0.85rem !important;
+        }
+        /* General cards layout on mobile */
+        .card {
+            border-radius: 24px !important;
+            padding: 1.15rem !important;
+        }
+        .card-title {
+            font-size: 0.95rem !important;
+        }
+        .main-grid {
+            gap: 1rem !important;
+        }
+        /* Stats cards grid override for mobile */
+        .grid.lg\:grid-cols-5 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+        }
+        .grid.lg\:grid-cols-5 > div:nth-child(5) {
+            grid-column: span 2 / span 2 !important;
+        }
+    }
 </style>
 @endpush
 
@@ -677,10 +775,12 @@
                         <tbody>
                             @forelse($lowStockProducts as $ps)
                             @php
-                                $psObj = (object) $ps;
-                                $productObj = isset($psObj->product) ? (object) $psObj->product : null;
-                                $storeObj = isset($psObj->store) ? (object) $psObj->store : null;
-                                $stokVal = $psObj->stok ?? 0;
+                                $psObj = is_array($ps) ? (object) $ps : $ps;
+                                $productVal = is_array($ps) ? ($ps['product'] ?? null) : ($ps->product ?? null);
+                                $productObj = is_array($productVal) ? (object) $productVal : $productVal;
+                                $storeVal = is_array($ps) ? ($ps['store'] ?? null) : ($ps->store ?? null);
+                                $storeObj = is_array($storeVal) ? (object) $storeVal : $storeVal;
+                                $stokVal = is_array($ps) ? ($ps['stok'] ?? 0) : ($ps->stok ?? 0);
                             @endphp
                             @if($productObj)
                             @php
@@ -740,10 +840,12 @@
                         <tbody>
                             @forelse($expiredProducts ?? [] as $ps)
                             @php
-                                $psObj = (object) $ps;
-                                $productObj = isset($psObj->product) ? (object) $psObj->product : null;
-                                $storeObj = isset($psObj->store) ? (object) $psObj->store : null;
-                                $kadaluarsaVal = $psObj->kadaluarsa ?? null;
+                                $psObj = is_array($ps) ? (object) $ps : $ps;
+                                $productVal = is_array($ps) ? ($ps['product'] ?? null) : ($ps->product ?? null);
+                                $productObj = is_array($productVal) ? (object) $productVal : $productVal;
+                                $storeVal = is_array($ps) ? ($ps['store'] ?? null) : ($ps->store ?? null);
+                                $storeObj = is_array($storeVal) ? (object) $storeVal : $storeVal;
+                                $kadaluarsaVal = is_array($ps) ? ($ps['kadaluarsa'] ?? null) : ($ps->kadaluarsa ?? null);
                             @endphp
                             @if($productObj && $kadaluarsaVal)
                             @php
@@ -810,10 +912,11 @@
                 <tbody>
                     @foreach($topProducts as $index => $tp)
                     @php
-                        $tpObj = (object) $tp;
-                        $productObj = isset($tpObj->product) ? (object) $tpObj->product : null;
-                        $totalQtyVal = $tpObj->total_qty ?? 0;
-                        $totalRevVal = $tpObj->total_revenue ?? 0;
+                        $tpObj = is_array($tp) ? (object) $tp : $tp;
+                        $productVal = is_array($tp) ? ($tp['product'] ?? null) : ($tp->product ?? null);
+                        $productObj = is_array($productVal) ? (object) $productVal : $productVal;
+                        $totalQtyVal = is_array($tp) ? ($tp['total_qty'] ?? 0) : ($tp->total_qty ?? 0);
+                        $totalRevVal = is_array($tp) ? ($tp['total_revenue'] ?? 0) : ($tp->total_revenue ?? 0);
                     @endphp
                     @if($productObj)
                     @php
@@ -859,8 +962,8 @@
             <div class="activity-feed">
                 @forelse($activities as $act)
                 @php
-                    $actObj = (object) $act;
-                    $roleVal = $actObj->role ?? null;
+                    $actObj = is_array($act) ? (object) $act : $act;
+                    $roleVal = is_array($act) ? ($act['role'] ?? null) : ($act->role ?? null);
                 @endphp
                 @if($roleVal)
                 <div class="activity-item">
@@ -1030,10 +1133,11 @@
                     <tbody>
                         @foreach($topProducts as $index => $tp)
                         @php
-                            $tpObj = (object) $tp;
-                            $productObj = isset($tpObj->product) ? (object) $tpObj->product : null;
-                            $totalQtyVal = $tpObj->total_qty ?? 0;
-                            $totalRevVal = $tpObj->total_revenue ?? 0;
+                            $tpObj = is_array($tp) ? (object) $tp : $tp;
+                            $productVal = is_array($tp) ? ($tp['product'] ?? null) : ($tp->product ?? null);
+                            $productObj = is_array($productVal) ? (object) $productVal : $productVal;
+                            $totalQtyVal = is_array($tp) ? ($tp['total_qty'] ?? 0) : ($tp->total_qty ?? 0);
+                            $totalRevVal = is_array($tp) ? ($tp['total_revenue'] ?? 0) : ($tp->total_revenue ?? 0);
                         @endphp
                         @if($productObj)
                         @php
@@ -1079,8 +1183,8 @@
                 <div class="activity-feed">
                     @forelse($activities as $act)
                     @php
-                        $actObj = (object) $act;
-                        $userVal = $actObj->user ?? null;
+                        $actObj = is_array($act) ? (object) $act : $act;
+                        $userVal = is_array($act) ? ($act['user'] ?? null) : ($act->user ?? null);
                     @endphp
                     @if($userVal)
                     <div class="activity-item" style="margin-bottom: 1rem;">
@@ -1144,7 +1248,13 @@
             categories: datasets.harian.labels,
             axisBorder: { show: false },
             axisTicks: { show: false },
-            labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+            labels: window.innerWidth < 720 ? {
+                rotate: -45,
+                hideOverlappingLabels: false,
+                style: { colors: '#94a3b8', fontWeight: 600, fontSize: '7.5px' }
+            } : {
+                style: { colors: '#94a3b8', fontWeight: 600 }
+            }
         },
         yaxis: {
             labels: {
@@ -1200,7 +1310,13 @@
         mainChart.updateOptions({
             xaxis: {
                 categories: d.labels,
-                labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
+                labels: window.innerWidth < 720 ? {
+                    rotate: -45,
+                    hideOverlappingLabels: false,
+                    style: { colors: '#94a3b8', fontWeight: 600, fontSize: '7.5px' }
+                } : {
+                    style: { colors: '#94a3b8', fontWeight: 600 }
+                }
             },
             series: [
                 { name: 'Offline (Kasir)', data: d.offline },
