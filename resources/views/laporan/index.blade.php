@@ -26,16 +26,19 @@
     <div x-data="{ tab: 'harian' }" class="fitur-container p-6 bg-gray-50 min-h-screen">
         <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
             <div class="flex flex-wrap items-center gap-3">
-                <nav class="flex space-x-1 bg-gray-200/50 p-1 rounded-2xl w-full md:w-fit" aria-label="Tab Laporan">
+                <nav class="flex space-x-1 bg-gray-200/50 p-1 rounded-2xl w-full md:w-fit overflow-x-auto" aria-label="Tab Laporan">
                     <button @click="tab = 'harian'; window.laporanActiveTab = 'harian'; fetchDailyData()"
                         :class="tab === 'harian' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                        class="px-8 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500">Harian</button>
+                        class="px-5 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap">Harian</button>
                     <button @click="tab = 'bulanan'; window.laporanActiveTab = 'bulanan'; fetchMonthlyData()"
                         :class="tab === 'bulanan' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                        class="px-8 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500">Bulanan</button>
+                        class="px-5 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap">Bulanan</button>
                     <button @click="tab = 'tahunan'; window.laporanActiveTab = 'tahunan'; fetchAnnualData()"
                         :class="tab === 'tahunan' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                        class="px-8 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500">Tahunan</button>
+                        class="px-5 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap">Tahunan</button>
+                    <button @click="tab = 'performa'; window.laporanActiveTab = 'performa'; fetchPerformaToko()"
+                        :class="tab === 'performa' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-5 py-3 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap">Performa Toko</button>
                 </nav>
 
                 <div class="action-bar" style="margin: 0; padding: 0; background: transparent; box-shadow: none;">
@@ -116,13 +119,16 @@
         @include('laporan.partials.daily')
         @include('laporan.partials.monthly')
         @include('laporan.partials.yearly')
+        @include('laporan.partials.performa-toko')
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         window.laporanConfig = {
             exportPdfUrl: @json(route('laporan.export.pdf')),
             exportExcelUrl: @json(route('laporan.export.excel')),
+            performaTokoUrl: @json(route('laporan.api.performa-toko')),
         };
     </script>
     @vite('resources/js/laporan.js')

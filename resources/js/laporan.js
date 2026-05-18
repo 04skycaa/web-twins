@@ -19,7 +19,7 @@ function resolveMonthlyFinancialValues(summaryData) {
     const pengeluaran = Number(summaryData.pengeluaran || 0);
     const rugi = Number(summaryData.rugi || 0);
     const labaBersih = Number(
-        summaryData.laba_bersih ?? labaKotor + pemasukan - (pengeluaran + rugi),
+        summaryData.laba_bersih ?? labaKotor + pemasukan - pengeluaran,
     );
 
     return {
@@ -533,7 +533,25 @@ async function fetchMonthlyData() {
         setValue("monthly-laba-bersih-badge", labaBersih, labaBersih < 0);
         setValue("monthly-pemasukan-value", pemasukan);
         setValue("monthly-pengeluaran-value", pengeluaran);
-        setValue("monthly-rugi-value", rugi, true);
+        
+        // Manual handle for rugi to keep it red without negative sign
+        const rugiEl = document.getElementById("monthly-rugi-value");
+        if (rugiEl) {
+            rugiEl.textContent = formatCurrency(Math.abs(Number(rugi) || 0));
+            rugiEl.classList.remove("text-current", "text-red-500");
+            rugiEl.classList.add("text-rose-600");
+        }
+
+        // Toggle Surplus / Defisit badge
+        const mSurplus = document.getElementById("monthly-surplus-badge");
+        const mDefisit = document.getElementById("monthly-defisit-badge");
+        const mBadge   = document.getElementById("monthly-laba-bersih-badge");
+        if (mSurplus && mDefisit && mBadge) {
+            mSurplus.classList.toggle("hidden", labaBersih < 0);
+            mDefisit.classList.toggle("hidden", labaBersih >= 0);
+            mBadge.classList.remove("text-gray-900", "text-emerald-600", "text-rose-600");
+            mBadge.classList.add(labaBersih >= 0 ? "text-emerald-600" : "text-rose-600");
+        }
 
         const renderIfCurrent = (renderFn) => (payload) => {
             if (window.laporanMonthlyRequestId === requestId) {
@@ -668,40 +686,30 @@ async function fetchAnnualData() {
         const offlineOmset = Number(summaryData.omset || 0);
         const onlineOmset = Number(summaryData.penjualan_online || 0);
         const totalOmset = offlineOmset + onlineOmset;
+        const annualLabaBersih = Number(summaryData.laba_bersih || 0);
 
-        setTextIfExists(
-            "annual-offline-omset-value",
-            formatCurrency(offlineOmset),
-        );
-        setTextIfExists(
-            "annual-online-omset-value",
-            formatCurrency(onlineOmset),
-        );
+        setTextIfExists("annual-offline-omset-value", formatCurrency(offlineOmset));
+        setTextIfExists("annual-online-omset-value", formatCurrency(onlineOmset));
         setTextIfExists("annual-total-omset-value", formatCurrency(totalOmset));
-        setTextIfExists(
-            "annual-laba-kotor-value",
-            formatCurrency(summaryData.laba_kotor || 0),
-        );
-        setTextIfExists(
-            "annual-laba-bersih-value",
-            formatCurrency(summaryData.laba_bersih || 0),
-        );
-        setTextIfExists(
-            "annual-pemasukan-value",
-            formatCurrency(summaryData.pemasukan || 0),
-        );
-        setTextIfExists(
-            "annual-pengeluaran-value",
-            formatCurrency(summaryData.pengeluaran || 0),
-        );
-        setTextIfExists(
-            "annual-hpp-value",
-            formatCurrency(summaryData.hpp || 0),
-        );
-        setTextIfExists(
-            "annual-rugi-value",
-            formatCurrency(summaryData.rugi || 0),
-        );
+        setTextIfExists("annual-laba-kotor-value", formatCurrency(summaryData.laba_kotor || 0));
+        setTextIfExists("annual-hpp-value", formatCurrency(summaryData.hpp || 0));
+        setTextIfExists("annual-rugi-value", formatCurrency(summaryData.rugi || 0));
+        setTextIfExists("annual-pemasukan-value", formatCurrency(summaryData.pemasukan || 0));
+        setTextIfExists("annual-pengeluaran-value", formatCurrency(summaryData.pengeluaran || 0));
+
+        // Laba Bersih with color
+        const annualLBEl = document.getElementById("annual-laba-bersih-value");
+        if (annualLBEl) {
+            annualLBEl.textContent = (annualLabaBersih < 0 ? "-" : "") + formatCurrency(Math.abs(annualLabaBersih));
+            annualLBEl.classList.remove("text-gray-900", "text-emerald-600", "text-rose-600");
+            annualLBEl.classList.add(annualLabaBersih >= 0 ? "text-emerald-600" : "text-rose-600");
+        }
+
+        // Toggle Surplus / Defisit badge
+        const aSurplus = document.getElementById("annual-surplus-badge");
+        const aDefisit = document.getElementById("annual-defisit-badge");
+        if (aSurplus) aSurplus.classList.toggle("hidden", annualLabaBersih < 0);
+        if (aDefisit) aDefisit.classList.toggle("hidden", annualLabaBersih >= 0);
 
         const operatorsResponse = await fetch(
             `/laporan/api/annual/operators?store_id=${storeId}&year=${year}`,
@@ -772,8 +780,8 @@ function renderAnnualOperators(operators) {
                         <div class="mt-1 text-xs text-gray-500">Total uang masuk dan keluar per operator</div>
                     </div>
                     <div class="flex gap-2 text-xs font-semibold">
-                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">Masuk ${formatCurrency(totalMasuk)}</span>
-                        <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-600">Keluar ${formatCurrency(totalKeluar)}</span>
+                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">Masuk ${formatCurrency(Math.abs(totalMasuk))}</span>
+                        <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-600">Keluar ${formatCurrency(Math.abs(totalKeluar))}</span>
                     </div>
                 </div>
             </div>
@@ -792,8 +800,8 @@ function renderAnnualOperators(operators) {
                                 (op) => `
                                     <tr class="hover:bg-gray-50/70 transition">
                                         <td class="px-5 py-4 font-bold text-gray-900">${op.name || "Unknown"}</td>
-                                        <td class="px-5 py-4 font-semibold text-emerald-600">${formatCurrency(op.masuk || 0)}</td>
-                                        <td class="px-5 py-4 text-right font-semibold text-rose-500">${formatCurrency(op.keluar || 0)}</td>
+                                        <td class="px-5 py-4 font-semibold text-emerald-600">${formatCurrency(Math.abs(op.masuk || 0))}</td>
+                                        <td class="px-5 py-4 text-right font-semibold text-rose-500">${formatCurrency(Math.abs(op.keluar || 0))}</td>
                                     </tr>
                                 `,
                             )
@@ -927,6 +935,8 @@ function renderAnnualMonthly(monthly) {
             );
             const negative = isMonthlyTransactionNegative(jenis);
 
+            const aChartId = `annual-chart-${jenis}`;
+
             return `
                 <details class="group overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm mb-4" ${showLaba ? "open" : ""}>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5">
@@ -1015,6 +1025,11 @@ function loadActiveTabData() {
 
     if (activeTab === "tahunan") {
         fetchAnnualData();
+        return;
+    }
+
+    if (activeTab === "performa") {
+        fetchPerformaToko();
         return;
     }
 
@@ -1275,8 +1290,8 @@ function renderMonthlyOperators(operators) {
                                 <div class="mt-1 text-xs text-gray-500">Ringkasan transaksi masuk dan keluar per operator</div>
                             </div>
                             <div class="flex gap-2 text-xs font-semibold">
-                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">Masuk ${formatCurrency(totalMasuk)}</span>
-                                <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-600">Keluar ${formatCurrency(totalKeluar)}</span>
+                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">Masuk ${formatCurrency(Math.abs(totalMasuk))}</span>
+                                <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-600">Keluar ${formatCurrency(Math.abs(totalKeluar))}</span>
                             </div>
                         </div>
                     </div>
@@ -1295,8 +1310,8 @@ function renderMonthlyOperators(operators) {
                                         (op) => `
                                                                     <tr class="hover:bg-gray-50/70 transition">
                                                                         <td class="px-5 py-4 font-bold text-gray-900">${op.name || "Unknown"}</td>
-                                                                        <td class="px-5 py-4 font-semibold text-emerald-600">${formatCurrency(op.masuk || 0)}</td>
-                                                                        <td class="px-5 py-4 text-right font-semibold text-rose-500">${formatCurrency(op.keluar || 0)}</td>
+                                                                        <td class="px-5 py-4 font-semibold text-emerald-600">${formatCurrency(Math.abs(op.masuk || 0))}</td>
+                                                                        <td class="px-5 py-4 text-right font-semibold text-rose-500">${formatCurrency(Math.abs(op.keluar || 0))}</td>
                                                                     </tr>
                                                                 `,
                                     )
@@ -1329,6 +1344,104 @@ function getMonthlyTransactionLabel(jenis) {
 
 function isMonthlyTransactionNegative(jenis) {
     return ["pembelian", "rugi"].includes(jenis);
+}
+
+// ─── Chart.js line chart for Monthly/Yearly transaction accordion ──────────
+const _laporanChartInstances = {};
+
+function renderTransactionLineChart(canvasId, rawData, isYearly) {
+    if (_laporanChartInstances[canvasId]) {
+        _laporanChartInstances[canvasId].destroy();
+        delete _laporanChartInstances[canvasId];
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const { labels, totals, freqs } = rawData;
+    const maxTotal = Math.max(...totals, 1);
+    const maxFreq  = Math.max(...freqs, 1);
+    const normFreqs = freqs.map(f => (f / maxFreq) * maxTotal);
+    const ctx = canvas.getContext("2d");
+    _laporanChartInstances[canvasId] = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Omset",
+                    data: totals,
+                    borderColor: "#3B82F6",
+                    backgroundColor: "rgba(59,130,246,0.1)",
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                },
+                {
+                    label: "Frekuensi",
+                    data: normFreqs,
+                    borderColor: "#F97316",
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: "top" },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            if (ctx.datasetIndex === 0) {
+                                return "Omset: " + formatCurrency(ctx.raw);
+                            }
+                            const actual = Math.round((ctx.raw / maxTotal) * maxFreq);
+                            return "Frekuensi: " + actual + " trx";
+                        },
+                    },
+                },
+            },
+            scales: { y: { beginAtZero: true } },
+        },
+    });
+}
+
+function buildTransactionChartData(rows, isYearly) {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const labels = [], totals = [], freqs = [];
+    if (isYearly) {
+        const currentYear = new Date().getFullYear();
+        const yearSelector = document.getElementById("year-selector");
+        const selYear = yearSelector ? parseInt(yearSelector.value) : currentYear;
+        const maxMonth = selYear === currentYear ? new Date().getMonth() + 1 : 12;
+        const dataMap = {};
+        rows.forEach(r => { dataMap[r.bulan] = r; });
+        for (let m = 1; m <= maxMonth; m++) {
+            labels.push(monthNames[m - 1]);
+            totals.push(Number(dataMap[m]?.total || 0));
+            freqs.push(Number(dataMap[m]?.frekuensi || 0));
+        }
+    } else {
+        const monthSelector = document.getElementById("month-selector");
+        let maxDay = 31;
+        if (monthSelector && monthSelector.value) {
+            const [y, m] = monthSelector.value.split("-").map(Number);
+            maxDay = new Date(y, m, 0).getDate();
+        }
+        const dataMap = {};
+        rows.forEach(r => {
+            const day = r.tanggal ? String(new Date(r.tanggal).getDate()).padStart(2, "0") : null;
+            if (day) dataMap[day] = r;
+        });
+        for (let d = 1; d <= maxDay; d++) {
+            const key = String(d).padStart(2, "0");
+            labels.push(key);
+            totals.push(Number(dataMap[key]?.total || 0));
+            freqs.push(Number(dataMap[key]?.frekuensi || 0));
+        }
+    }
+    return { labels, totals, freqs };
 }
 
 function renderMonthlyTransactions(daily) {
@@ -1386,6 +1499,9 @@ function renderMonthlyTransactions(daily) {
             );
             const negative = isMonthlyTransactionNegative(jenis);
 
+            const chartId = `monthly-chart-${jenis}`;
+            const chartData = showLaba ? buildTransactionChartData(rows, false) : null;
+
             return `
                         <details class="group overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm mb-4" ${showLaba ? "open" : ""}>
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5">
@@ -1414,67 +1530,57 @@ function renderMonthlyTransactions(daily) {
                                             ${rows
                                                 .map((row) => {
                                                     const tanggal = row.tanggal
-                                                        ? new Date(
-                                                              row.tanggal,
-                                                          ).toLocaleDateString(
-                                                              "id-ID",
-                                                              {
-                                                                  day: "2-digit",
-                                                                  month: "short",
-                                                              },
-                                                          )
+                                                        ? new Date(row.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
                                                         : "-";
-                                                    const rowTotal = Number(
-                                                        row.total || 0,
-                                                    );
-                                                    const rowLaba = Number(
-                                                        row.laba || 0,
-                                                    );
-                                                    const rowFreq = Number(
-                                                        row.frekuensi || 0,
-                                                    );
-
-                                                    const totalClass = negative
-                                                        ? "text-rose-600"
-                                                        : "text-gray-900";
+                                                    const rowTotal = Number(row.total || 0);
+                                                    const rowLaba = Number(row.laba || 0);
+                                                    const rowFreq = Number(row.frekuensi || 0);
+                                                    const totalClass = negative ? "text-rose-600" : "text-gray-900";
                                                     const labaCell = showLaba
-                                                        ? '<td class="py-3 pr-4 font-semibold text-emerald-600">' +
-                                                          formatCurrency(
-                                                              rowLaba,
-                                                          ) +
-                                                          "</td>"
+                                                        ? `<td class="py-3 pr-4 font-semibold text-emerald-600">${formatCurrency(rowLaba)}</td>`
                                                         : "";
-
-                                                    return (
-                                                        "<tr>" +
-                                                        '<td class="py-4 pr-4 font-medium text-gray-900">' +
-                                                        tanggal +
-                                                        "</td>" +
-                                                        '<td class="py-4 pr-4 font-semibold ' +
-                                                        totalClass +
-                                                        '">' +
-                                                        (negative ? "-" : "") +
-                                                        formatCurrency(
-                                                            rowTotal,
-                                                        ) +
-                                                        "</td>" +
-                                                        labaCell +
-                                                        '<td class="py-4 text-right text-gray-600">' +
-                                                        rowFreq +
-                                                        " trx</td>" +
-                                                        "</tr>"
-                                                    );
+                                                    return `<tr><td class="py-4 pr-4 font-medium text-gray-900">${tanggal}</td><td class="py-4 pr-4 font-semibold ${totalClass}">${negative ? "-" : ""}${formatCurrency(rowTotal)}</td>${labaCell}<td class="py-4 text-right text-gray-600">${rowFreq} trx</td></tr>`;
                                                 })
                                                 .join("")}
                                         </tbody>
                                     </table>
                                 </div>
+                                ${showLaba ? `
+                                <div class="mt-4 border-t border-gray-100 pt-4">
+                                    <button onclick="toggleMonthlyChart('${chartId}')" class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition">
+                                        <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+                                        <span>📊 Lihat Grafik Performa</span>
+                                    </button>
+                                    <div id="${chartId}" class="hidden mt-4" style="max-height:280px">
+                                        <canvas id="canvas-${chartId}"></canvas>
+                                    </div>
+                                </div>` : ""}
                             </div>
                         </details>
                     `;
         })
         .filter(Boolean)
         .join("");
+
+    // After rendering, attach chart data to window for lazy init
+    if (typeof window._monthlyChartData === 'undefined') window._monthlyChartData = {};
+    ['penjualan', 'penjualan_online'].forEach(jenis => {
+        const rows = grouped[jenis] || [];
+        if (rows.length) {
+            const cid = `monthly-chart-${jenis}`;
+            window._monthlyChartData[cid] = buildTransactionChartData(rows, false);
+        }
+    });
+}
+
+function toggleMonthlyChart(chartId) {
+    const wrapper = document.getElementById(chartId);
+    if (!wrapper) return;
+    const wasHidden = wrapper.classList.contains("hidden");
+    wrapper.classList.toggle("hidden", !wasHidden);
+    if (wasHidden && window._monthlyChartData && window._monthlyChartData[chartId]) {
+        renderTransactionLineChart(`canvas-${chartId}`, window._monthlyChartData[chartId], false);
+    }
 }
 
 async function fetchOperatorData(storeId, date) {
@@ -1634,3 +1740,285 @@ window.selectStore = selectStore;
 window.applyCalendarFilter = applyCalendarFilter;
 window.downloadLaporanExport = downloadLaporanExport;
 window.resolveMonthlyFinancialValues = resolveMonthlyFinancialValues;
+window.toggleMonthlyChart = typeof toggleMonthlyChart !== 'undefined' ? toggleMonthlyChart : () => {};
+
+// ─── Performa Toko Module ────────────────────────────────────────────────────
+
+let _performaChartInstance = null;
+let _performaStores = [];
+let _performaCurrentMetric = 'laba_bersih';
+
+const PERFORMA_COLORS = [
+    '#6366F1', '#8B5CF6', '#3B82F6', '#06B6D4', '#10B981',
+    '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#F97316',
+];
+
+async function fetchPerformaToko() {
+    const yearEl = document.getElementById('year-selector');
+    const year   = yearEl ? yearEl.value || new Date().getFullYear() : new Date().getFullYear();
+    const url    = (window.laporanConfig && window.laporanConfig.performaTokoUrl)
+        ? `${window.laporanConfig.performaTokoUrl}?year=${year}`
+        : `/laporan/api/performa-toko?year=${year}`;
+
+    // Show loading state
+    const loading  = document.getElementById('performa-chart-loading');
+    const content  = document.getElementById('performa-chart-content');
+    const empty    = document.getElementById('performa-chart-empty');
+    const storeList = document.getElementById('performa-store-list');
+
+    if (loading)  { loading.classList.remove('hidden');  }
+    if (content)  { content.classList.add('hidden');     }
+    if (empty)    { empty.classList.add('hidden');       }
+    if (storeList) {
+        storeList.innerHTML = Array.from({length: 3}, () => `
+            <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 animate-pulse">
+                <div class="flex items-center gap-4">
+                    <div class="h-10 w-10 rounded-xl bg-gray-200 flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <div class="h-4 w-32 rounded bg-gray-200"></div>
+                        <div class="mt-2 h-3 w-48 rounded bg-gray-100"></div>
+                    </div>
+                    <div class="h-4 w-24 rounded bg-gray-200"></div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Gagal fetch performa toko');
+        const data = await resp.json();
+
+        _performaStores = data.stores || [];
+        const chartData = data.chart_data || [];
+
+        if (!chartData.length) {
+            if (loading) loading.classList.add('hidden');
+            if (empty)   empty.classList.remove('hidden');
+            if (storeList) storeList.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko untuk tahun ini</div>';
+            return;
+        }
+
+        renderPerformaChart(chartData, _performaCurrentMetric);
+        renderPerformaStoreList(_performaStores);
+
+        const countEl = document.getElementById('performa-store-count');
+        if (countEl) countEl.textContent = `${_performaStores.length} Toko`;
+
+    } catch (err) {
+        console.error('Error performa toko:', err);
+        if (loading) loading.classList.add('hidden');
+        if (storeList) storeList.innerHTML = `<div class="rounded-2xl border border-rose-100 bg-rose-50 p-6 text-sm text-rose-700 text-center">Gagal memuat data: ${err.message}</div>`;
+    }
+}
+
+function renderPerformaChart(chartData, metric) {
+    const loading = document.getElementById('performa-chart-loading');
+    const content = document.getElementById('performa-chart-content');
+    const empty   = document.getElementById('performa-chart-empty');
+
+    const labels = chartData.map(d => d.nama);
+    const values = chartData.map(d => Number(d[metric] || 0));
+    const positiveCount = values.filter(v => v > 0).length;
+
+    if (loading) loading.classList.add('hidden');
+
+    if (positiveCount === 0) {
+        if (empty) empty.classList.remove('hidden');
+        if (content) content.classList.add('hidden');
+        return;
+    }
+
+    if (empty) empty.classList.add('hidden');
+    if (content) content.classList.remove('hidden');
+
+    const total = values.reduce((s, v) => s + Math.max(v, 0), 0);
+    const totalEl = document.getElementById('performa-chart-total');
+    if (totalEl) totalEl.textContent = formatCurrency(total);
+
+    const canvas = document.getElementById('performa-doughnut-chart');
+    if (!canvas) return;
+
+    if (_performaChartInstance) {
+        _performaChartInstance.destroy();
+        _performaChartInstance = null;
+    }
+
+    const bgColors = labels.map((_, i) => PERFORMA_COLORS[i % PERFORMA_COLORS.length]);
+
+    _performaChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data: values.map(v => Math.max(v, 0)),
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '68%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)}`,
+                    },
+                },
+            },
+            onClick: (evt, elements) => {
+                if (!elements.length) return;
+                const idx = elements[0].index;
+                const name = labels[idx];
+                const val  = values[idx];
+                const infoBox  = document.getElementById('performa-info-box');
+                const infoName = document.getElementById('performa-info-name');
+                const infoVal  = document.getElementById('performa-info-val');
+                if (infoBox && infoName && infoVal) {
+                    infoName.textContent = name;
+                    infoVal.textContent  = formatCurrency(val);
+                    infoBox.classList.remove('hidden');
+                }
+            },
+        },
+    });
+
+    // Render legend
+    const legendEl = document.getElementById('performa-chart-legend');
+    if (legendEl) {
+        legendEl.innerHTML = labels.map((label, i) => `
+            <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-gray-50 transition cursor-pointer"
+                 onclick="highlightPerformaSegment(${i})">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="h-3 w-3 rounded-full flex-shrink-0" style="background:${bgColors[i]}"></span>
+                    <span class="text-sm font-medium text-gray-700 truncate">${label}</span>
+                </div>
+                <span class="text-sm font-bold text-gray-900 whitespace-nowrap">${formatCurrency(values[i])}</span>
+            </div>
+        `).join('');
+    }
+}
+
+function highlightPerformaSegment(index) {
+    if (!_performaChartInstance) return;
+    _performaChartInstance.setDatasetVisibility(0, true);
+    _performaChartInstance.update();
+    const infoBox  = document.getElementById('performa-info-box');
+    const infoName = document.getElementById('performa-info-name');
+    const infoVal  = document.getElementById('performa-info-val');
+    if (infoBox && infoName && infoVal && _performaStores[index]) {
+        const store  = _performaStores[index];
+        const metric = _performaCurrentMetric;
+        infoName.textContent = store.nama;
+        infoVal.textContent  = formatCurrency(store[`total_${metric}`] || 0);
+        infoBox.classList.remove('hidden');
+    }
+}
+
+function updatePerformaChart(metric) {
+    _performaCurrentMetric = metric;
+    if (!_performaStores.length) return;
+    const chartData = _performaStores.map(s => ({
+        nama:        s.nama,
+        laba_bersih: s.total_laba_bersih,
+        laba_kotor:  s.total_laba_kotor,
+        omset:       s.total_omset,
+    }));
+    renderPerformaChart(chartData, metric);
+}
+
+function renderPerformaStoreList(stores) {
+    const list = document.getElementById('performa-store-list');
+    if (!list) return;
+
+    if (!stores.length) {
+        list.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko</div>';
+        return;
+    }
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    list.innerHTML = stores.map((store, i) => {
+        const color = PERFORMA_COLORS[i % PERFORMA_COLORS.length];
+        const rank  = i + 1;
+        const isPositive = store.total_laba_bersih >= 0;
+        const badge = isPositive
+            ? `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700">Surplus</span>`
+            : `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-rose-100 text-rose-700">Defisit</span>`;
+
+        const monthRows = (store.months || []).map(m => `
+            <tr class="hover:bg-gray-50/70 transition">
+                <td class="px-4 py-3 font-medium text-gray-700">${monthNames[(m.bulan || 1) - 1]}</td>
+                <td class="px-4 py-3 font-semibold text-gray-900">${formatCurrency(m.omset || 0)}</td>
+                <td class="px-4 py-3 font-semibold ${m.laba >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(m.laba || 0)}</td>
+                <td class="px-4 py-3 text-right font-semibold text-rose-500">${formatCurrency(m.rugi || 0)}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <details class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden group">
+                <summary class="flex cursor-pointer list-none items-center gap-4 px-5 py-4 hover:bg-gray-50/60 transition">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl font-bold text-white text-sm flex-shrink-0"
+                         style="background:${color}">#${rank}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-gray-900 truncate">${store.nama}</span>
+                            ${badge}
+                        </div>
+                        <div class="mt-0.5 text-xs text-gray-500">Omset: ${formatCurrency(store.total_omset)}</div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(store.total_laba_bersih)}</div>
+                        <div class="text-xs text-gray-500">Laba Bersih</div>
+                    </div>
+                    <iconify-icon icon="solar:alt-arrow-down-bold" class="text-gray-400 flex-shrink-0 group-open:rotate-180 transition-transform"></iconify-icon>
+                </summary>
+
+                <div class="border-t border-gray-100 px-5 py-4 space-y-4">
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div class="rounded-xl bg-blue-50 border border-blue-100 p-3">
+                            <div class="text-xs font-bold text-blue-600 uppercase tracking-wider">Laba Kotor</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(store.total_laba_kotor)}</div>
+                        </div>
+                        <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+                            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Pemasukan</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(store.total_pemasukan)}</div>
+                        </div>
+                        <div class="rounded-xl bg-rose-50 border border-rose-100 p-3">
+                            <div class="text-xs font-bold text-rose-600 uppercase tracking-wider">Pengeluaran</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(store.total_pengeluaran)}</div>
+                        </div>
+                        <div class="rounded-xl bg-amber-50 border border-amber-100 p-3">
+                            <div class="text-xs font-bold text-amber-600 uppercase tracking-wider">Rugi</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(store.total_rugi)}</div>
+                        </div>
+                    </div>
+
+                    ${monthRows ? `
+                    <div class="overflow-x-auto rounded-xl border border-gray-100">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-3">Bulan</th>
+                                    <th class="px-4 py-3">Omset</th>
+                                    <th class="px-4 py-3">Laba Kotor</th>
+                                    <th class="px-4 py-3 text-right">Rugi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">${monthRows}</tbody>
+                        </table>
+                    </div>` : ''}
+                </div>
+            </details>
+        `;
+    }).join('');
+}
+
+window.fetchPerformaToko = fetchPerformaToko;
+window.updatePerformaChart = updatePerformaChart;
+window.highlightPerformaSegment = highlightPerformaSegment;
+window.toggleMonthlyChart = typeof toggleMonthlyChart !== 'undefined' ? toggleMonthlyChart : () => {};

@@ -174,6 +174,7 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('lapor
     Route::get('/annual/debt-summary', [LaporanController::class, 'annualDebtSummary'])->name('laporan.api.annual.debt-summary');
     Route::get('/annual/monthly', [LaporanController::class, 'annualMonthly'])->name('laporan.api.annual.monthly');
     Route::get('/annual/cashbox', [LaporanController::class, 'annualCashbox'])->name('laporan.api.annual.cashbox');
+    Route::get('/performa-toko', [LaporanController::class, 'performaToko'])->name('laporan.api.performa-toko');
 });
 
 Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {

@@ -457,29 +457,7 @@ class LaporanController extends Controller
 
         $cashFlows = $cashFlowQuery->first();
 
-        $piutangQuery = DB::table('detail_debts as dd')
-            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
-            ->where('d.tipe', 'piutang')
-            ->whereMonth('dd.tanggal', $month)
-            ->whereYear('dd.tanggal', $year);
-
-        if ($store !== null && $store !== '') {
-            $piutangQuery->where('d.store_id', $store);
-        }
-
-        $piutang = (float) $piutangQuery->sum('dd.bayar');
-
-        $utangQuery = DB::table('detail_debts as dd')
-            ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
-            ->where('d.tipe', 'utang')
-            ->whereMonth('dd.tanggal', $month)
-            ->whereYear('dd.tanggal', $year);
-
-        if ($store !== null && $store !== '') {
-            $utangQuery->where('d.store_id', $store);
-        }
-
-        $utang = (float) $utangQuery->sum('dd.bayar');
+        // Utang & Piutang not included in Pemasukan/Pengeluaran summary based on user request
 
         $rugiQuery = DB::table('transactions')
             ->where('jenis', 'rugi')
@@ -492,8 +470,8 @@ class LaporanController extends Controller
 
         $rugi = (float) $rugiQuery->sum('total');
 
-        $pemasukan = (float) ($cashFlows->pemasukan ?? 0) + $piutang;
-        $pengeluaran = (float) ($cashFlows->pengeluaran ?? 0) + $utang;
+        $pemasukan = (float) ($cashFlows->pemasukan ?? 0);
+        $pengeluaran = (float) ($cashFlows->pengeluaran ?? 0);
         $data = $this->buildFinancialSummaryPayload(
             $omset,
             $onlineOmset,
@@ -557,7 +535,7 @@ class LaporanController extends Controller
                                 FROM transactions t
                                 LEFT JOIN users u ON u.uuid = t.user_id
                                 LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE t.jenis IN ('pembelian', 'retur', 'rugi')
+                                WHERE t.jenis = 'rugi'
                                     AND EXTRACT(MONTH FROM t.tanggal) = ?
                                     AND EXTRACT(YEAR FROM t.tanggal) = ?
                                     %TRANSACTION_STORE%
@@ -574,38 +552,14 @@ class LaporanController extends Controller
                                     AND EXTRACT(YEAR FROM cf.tanggal) = ?
                                     %CASHFLOW_STORE%
                                 GROUP BY cf.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
-
-                                UNION ALL
-
-                                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, COALESCE(SUM(dd.bayar), 0) AS masuk, 0 AS keluar
-                                FROM detail_debts dd
-                                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'piutang'
-                                LEFT JOIN users u ON u.uuid = dd.user_id
-                                LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE EXTRACT(MONTH FROM dd.tanggal) = ?
-                                    AND EXTRACT(YEAR FROM dd.tanggal) = ?
-                                    %DEBT_STORE%
-                                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
-
-                                UNION ALL
-
-                                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, 0 AS masuk, COALESCE(SUM(dd.bayar), 0) AS keluar
-                                FROM detail_debts dd
-                                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'utang'
-                                LEFT JOIN users u ON u.uuid = dd.user_id
-                                LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE EXTRACT(MONTH FROM dd.tanggal) = ?
-                                    AND EXTRACT(YEAR FROM dd.tanggal) = ?
-                                    %DEBT_STORE%
-                                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
-                        ) aggregated
+                            ) sub
                         GROUP BY nama_operator
                         ORDER BY masuk DESC, keluar DESC, nama_operator ASC
                 SQL;
 
         $sql = str_replace(
-            ['%TRANSACTION_STORE%', '%OUTLET_STORE%', '%CASHFLOW_STORE%', '%DEBT_STORE%'],
-            [$transactionStoreClause, $outletClause, $cashFlowStoreClause, $debtStoreClause],
+            ['%TRANSACTION_STORE%', '%OUTLET_STORE%', '%CASHFLOW_STORE%'],
+            [$transactionStoreClause, $outletClause, $cashFlowStoreClause],
             $sql
         );
 
@@ -619,8 +573,6 @@ class LaporanController extends Controller
             }
         };
 
-        $pushBindings();
-        $pushBindings();
         $pushBindings();
         $pushBindings();
         $pushBindings();
@@ -856,7 +808,7 @@ class LaporanController extends Controller
                                 FROM transactions t
                                 LEFT JOIN users u ON u.uuid = t.user_id
                                 LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE t.jenis IN ('pembelian', 'retur', 'rugi')
+                                WHERE t.jenis = 'rugi'
                                     AND EXTRACT(YEAR FROM t.tanggal) = ?
                                     %TRANSACTION_STORE%
                                 GROUP BY t.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
@@ -871,41 +823,19 @@ class LaporanController extends Controller
                                     AND EXTRACT(YEAR FROM cf.tanggal) = ?
                                     %CASHFLOW_STORE%
                                 GROUP BY cf.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
-
-                                UNION ALL
-
-                                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, COALESCE(SUM(dd.bayar), 0) AS masuk, 0 AS keluar
-                                FROM detail_debts dd
-                                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'piutang'
-                                LEFT JOIN users u ON u.uuid = dd.user_id
-                                LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE EXTRACT(YEAR FROM dd.tanggal) = ?
-                                    %DEBT_STORE%
-                                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
-
-                                UNION ALL
-
-                                SELECT COALESCE(o.nama, u.username, 'Tidak Diketahui') AS nama_operator, 0 AS masuk, COALESCE(SUM(dd.bayar), 0) AS keluar
-                                FROM detail_debts dd
-                                INNER JOIN debts d ON d.uuid = dd.debts_id AND d.tipe = 'utang'
-                                LEFT JOIN users u ON u.uuid = dd.user_id
-                                LEFT JOIN operator o ON o.uuid = u.operator_id
-                                WHERE EXTRACT(YEAR FROM dd.tanggal) = ?
-                                    %DEBT_STORE%
-                                GROUP BY dd.user_id, COALESCE(o.nama, u.username, 'Tidak Diketahui')
                         ) aggregated
                         GROUP BY nama_operator
                         ORDER BY masuk DESC, keluar DESC, nama_operator ASC
                 SQL;
 
         $sql = str_replace(
-            ['%TRANSACTION_STORE%', '%OUTLET_STORE%', '%CASHFLOW_STORE%', '%DEBT_STORE%'],
-            [$transactionStoreClause, $outletClause, $cashFlowStoreClause, $debtStoreClause],
+            ['%TRANSACTION_STORE%', '%OUTLET_STORE%', '%CASHFLOW_STORE%'],
+            [$transactionStoreClause, $outletClause, $cashFlowStoreClause],
             $sql
         );
 
         $bindings = [];
-        for ($i = 0; $i < 7; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $bindings[] = $year;
 
             if ($store !== null && $store !== '') {
@@ -945,6 +875,7 @@ class LaporanController extends Controller
                 $join->on('hpp.transaction_id', '=', 't.uuid');
             })
             ->whereYear('t.tanggal', $year)
+            ->where('t.jenis', 'penjualan')
             ->selectRaw("'penjualan' as jenis, EXTRACT(MONTH FROM t.tanggal) as bulan, COALESCE(SUM(t.total),0) as total, COALESCE(SUM(t.total - COALESCE(hpp.total_hpp, 0)),0) as laba, COUNT(t.uuid) as frekuensi")
             ->groupBy(DB::raw('EXTRACT(MONTH FROM t.tanggal)'));
 
@@ -1084,6 +1015,97 @@ class LaporanController extends Controller
         }, $items);
 
         return response()->json(['items' => $data]);
+    }
+
+    /**
+     * Performa Toko API — calls get_store_performance_yearly RPC
+     * Groups all active stores by store_id in PHP, calculates laba kotor/bersih.
+     */
+    public function performaToko(Request $request)
+    {
+        $year        = (int) $request->query('year', date('Y'));
+        $user        = Auth::user();
+        $isOwner     = $user->isOwner();
+        $userStoreId = $isOwner ? null : ($user->store_id ?? null);
+
+        try {
+            // Single RPC — returns all active stores × 12 months
+            $rawRows = DB::select(
+                'SELECT * FROM get_store_performance_yearly(?)',
+                [$year]
+            );
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
+        }
+
+        $rows = collect($rawRows);
+
+        // Non-owner: filter to own store only
+        if (!$isOwner && $userStoreId) {
+            $rows = $rows->filter(fn($r) => (string)$r->store_id === (string)$userStoreId);
+        }
+
+        if ($rows->isEmpty()) {
+            return response()->json(['stores' => [], 'chart_data' => []]);
+        }
+
+        $stores = [];
+        foreach ($rows->groupBy('store_id') as $storeId => $storeRows) {
+            $first = $storeRows->first();
+            $store = [
+                'store_id'          => (string) $storeId,
+                'nama'              => $first->nama_toko,
+                'total_omset'       => 0.0,
+                'total_hpp'         => 0.0,
+                'total_pemasukan'   => 0.0,
+                'total_pengeluaran' => 0.0,
+                'total_rugi'        => 0.0,
+                'total_laba_kotor'  => 0.0,
+                'total_laba_bersih' => 0.0,
+                'months'            => [],
+            ];
+
+            foreach ($storeRows->sortBy('bulan') as $row) {
+                $omset       = (float) $row->omset;
+                $hpp         = (float) $row->hpp;
+                $pemasukan   = (float) $row->pemasukan;
+                $pengeluaran = (float) $row->pengeluaran;
+                $rugi        = (float) $row->rugi;
+
+                $labaKotor  = $omset - $hpp;
+                $labaBersih = ($labaKotor + $pemasukan) - ($pengeluaran + $rugi);
+
+                $store['total_omset']       += $omset;
+                $store['total_hpp']         += $hpp;
+                $store['total_pemasukan']   += $pemasukan;
+                $store['total_pengeluaran'] += $pengeluaran;
+                $store['total_rugi']        += $rugi;
+                $store['total_laba_kotor']  += $labaKotor;
+                $store['total_laba_bersih'] += $labaBersih;
+
+                $store['months'][] = [
+                    'bulan' => (int) $row->bulan,
+                    'omset' => $omset,
+                    'laba'  => $labaKotor,
+                    'rugi'  => $rugi,
+                ];
+            }
+
+            $stores[] = $store;
+        }
+
+        // Sort by laba_bersih DESC
+        usort($stores, fn($a, $b) => $b['total_laba_bersih'] <=> $a['total_laba_bersih']);
+
+        return response()->json([
+            'stores'     => $stores,
+            'chart_data' => array_values(array_map(fn($s) => [
+                'nama'        => $s['nama'],
+                'laba_bersih' => $s['total_laba_bersih'],
+                'laba_kotor'  => $s['total_laba_kotor'],
+                'omset'       => $s['total_omset'],
+            ], $stores)),
+        ]);
     }
 
     public function exportExcel(Request $request)
@@ -1370,12 +1392,13 @@ class LaporanController extends Controller
         float $omsetOnline,
         float $hpp,
         float $pemasukan,
-        float $pengeluaran,
+        float $pengeluaranRaw,
         float $rugi
     ): array {
         $omsetTotal = $omsetOffline + $omsetOnline;
         $labaKotor = $omsetTotal - $hpp;
-        $labaBersih = ($labaKotor + $pemasukan) - ($pengeluaran + $rugi);
+        $pengeluaranTotal = $pengeluaranRaw + $rugi;
+        $labaBersih = ($labaKotor + $pemasukan) - $pengeluaranTotal;
 
         return [
             'omset' => $omsetOffline,
@@ -1384,7 +1407,7 @@ class LaporanController extends Controller
             'laba_kotor' => $labaKotor,
             'laba_bersih' => $labaBersih,
             'pemasukan' => $pemasukan,
-            'pengeluaran' => $pengeluaran,
+            'pengeluaran' => $pengeluaranTotal,
             'rugi' => $rugi,
         ];
     }
