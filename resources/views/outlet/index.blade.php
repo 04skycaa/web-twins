@@ -906,7 +906,13 @@
         let viewObj = document.getElementById('view-' + tabId);
         if(viewObj) viewObj.style.display = 'block';
 
-        // Update URL without reload (Optional, for better UX)
+        // Trigger kinerja data load when switching to kinerja tab
+        if (tabId === 'kinerja' && typeof updateKinerjaData === 'function') {
+            const selector = document.getElementById('kinerjaOutletSelector');
+            setTimeout(() => updateKinerjaData(selector ? selector.value : 'all'), 100);
+        }
+
+        // Update URL without reload
         const url = new URL(window.location);
         url.searchParams.set('active_tab', tabId);
         window.history.pushState({}, '', url);
@@ -1042,22 +1048,20 @@
         });
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Handle Row Clicks
-        document.querySelectorAll('.outlet-row').forEach(row => {
-            row.addEventListener('click', function() {
-                const data = JSON.parse(this.dataset.outlet);
-                selectOutlet(this, data);
-            });
+    // Handle Row Clicks — DOM elements already rendered above this script
+    document.querySelectorAll('.outlet-row').forEach(row => {
+        row.addEventListener('click', function() {
+            const data = JSON.parse(this.dataset.outlet);
+            selectOutlet(this, data);
         });
-
-        @if(session('success'))
-            Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 3000, showConfirmButton: false });
-        @endif
-        @if(session('error'))
-            Swal.fire({ icon: 'error', title: 'Oops...', text: "{{ session('error') }}" });
-        @endif
     });
+
+    @if(session('success'))
+        Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 3000, showConfirmButton: false });
+    @endif
+    @if(session('error'))
+        Swal.fire({ icon: 'error', title: 'Oops...', text: "{{ session('error') }}" });
+    @endif
 </script>
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1379,21 +1383,10 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initial data load
-        if ('{{ $active_tab }}' === 'kinerja') {
-            updateKinerjaData('all');
-        }
-        
-        // Tab observer to trigger animation when switching to kinerja
-        const originalSwitchTab = window.switchTab;
-        window.switchTab = function(tabId) {
-            originalSwitchTab(tabId);
-            if (tabId === 'kinerja') {
-                setTimeout(() => updateKinerjaData(document.getElementById('kinerjaOutletSelector').value), 100);
-            }
-        };
-    });
+    // Initial kinerja data load if starting on kinerja tab
+    if ('{{ $active_tab }}' === 'kinerja') {
+        updateKinerjaData('all');
+    }
 </script>
 @endpush
 @endsection

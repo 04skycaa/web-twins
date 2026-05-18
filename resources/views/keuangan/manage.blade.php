@@ -7,6 +7,11 @@
     .view-section.active { display: block; animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* Tighter, more compact premium table styles */
+    .fitur-table th { padding: 8px 12px !important; font-size: 12px !important; }
+    .fitur-table td { padding: 8px 12px !important; font-size: 12px !important; }
+    .history-row td, .transfer-row td { padding: 8px 12px !important; }
+
     /* Arus Uang Custom Styles */
     .finance-card-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
     .finance-card { background: white; padding: 24px; border-radius: 24px; display: flex; align-items: center; gap: 20px; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
@@ -47,15 +52,18 @@
     .nominal-wrapper { position: relative; display: flex; align-items: center; }
     .nominal-wrapper::before { content: "Rp"; position: absolute; left: 15px; font-weight: 700; color: #64748b; font-size: 14px; pointer-events: none; }
     .nominal-wrapper input { padding-left: 45px !important; }
+
+
 </style>
 @endpush
 
 @section('content')
+@php $active_tab = request('tab', 'cashbox'); @endphp
 <div class="fitur-container">
     @include('keuangan.partials.tabs')
 
     {{-- SECTION CASHBOX --}}
-    <div id="view-cashbox" class="view-section">
+    <div id="view-cashbox" class="view-section {{ $active_tab === 'cashbox' ? 'active' : '' }}">
         <div class="action-bar" style="margin-bottom: 20px;">
             <div class="left-actions-group">
                 <div class="search-wrapper">
@@ -109,7 +117,7 @@
     </div>
 
     {{-- SECTION ARUS UANG --}}
-    <div id="view-arus-uang" class="view-section">
+    <div id="view-arus-uang" class="view-section {{ $active_tab === 'arus-uang' ? 'active' : '' }}">
         <div class="action-bar" style="margin-bottom: 20px;">
             <div class="left-actions-group">
                 <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" onchange="this.submit()">
@@ -160,10 +168,16 @@
                     <iconify-icon icon="solar:card-transfer-bold-duotone" style="font-size: 20px;"></iconify-icon>
                     <span>Pemindahan Saldo</span>
                 </button>
-                <button type="button" class="btn-action" style="background: #64748b;" onclick="exportToExcel()">
-                    <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
-                    <span>Export</span>
-                </button>
+                <div class="dropdown">
+                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                        <span>Extract</span>
+                    </button>
+                    <div class="dropdown-content" style="right: 0; left: auto;">
+                        <a href="javascript:void(0)" onclick="exportToExcel()"><iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px; font-size: 16px;"></iconify-icon> Excel</a>
+                        <a href="javascript:void(0)" onclick="exportToPDF()"><iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px; font-size: 16px;"></iconify-icon> PDF</a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -196,17 +210,10 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                     <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">Histori Transaksi</h3>
                     <div class="filter-pills">
-                        <button type="button" class="filter-pill {{ !request('type') || request('type') == 'semua' ? 'active' : '' }}" onclick="setType('semua')">Semua</button>
-                        <button type="button" class="filter-pill {{ request('type') == 'pemasukan' ? 'active' : '' }}" onclick="setType('pemasukan')">Masuk</button>
-                        <button type="button" class="filter-pill {{ request('type') == 'pengeluaran' ? 'active' : '' }}" onclick="setType('pengeluaran')">Keluar</button>
+                        <button type="button" class="filter-pill active" onclick="filterHistoryType('semua', this)">Semua</button>
+                        <button type="button" class="filter-pill" onclick="filterHistoryType('pemasukan', this)">Masuk</button>
+                        <button type="button" class="filter-pill" onclick="filterHistoryType('pengeluaran', this)">Keluar</button>
                     </div>
-                    <form id="typeFilterForm" action="{{ route('keuangan.index') }}" method="GET" style="display:none;">
-                        <input type="hidden" name="tab" value="arus-uang">
-                        <input type="hidden" name="type" id="filter_type">
-                        @foreach(request()->except(['tab', 'type']) as $k => $v)
-                            <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-                        @endforeach
-                    </form>
                 </div>
 
                 <table class="fitur-table" id="arusUangTable">
@@ -221,7 +228,7 @@
                     </thead>
                     <tbody>
                         @forelse($history as $item)
-                            <tr class="history-row">
+                            <tr class="history-row" data-jenis="{{ $item->jenis }}">
                                 <td style="white-space: nowrap;">{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }} <br> <span style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($item->tanggal)->format('H:i') }}</span></td>
                                 <td>
                                     <div style="font-weight: 600; color: #334155;">{{ $item->keterangan }}</div>
@@ -244,7 +251,7 @@
     </div>
 
     {{-- SECTION PEMINDAHAN SALDO --}}
-    <div id="view-pemindahan-saldo" class="view-section">
+    <div id="view-pemindahan-saldo" class="view-section {{ $active_tab === 'pemindahan-saldo' ? 'active' : '' }}">
         <div class="action-bar" style="margin-bottom: 20px;">
             <div class="left-actions-group">
                 <div class="search-wrapper">
@@ -290,6 +297,16 @@
             </div>
             
             <div class="right-actions">
+                <div class="dropdown">
+                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                        <span>Extract</span>
+                    </button>
+                    <div class="dropdown-content" style="right: 0; left: auto;">
+                        <a href="javascript:void(0)" onclick="exportToExcel()"><iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px; font-size: 16px;"></iconify-icon> Excel</a>
+                        <a href="javascript:void(0)" onclick="exportToPDF()"><iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px; font-size: 16px;"></iconify-icon> PDF</a>
+                    </div>
+                </div>
                 <button type="button" class="btn-action" onclick="openModal('modalTransferSaldo')">
                     <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
                     <span>Tambah Pemindahan Saldo</span>
@@ -310,11 +327,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $transfers = $history->filter(function($item) {
-                                return str_contains(strtolower($item->keterangan), 'transfer');
-                            });
-                        @endphp
                         @forelse($transfers as $t)
                             <tr class="transfer-row">
                                 <td style="white-space: nowrap;">{{ \Carbon\Carbon::parse($t->tanggal)->translatedFormat('d F Y') }} <br> <span style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($t->tanggal)->format('H:i') }}</span></td>
@@ -334,6 +346,7 @@
                     </tbody>
                 </table>
             </div>
+            <div class="pagination-container" style="margin-top: 24px;">{{ $transfers->links() }}</div>
         </div>
     </div>
 </div>
@@ -459,15 +472,14 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer crossorigin="anonymous"></script>
 <script>
     let currentTab = '{{ request('tab', 'cashbox') }}';
 
-    window.addEventListener('DOMContentLoaded', () => {
-        switchTab(currentTab);
-    });
+    // Tab-pill & sections sudah dirender di atas script ini — langsung init
+    switchTab(currentTab, true);
 
-    function switchTab(tabId) {
+    function switchTab(tabId, isInitial = false) {
         currentTab = tabId;
         document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
         let activePill = document.getElementById('pill-' + tabId);
@@ -477,10 +489,15 @@
         let viewObj = document.getElementById('view-' + tabId);
         if(viewObj) viewObj.classList.add('active');
 
+        // Sync semua hidden input[name=tab] agar filter form tidak reset tab
+        document.querySelectorAll('input[name="tab"]').forEach(input => input.value = tabId);
+
         // Update URL without reload
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tabId);
-        window.history.pushState({}, '', url);
+        if (!isInitial) {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.pushState({}, '', url);
+        }
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -523,15 +540,32 @@
         document.getElementById('filterForm').submit();
     }
 
-    function setType(type) {
-        document.getElementById('filter_type').value = type;
-        document.getElementById('typeFilterForm').submit();
+    let currentTypeFilter = 'semua';
+    let currentSearchQuery = '';
+
+    function filterHistoryType(type, btn) {
+        // Toggle active class pada filter pills
+        document.querySelectorAll('.filter-pills .filter-pill').forEach(pill => pill.classList.remove('active'));
+        btn.classList.add('active');
+
+        currentTypeFilter = type;
+        applyHistoryFilters();
     }
 
     function realtimeSearch() {
-        const input = document.getElementById('searchInput').value.toLowerCase();
+        currentSearchQuery = document.getElementById('searchInput').value.toLowerCase();
+        applyHistoryFilters();
+    }
+
+    function applyHistoryFilters() {
         document.querySelectorAll('.history-row').forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+            const jenis = row.getAttribute('data-jenis'); // 'pemasukan' atau 'pengeluaran'
+            const text = row.innerText.toLowerCase();
+
+            const matchesSearch = text.includes(currentSearchQuery);
+            const matchesType = (currentTypeFilter === 'semua') || (jenis === currentTypeFilter);
+
+            row.style.display = (matchesSearch && matchesType) ? '' : 'none';
         });
     }
 
@@ -549,10 +583,86 @@
     }
 
     function exportToExcel() {
-        const table = document.getElementById('arusUangTable');
+        const activeSection = document.querySelector('.view-section.active');
+        if (!activeSection) return;
+        const table = activeSection.querySelector('table');
         if (!table) return;
-        const wb = XLSX.utils.table_to_book(table, {sheet: "Arus Uang"});
-        XLSX.writeFile(wb, `Laporan_Arus_Uang.xlsx`);
+        
+        let title = 'Data Keuangan';
+        const headerText = activeSection.querySelector('h3, h4');
+        if (headerText) {
+            title = headerText.innerText;
+        } else {
+            const id = activeSection.getAttribute('id');
+            if (id) {
+                title = id.replace('view-', '').replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
+            }
+        }
+        
+        if (typeof XLSX === 'undefined') return;
+        const wb = XLSX.utils.table_to_book(table, {sheet: title});
+        XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}.xlsx`);
+    }
+
+    function exportToPDF() {
+        const activeSection = document.querySelector('.view-section.active');
+        if (!activeSection) return;
+        const table = activeSection.querySelector('table');
+        if (!table) return;
+        
+        let title = 'Data Keuangan';
+        const headerText = activeSection.querySelector('h3, h4');
+        if (headerText) {
+            title = headerText.innerText;
+        } else {
+            const id = activeSection.getAttribute('id');
+            if (id) {
+                title = id.replace('view-', '').replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
+            }
+        }
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>\${title}</title>
+                <style>
+                    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 30px; color: #1e293b; background: #fff; }
+                    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
+                    .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #0081C9; }
+                    .header .meta { text-align: right; font-size: 12px; color: #64748b; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    th, td { border: 1px solid #e2e8f0; padding: 12px 10px; text-align: left; font-size: 13px; }
+                    th { background-color: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+                    tr:nth-child(even) { background-color: #f8fafc; }
+                    .price-text { font-weight: 600; font-family: monospace; }
+                    .pemasukan-text { color: #2E7D32; }
+                    .pengeluaran-text { color: #C62828; }
+                    @media print {
+                        body { padding: 0; }
+                        @page { margin: 1.5cm; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>\${title}</h1>
+                    <div class="meta">
+                        <div>Sistem POS & Keuangan TWINS</div>
+                        <div>Dicetak pada: \${new Date().toLocaleString('id-ID')}</div>
+                    </div>
+                </div>
+                \${table.outerHTML}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(function() { window.close(); }, 500);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     }
 
     function filterTransfer() {

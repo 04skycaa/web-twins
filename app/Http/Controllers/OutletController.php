@@ -180,11 +180,11 @@ class OutletController extends Controller
                     ];
                 })->filter()->values()->toArray();
 
-                return compact('performanceData', 'top3All');
+                return ['performanceData' => $performanceData->toArray(), 'top3All' => $top3All];
             });
 
-            $performanceData = $cachedData['performanceData'];
-            $top3All = $cachedData['top3All'];
+            $performanceData = collect($cachedData['performanceData'] ?? []);
+            $top3All = $cachedData['top3All'] ?? [];
         }
 
         // Tab Isolation: Only query stock history if 'riwayat' tab or AJAX filtering is active

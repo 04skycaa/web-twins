@@ -113,16 +113,22 @@ class ProductController extends Controller
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $selectedStoreId,
-            'all_products' => $this->mapProductsForJs(
-                Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
-                    if (!$user->isOwner()) {
-                        $q->where('store_id', $user->store_id);
-                    } elseif ($selectedStoreId && $selectedStoreId != 'all') {
-                        $q->where('store_id', $selectedStoreId);
-                    }
-                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                $user, 
-                $selectedStoreId
+            'all_products' => \Illuminate\Support\Facades\Cache::remember(
+                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($selectedStoreId ?? 'all'),
+                3600,
+                function() use ($user, $selectedStoreId) {
+                    return $this->mapProductsForJs(
+                        Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
+                            if (!$user->isOwner()) {
+                                $q->where('store_id', $user->store_id);
+                            } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                                $q->where('store_id', $selectedStoreId);
+                            }
+                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
+                        $user, 
+                        $selectedStoreId
+                    );
+                }
             ),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
@@ -211,16 +217,23 @@ class ProductController extends Controller
             'outlets' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $request->store_id,
-            'all_products' => $this->mapProductsForJs(
-                Product::whereHas('stores', function($q) use ($user, $request) {
-                    if (!$user->isOwner()) {
-                        $q->where('store_id', $user->store_id);
-                    } elseif ($request->store_id && $request->store_id != 'all') {
-                        $q->where('store_id', $request->store_id);
-                    }
-                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                $user, 
-                $request->store_id
+            'all_products' => \Illuminate\Support\Facades\Cache::remember(
+                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($request->store_id ?? 'all'),
+                3600,
+                function() use ($user, $request) {
+                    $storeId = $request->store_id;
+                    return $this->mapProductsForJs(
+                        Product::whereHas('stores', function($q) use ($user, $storeId) {
+                            if (!$user->isOwner()) {
+                                $q->where('store_id', $user->store_id);
+                            } elseif ($storeId && $storeId != 'all') {
+                                $q->where('store_id', $storeId);
+                            }
+                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
+                        $user, 
+                        $storeId
+                    );
+                }
             ),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
@@ -293,16 +306,22 @@ class ProductController extends Controller
             'selected_store_id' => $selectedStoreId,
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
-            'all_products' => $this->mapProductsForJs(
-                Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
-                    if (!$user->isOwner()) {
-                        $q->where('store_id', $user->store_id);
-                    } elseif ($selectedStoreId && $selectedStoreId != 'all') {
-                        $q->where('store_id', $selectedStoreId);
-                    }
-                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                $user, 
-                $selectedStoreId
+            'all_products' => \Illuminate\Support\Facades\Cache::remember(
+                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($selectedStoreId ?? 'all'),
+                3600,
+                function() use ($user, $selectedStoreId) {
+                    return $this->mapProductsForJs(
+                        Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
+                            if (!$user->isOwner()) {
+                                $q->where('store_id', $user->store_id);
+                            } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                                $q->where('store_id', $selectedStoreId);
+                            }
+                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
+                        $user, 
+                        $selectedStoreId
+                    );
+                }
             ),
             'type' => $type,
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
@@ -358,7 +377,13 @@ class ProductController extends Controller
             'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
-            'all_products' => Product::all(),
+            'all_products' => \Illuminate\Support\Facades\Cache::remember(
+                'all_products_raw',
+                3600,
+                function() {
+                    return Product::all();
+                }
+            ),
             'filter' => $request->filter,
             'status_bayar' => $request->status_bayar,
             'start_date' => $request->start_date,
@@ -472,15 +497,21 @@ class ProductController extends Controller
 
         $products = [];
         if ($sourceStoreId) {
-            $products = ProductStore::where('store_id', $sourceStoreId)->where('stok', '>', 0)->where('status_aktif', true)->with('product')->get()
-                ->map(function ($item) {
-                    return [
-                        'uuid' => $item->product->uuid,
-                        'nama_produk' => $item->product->nama_produk,
-                        'barcode' => $item->product->barcode,
-                        'stok' => $item->stok
-                    ];
-                });
+            $products = \Illuminate\Support\Facades\Cache::remember(
+                'transfer_products_' . $sourceStoreId,
+                3600,
+                function() use ($sourceStoreId) {
+                    return ProductStore::where('store_id', $sourceStoreId)->where('stok', '>', 0)->where('status_aktif', true)->with('product')->get()
+                        ->map(function ($item) {
+                            return [
+                                'uuid' => $item->product->uuid,
+                                'nama_produk' => $item->product->nama_produk,
+                                'barcode' => $item->product->barcode,
+                                'stok' => $item->stok
+                            ];
+                        })->toArray();
+                }
+            );
         }
 
         return [
@@ -573,6 +604,7 @@ class ProductController extends Controller
             }
 
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -612,6 +644,7 @@ class ProductController extends Controller
         }
 
         $transaction->update(['status' => 'Disetujui']);
+        \Illuminate\Support\Facades\Cache::flush();
         return back()->with('success', 'Transfer stok telah disetujui.');
     }
 
@@ -656,6 +689,7 @@ class ProductController extends Controller
 
             $transaction->update(['status' => 'Dikirim']);
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return back()->with('success', 'Barang berhasil ditandai sebagai dikirim.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -700,6 +734,7 @@ class ProductController extends Controller
 
             $transaction->update(['status' => 'Selesai']);
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return back()->with('success', 'Barang berhasil diterima dan stok tujuan telah diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -880,6 +915,7 @@ class ProductController extends Controller
             }
 
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return redirect()->route('products.restok')->with('success', 'Restok berhasil disimpan dan stok telah diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -917,6 +953,7 @@ class ProductController extends Controller
             ]);
         }
 
+        \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', 'Data stok dan kadaluarsa berhasil diperbarui!');
     }
 
@@ -988,6 +1025,7 @@ class ProductController extends Controller
             ]);
         }
 
+        \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan!');
     }
 
@@ -1064,6 +1102,7 @@ class ProductController extends Controller
             }
         }
 
+        \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', 'Produk berhasil diperbarui!');
     }
 
@@ -1104,6 +1143,7 @@ class ProductController extends Controller
             $product->delete();
             
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return redirect()->back()->with('success', 'Produk berhasil dihapus secara permanen!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1131,6 +1171,7 @@ class ProductController extends Controller
                 ->update(['status_aktif' => false]);
         }
 
+        \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', count($request->ids) . ' Produk berhasil dihapus dari daftar!');
     }
 
@@ -1289,6 +1330,7 @@ class ProductController extends Controller
             $opname->update(['status' => 'Selesai']);
 
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
 
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Opname berhasil difinalisasi!']);
@@ -2009,6 +2051,7 @@ class ProductController extends Controller
             $transaction->delete();
 
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return response()->json(['success' => true, 'message' => 'Restok berhasil dihapus. Stok produk dan catatan keuangan telah dikembalikan ke kondisi semula.']);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2029,6 +2072,7 @@ class ProductController extends Controller
             Product::whereIn('uuid', $uuids)->delete();
 
             DB::commit();
+            \Illuminate\Support\Facades\Cache::flush();
             return back()->with('success', count($uuids) . ' produk berhasil dihapus secara massal.');
         } catch (\Exception $e) {
             DB::rollBack();

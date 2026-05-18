@@ -77,7 +77,7 @@
 
             @if (Auth::user()->hasFeature(7))
                 <a href="{{ route('kontak.index') }}"
-                    class="menu-item {{ request()->routeIs('kontak.*') ? 'active' : '' }}">
+                    class="menu-item {{ request()->is('kontak*') || request()->routeIs('kontak.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:phone-calling-bold-duotone"></iconify-icon>
                     <span>Kelola Kontak</span>
@@ -95,7 +95,7 @@
 
             @if (Auth::user()->hasFeature(9))
                 <a href="{{ route('laporan.index') }}"
-                    class="menu-item {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
+                    class="menu-item {{ request()->is('laporan*') || request()->routeIs('laporan.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                     <span>Laporan</span>
@@ -104,7 +104,7 @@
 
             @if (Auth::user()->hasFeature(10))
                 <a href="{{ route('absensi.index') }}"
-                    class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                    class="menu-item {{ request()->is('absensi*') || request()->routeIs('absensi.*') ? 'active' : '' }}">
                     <div class="curve-helper"></div>
                     <iconify-icon icon="solar:calendar-date-bold-duotone"></iconify-icon>
                     <span>Absensi</span>
@@ -147,13 +147,13 @@
                 @elseif(request()->is('users*'))
                     <iconify-icon id="topbar-icon" icon="solar:users-group-rounded-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Manajemen User</h2>
-                @elseif(request()->routeIs('kontak.*'))
+                @elseif(request()->is('kontak*') || request()->routeIs('kontak.*'))
                     <iconify-icon id="topbar-icon" icon="solar:phone-calling-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Kelola Kontak</h2>
-                @elseif(request()->routeIs('laporan.*'))
+                @elseif(request()->is('laporan*') || request()->routeIs('laporan.*'))
                     <iconify-icon id="topbar-icon" icon="solar:document-text-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Laporan Keseluruhan</h2>
-                @elseif(request()->routeIs('absensi.*'))
+                @elseif(request()->is('absensi*') || request()->routeIs('absensi.*'))
                     <iconify-icon id="topbar-icon" icon="solar:calendar-date-bold-duotone" width="28" height="28"></iconify-icon>
                     <h2 id="topbar-title">Kelola Jadwal & Absensi</h2>
                 @elseif(request()->is('perilaku*'))

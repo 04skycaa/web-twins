@@ -62,7 +62,10 @@ class PerilakuController extends Controller
 
         try {
             $data = Cache::remember($cacheKey, 1800, function () use ($store_id, $year) {
-                return DB::select('SELECT * FROM get_customer_behavior_yearly(?, ?)', [$store_id, $year]);
+                $rows = DB::select('SELECT * FROM get_customer_behavior_yearly(?, ?)', [$store_id, $year]);
+                return array_map(function($row) {
+                    return (array) $row;
+                }, $rows);
             });
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] customerYearly RPC failed: ' . $e->getMessage());
@@ -75,7 +78,7 @@ class PerilakuController extends Controller
         }
 
         // Group by customer
-        $grouped = collect($data)->groupBy('contact_id')->map(function ($rows) {
+        $grouped = collect($data)->map(fn($r) => (object)$r)->groupBy('contact_id')->map(function ($rows) {
             $first = $rows->first();
             $months = [];
             $totalOmset = 0;
@@ -223,7 +226,10 @@ class PerilakuController extends Controller
 
         try {
             $data = Cache::remember($cacheKey, 1800, function () use ($store_id, $year) {
-                return DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
+                $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
+                return array_map(function($row) {
+                    return (array) $row;
+                }, $rows);
             });
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productYearly RPC failed: ' . $e->getMessage());
@@ -239,7 +245,7 @@ class PerilakuController extends Controller
         }
 
         // Group by product
-        $grouped = collect($data)->groupBy('product_id')->map(function ($rows) {
+        $grouped = collect($data)->map(fn($r) => (object)$r)->groupBy('product_id')->map(function ($rows) {
             $first = $rows->first();
             $months = [];
             $totalOmset = 0;
@@ -306,7 +312,10 @@ class PerilakuController extends Controller
         // Get yearly data first, then filter to specific month to get product list
         try {
             $yearlyData = Cache::remember("product_behavior_{$store_id}_{$year}", 1800, function () use ($store_id, $year) {
-                return DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
+                $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
+                return array_map(function($row) {
+                    return (array) $row;
+                }, $rows);
             });
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productMonthly RPC failed: ' . $e->getMessage());
@@ -322,7 +331,7 @@ class PerilakuController extends Controller
         }
 
         // Filter to specific month
-        $monthData = collect($yearlyData)->filter(function ($row) use ($month) {
+        $monthData = collect($yearlyData)->map(fn($r) => (object)$r)->filter(function ($row) use ($month) {
             return (int) $row->bulan === $month;
         });
 

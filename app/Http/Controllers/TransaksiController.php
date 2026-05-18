@@ -19,34 +19,60 @@ class TransaksiController extends Controller
 
     public function manage()
     {
-        // Data Riwayat
-        $data = \App\Models\PaymentOrder::orderBy('created_at', 'desc')->get()->map(function($trx) {
+        $request = request();
+
+        // Data Riwayat (paginate 10) with eager loaded items & products
+        $paymentOrders = \App\Models\PaymentOrder::with(['items.product'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'page_trx')
+            ->appends(array_merge($request->query(), ['tab' => 'riwayat']));
+
+        $data = collect($paymentOrders->items())->map(function($trx) {
             $meta = $trx->meta ?: [];
             $itemDiscount = (int)($meta['item_discount_total'] ?? 0);
             $globalDiscount = (int)($meta['global_discount_amount'] ?? 0);
             $totalDiscount = $itemDiscount + $globalDiscount;
+
+            $itemsData = $trx->items->map(function($item) {
+                return [
+                    'product_name' => $item->product_name ?: ($item->product ? $item->product->nama_produk : 'Produk Tidak Ditemukan'),
+                    'qty' => $item->quantity,
+                    'price' => 'Rp ' . number_format($item->unit_price, 0, ',', '.'),
+                    'subtotal' => 'Rp ' . number_format($item->subtotal, 0, ',', '.'),
+                    'image' => $item->product ? $item->product->resolved_image_url : asset('images/placeholder-product.png'),
+                ];
+            })->toArray();
 
             return [
                 'id' => $trx->order_code,
                 'tanggal' => $trx->created_at->format('d M Y H:i'),
                 'kasir' => 'Online Checkout',
                 'pelanggan' => $trx->recipient_name,
+                'phone' => $trx->recipient_phone ?: '-',
+                'address' => $trx->delivery_address ?: '-',
                 'qty' => $trx->items_count,
+                'subtotal' => 'Rp ' . number_format($trx->subtotal_amount, 0, ',', '.'),
+                'shipping' => 'Rp ' . number_format($trx->shipping_fee, 0, ',', '.'),
                 'total' => 'Rp ' . number_format($trx->total_amount, 0, ',', '.'),
                 'diskon' => $totalDiscount > 0 ? '-Rp ' . number_format($totalDiscount, 0, ',', '.') : '-',
                 'status' => ucfirst($trx->payment_status),
-                'uuid' => $trx->uuid
+                'uuid' => $trx->uuid,
+                'items_data' => $itemsData
             ];
         });
 
-        // Data Diskon
-        $diskons = Promo::orderBy('tanggal_mulai', 'desc')->get();
+        // Data Diskon (paginate 10) with eager loaded relationships
+        $diskons = Promo::with(['products', 'stores'])
+            ->orderBy('tanggal_mulai', 'desc')
+            ->paginate(10, ['*'], 'page_promo')
+            ->appends(array_merge($request->query(), ['tab' => 'diskon']));
+
         $products = \App\Models\Product::orderBy('nama_produk', 'asc')->get();
         $outlets = \App\Models\Outlet::orderBy('nama', 'asc')->get();
         
         $sub_menus = Fitur::where('parent_id', 3)->orderBy('id')->get();
         
-        return view('transaksi.manage', compact('data', 'diskons', 'products', 'outlets', 'sub_menus'));
+        return view('transaksi.manage', compact('paymentOrders', 'data', 'diskons', 'products', 'outlets', 'sub_menus'));
     }
 
     public function riwayat()
@@ -127,7 +153,7 @@ class TransaksiController extends Controller
             }
         }
         
-        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil ditambahkan');
+        return redirect()->route('transaksi.index', ['tab' => 'diskon'])->with('success', 'Promo berhasil ditambahkan');
     }
 
     public function updateDiskon(Request $request, $id)
@@ -187,7 +213,7 @@ class TransaksiController extends Controller
             }
         }
         
-        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil diperbarui');
+        return redirect()->route('transaksi.index', ['tab' => 'diskon'])->with('success', 'Promo berhasil diperbarui');
     }
 
     public function destroyDiskon($id)
@@ -199,6 +225,6 @@ class TransaksiController extends Controller
         }
         $promo->delete();
         
-        return redirect()->route('transaksi.diskon')->with('success', 'Promo berhasil dihapus');
+        return redirect()->route('transaksi.index', ['tab' => 'diskon'])->with('success', 'Promo berhasil dihapus');
     }
 }

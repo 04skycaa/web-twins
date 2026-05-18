@@ -121,19 +121,19 @@
     <div class="fitur-container" id="absensi-app">
         {{-- PILL TABS --}}
         <div class="tab-navigation">
-            <a href="#" class="tab-pill" onclick="switchTab('shift')" id="pill-shift">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'shift') === 'shift' ? 'active' : '' }}" onclick="switchTab('shift')" id="pill-shift">
                 <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
                 <span>Master Shift</span>
             </a>
-            <a href="#" class="tab-pill" onclick="switchTab('jadwal')" id="pill-jadwal">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'shift') === 'jadwal' ? 'active' : '' }}" onclick="switchTab('jadwal')" id="pill-jadwal">
                 <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
                 <span>Jadwal Karyawan</span>
             </a>
-            <a href="#" class="tab-pill" onclick="switchTab('riwayat')" id="pill-riwayat">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'shift') === 'riwayat' ? 'active' : '' }}" onclick="switchTab('riwayat')" id="pill-riwayat">
                 <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
                 <span>Riwayat Absensi</span>
             </a>
-            <a href="#" class="tab-pill" onclick="switchTab('rekap')" id="pill-rekap">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'shift') === 'rekap' ? 'active' : '' }}" onclick="switchTab('rekap')" id="pill-rekap">
                 <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
                 <span>Rekap Absensi</span>
             </a>

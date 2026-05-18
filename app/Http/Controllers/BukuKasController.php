@@ -123,14 +123,16 @@ class BukuKasController extends Controller
             $pemasukanQuery->whereDate('tanggal', '<=', $end_date);
         }
 
-        $pengeluaran = $pengeluaranQuery->orderBy('tanggal', 'desc')->get();
-        $pemasukan = $pemasukanQuery->orderBy('tanggal', 'desc')->get();
-        $hutang = $hutangQuery->orderBy('jatuh_tempo', 'asc')->get();
-        $piutang = $piutangQuery->orderBy('jatuh_tempo', 'asc')->get();
-
-        $totalPemasukan = $pemasukan->sum('nominal');
-        $totalPengeluaran = $pengeluaran->sum('nominal');
+        // 1. Calculate totals on the full queries first to ensure mathematical correctness
+        $totalPemasukan = (clone $pemasukanQuery)->sum('nominal');
+        $totalPengeluaran = (clone $pengeluaranQuery)->sum('nominal');
         $saldoKasBersih = $totalPemasukan - $totalPengeluaran;
+
+        // 2. Fetch the latest 150 records per tab to prevent memory exhaustion and browser slowdown
+        $pengeluaran = $pengeluaranQuery->orderBy('tanggal', 'desc')->limit(150)->get();
+        $pemasukan = $pemasukanQuery->orderBy('tanggal', 'desc')->limit(150)->get();
+        $hutang = $hutangQuery->orderBy('jatuh_tempo', 'asc')->limit(150)->get();
+        $piutang = $piutangQuery->orderBy('jatuh_tempo', 'asc')->limit(150)->get();
 
         $suppliers = $suppliersQuery->get();
         $customers = $customersQuery->get();

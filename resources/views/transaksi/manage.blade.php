@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @push('styles')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 <style>
     .modal-content { max-width: 500px !important; padding: 20px !important; border-radius: 20px !important; }
@@ -46,25 +47,21 @@
 @endpush
 
 @section('content')
+@php $active_tab = request('tab', 'riwayat'); @endphp
 <div class="fitur-container" id="transaksi-app">
     {{-- PILL TABS --}}
     <div class="tab-navigation">
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('riwayat')" id="pill-riwayat">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab === 'riwayat' ? 'active' : '' }}" onclick="switchTab('riwayat')" id="pill-riwayat">
             <iconify-icon icon="solar:history-bold-duotone"></iconify-icon>
             <span>Riwayat Transaksi</span>
         </a>
-        <a href="javascript:void(0)" class="tab-pill" onclick="switchTab('diskon')" id="pill-diskon">
+        <a href="javascript:void(0)" class="tab-pill {{ $active_tab === 'diskon' ? 'active' : '' }}" onclick="switchTab('diskon')" id="pill-diskon">
             <iconify-icon icon="solar:sale-bold-duotone"></iconify-icon>
             <span>Manajemen Diskon</span>
         </a>
     </div>
 
-    @if(session('success'))
-        <div id="alertSuccess" style="background: #E8F5E9; color: #2E7D32; padding: 10px 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; border-left: 4px solid #4CAF50; transition: opacity 0.5s ease;">
-            <iconify-icon icon="solar:check-circle-bold-duotone" style="font-size: 18px;"></iconify-icon>
-            {{ session('success') }}
-        </div>
-    @endif
+
 
     @if($errors->any())
     <div style="background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
@@ -81,7 +78,7 @@
     @endif
 
     {{-- SECTION RIWAYAT --}}
-    <div id="view-riwayat" class="view-section">
+    <div id="view-riwayat" class="view-section {{ $active_tab === 'riwayat' ? 'active' : '' }}">
         <div class="action-bar">
             <div class="left-actions-group">
                 <div class="search-wrapper">
@@ -102,33 +99,67 @@
                 <table class="fitur-table" id="riwayatTable">
                     <thead>
                         <tr>
-                            <th>KODE ORDER</th>
-                            <th>TANGGAL</th>
-                            <th>PELANGGAN</th>
-                            <th>ITEMS</th>
-                            <th>TOTAL</th>
-                            <th>DISKON</th>
-                            <th>STATUS</th>
-                            <th style="text-align: center;">AKSI</th>
+                            <th style="white-space: nowrap;">KODE ORDER</th>
+                            <th style="white-space: nowrap;">TANGGAL</th>
+                            <th style="white-space: nowrap;">PELANGGAN</th>
+                            <th style="text-align: center; white-space: nowrap;">ITEMS</th>
+                            <th style="text-align: right; white-space: nowrap;">TOTAL</th>
+                            <th style="text-align: right; white-space: nowrap;">DISKON</th>
+                            <th style="text-align: center; white-space: nowrap;">STATUS</th>
+                            <th style="text-align: center; white-space: nowrap;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($data as $trx)
                         <tr>
-                            <td><code style="font-weight: bold; color: var(--primary-blue);">#{{ $trx['id'] }}</code></td>
-                            <td style="font-size: 12px; color: #64748b;">{{ $trx['tanggal'] }}</td>
-                            <td><strong>{{ $trx['pelanggan'] }}</strong></td>
-                            <td><span class="category-badge cat-poster" style="background: #f1f5f9; color: #475569;">{{ $trx['qty'] }} items</span></td>
-                            <td style="font-weight: 700; color: #1e293b;">{{ $trx['total'] }}</td>
-                            <td style="color: #ef4444; font-size: 12px;">{{ $trx['diskon'] }}</td>
-                            <td>
-                                <span class="status-badge {{ strtolower($trx['status']) == 'settlement' || strtolower($trx['status']) == 'capture' ? 'status-active' : 'status-inactive' }}">
-                                    {{ $trx['status'] }}
+                            <td style="padding-right: 20px; vertical-align: middle;">
+                                @php
+                                    $parts = explode('-', $trx['id']);
+                                    $topPart = $trx['id'];
+                                    $bottomPart = null;
+                                    if (count($parts) >= 3) {
+                                        $topPart = '#' . $parts[0] . '-' . $parts[1];
+                                        $bottomPart = $parts[2];
+                                    } elseif (count($parts) == 2) {
+                                        $topPart = '#' . $parts[0];
+                                        $bottomPart = $parts[1];
+                                    } else {
+                                        $topPart = '#' . $trx['id'];
+                                    }
+                                @endphp
+                                <div style="line-height: 1.2;">
+                                    <span style="font-weight: 700; color: var(--primary-blue); font-size: 11px; display: block; white-space: nowrap;">{{ $topPart }}</span>
+                                    @if($bottomPart)
+                                        <span style="font-size: 9.5px; color: #94a3b8; display: block; margin-top: 2px; font-family: monospace; white-space: nowrap;">{{ $bottomPart }}</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td style="font-size: 12px; color: #64748b; white-space: nowrap; padding-right: 20px;">{{ $trx['tanggal'] }}</td>
+                            <td style="white-space: nowrap; padding-right: 20px; text-transform: capitalize;"><strong>{{ strtolower($trx['pelanggan']) }}</strong></td>
+                            <td style="text-align: center; white-space: nowrap; padding-right: 20px;"><span class="category-badge cat-poster" style="background: #f1f5f9; color: #475569; white-space: nowrap; font-size: 11px; padding: 4px 10px;">{{ $trx['qty'] }} items</span></td>
+                            <td style="font-weight: 700; color: #1e293b; white-space: nowrap; text-align: right; padding-right: 20px;">{{ $trx['total'] }}</td>
+                            <td style="color: #ef4444; font-size: 12px; white-space: nowrap; text-align: right; padding-right: 20px;">{{ $trx['diskon'] }}</td>
+                            <td style="text-align: center; white-space: nowrap; padding-right: 20px;">
+                                @php
+                                    $statusClass = 'status-inactive';
+                                    $statusLabel = $trx['status'];
+                                    $statusLower = strtolower($trx['status']);
+                                    if (in_array($statusLower, ['settlement', 'capture', 'paid', 'success'])) {
+                                        $statusClass = 'status-active';
+                                    } elseif (in_array($statusLower, ['pending'])) {
+                                        $statusClass = 'stat-proses';
+                                    }
+                                @endphp
+                                <span class="status-badge {{ $statusClass }}" style="white-space: nowrap; font-size: 11px; padding: 4px 12px;">
+                                    {{ $statusLabel }}
                                 </span>
                             </td>
-                            <td style="text-align: center;">
-                                <button class="btn-filter-small" style="color: #0081C9;" onclick="Swal.fire('Info', 'Fitur detail transaksi sedang dalam pengembangan', 'info')">
-                                    <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                            <td style="text-align: center; white-space: nowrap;">
+                                <button class="btn-filter-small" 
+                                    style="color: #0081C9; width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1;" 
+                                    data-trx='{{ json_encode($trx) }}'
+                                    onclick="openViewModalTransaksi(this)">
+                                    <iconify-icon icon="solar:eye-bold-duotone" style="font-size: 15px;"></iconify-icon>
                                 </button>
                             </td>
                         </tr>
@@ -138,11 +169,16 @@
                     </tbody>
                 </table>
             </div>
+            @if($paymentOrders->hasPages())
+                <div class="pagination-container" style="margin-top: 24px;">
+                    {{ $paymentOrders->links() }}
+                </div>
+            @endif
         </div>
     </div>
 
     {{-- SECTION DISKON --}}
-    <div id="view-diskon" class="view-section">
+    <div id="view-diskon" class="view-section {{ $active_tab === 'diskon' ? 'active' : '' }}">
         <div class="sub-tab-navigation" style="margin-bottom: 20px;">
             <button class="sub-tab-pill active" onclick="filterCategory('all', this)">
                 <iconify-icon icon="solar:layers-bold-duotone"></iconify-icon>
@@ -182,14 +218,14 @@
                 <table class="fitur-table" id="promoTable">
                     <thead>
                         <tr>
-                            <th style="width: 35%;">NAMA</th>
-                            <th>KODE</th>
-                            <th>KATEGORI</th>
-                            <th>MULAI</th>
-                            <th>SELESAI</th>
-                            <th>NILAI</th>
-                            <th>STATUS</th>
-                            <th style="text-align: center;">AKSI</th>
+                            <th style="width: 35%; white-space: nowrap;">NAMA</th>
+                            <th style="text-align: center; white-space: nowrap;">KODE</th>
+                            <th style="text-align: center; white-space: nowrap;">KATEGORI</th>
+                            <th style="text-align: center; white-space: nowrap;">MULAI</th>
+                            <th style="text-align: center; white-space: nowrap;">SELESAI</th>
+                            <th style="text-align: center; white-space: nowrap;">NILAI</th>
+                            <th style="text-align: center; white-space: nowrap;">STATUS</th>
+                            <th style="text-align: center; white-space: nowrap;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,7 +247,7 @@
                                     </div>
                                     <div class="promo-details">
                                         <span class="name">{{ $diskon->nama_promo }}</span>
-                                        <span class="sub">
+                                        <span class="sub" style="white-space: nowrap;">
                                             <iconify-icon icon="solar:box-minimalistic-linear" style="vertical-align: middle;"></iconify-icon> 
                                             {{ $diskon->products->count() }} Produk &bull; 
                                             <iconify-icon icon="solar:shop-linear" style="vertical-align: middle;"></iconify-icon> 
@@ -220,34 +256,34 @@
                                     </div>
                                 </div>
                             </td>
-                            <td style="padding: 10px 16px;"><code class="promo-code" style="font-size: 11px; padding: 2px 6px;">{{ $diskon->kode_promo ?? '-' }}</code></td>
-                            <td style="padding: 10px 16px;">
-                                <span class="category-badge cat-{{ strtolower($diskon->tipe) == 'promo' ? 'poster' : strtolower($diskon->tipe) }}" style="font-size: 10px; padding: 3px 10px;">
+                            <td style="padding: 10px 16px; text-align: center; white-space: nowrap;"><code class="promo-code" style="font-size: 11px; padding: 2px 6px; white-space: nowrap;">{{ $diskon->kode_promo ?? '-' }}</code></td>
+                            <td style="padding: 10px 16px; text-align: center; white-space: nowrap;">
+                                <span class="category-badge cat-{{ strtolower($diskon->tipe) == 'promo' ? 'poster' : strtolower($diskon->tipe) }}" style="font-size: 10px; padding: 3px 10px; white-space: nowrap;">
                                     {{ $diskon->tipe == 'promo' ? 'Poster' : $diskon->tipe }}
                                 </span>
                             </td>
-                            <td style="padding: 10px 12px; font-size: 11px; color: #64748b;">{{ \Carbon\Carbon::parse($diskon->tanggal_mulai)->format('d/m/Y') }}</td>
-                            <td style="padding: 10px 12px; font-size: 11px; color: #64748b;">{{ \Carbon\Carbon::parse($diskon->tanggal_selesai)->format('d/m/Y') }}</td>
-                            <td class="price-text" style="padding: 10px 12px;">
+                            <td style="padding: 10px 12px; font-size: 11px; color: #64748b; text-align: center; white-space: nowrap;">{{ \Carbon\Carbon::parse($diskon->tanggal_mulai)->format('d/m/Y') }}</td>
+                            <td style="padding: 10px 12px; font-size: 11px; color: #64748b; text-align: center; white-space: nowrap;">{{ \Carbon\Carbon::parse($diskon->tanggal_selesai)->format('d/m/Y') }}</td>
+                            <td class="price-text" style="padding: 10px 12px; text-align: center; white-space: nowrap;">
                                 @php
                                     $specialDiscount = $diskon->products->whereNotNull('pivot.nilai_diskon')->first();
                                     $effectiveValue = $specialDiscount ? $specialDiscount->pivot->nilai_diskon : $diskon->nilai;
                                     $isCustom = $specialDiscount ? true : false;
                                 @endphp
-                                <div style="font-weight: 700; font-size: 13px; color: #0081C9;">{{ (int)$effectiveValue }}%</div>
+                                <div style="font-weight: 700; font-size: 13px; color: #0081C9; white-space: nowrap;">{{ (int)$effectiveValue }}%</div>
                                 @if($isCustom)
-                                    <div style="font-size: 8px; color: #ef4444; font-weight: 600;">(CUSTOM)</div>
+                                    <div style="font-size: 8px; color: #ef4444; font-weight: 600; white-space: nowrap;">(CUSTOM)</div>
                                 @endif
                             </td>
-                            <td style="padding: 10px 12px;">
-                                <span class="status-badge {{ $diskon->status ? 'status-active' : 'status-inactive' }}" style="font-size: 10px; padding: 2px 8px;">
+                            <td style="padding: 10px 12px; text-align: center; white-space: nowrap;">
+                                <span class="status-badge {{ $diskon->status ? 'status-active' : 'status-inactive' }}" style="font-size: 10px; padding: 2px 8px; white-space: nowrap;">
                                     {{ $diskon->status ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>
-                            <td style="padding: 10px 12px;">
-                                <div style="display: flex; gap: 4px; justify-content: center;">
+                            <td style="padding: 10px 12px; text-align: center; white-space: nowrap;">
+                                <div style="display: flex; gap: 4px; justify-content: center; white-space: nowrap;">
                                     <button class="btn-filter-small" 
-                                        style="width: 26px; height: 26px; color: #0081C9;" 
+                                        style="width: 26px; height: 26px; color: #0081C9; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1;" 
                                         data-diskon='{{ json_encode($diskon) }}'
                                         data-products-list='{{ json_encode($diskon->products->pluck("nama_produk")) }}'
                                         data-stores-list='{{ json_encode($diskon->stores->pluck("nama")) }}'
@@ -255,14 +291,14 @@
                                         <iconify-icon icon="solar:eye-bold-duotone" style="font-size: 13px;"></iconify-icon>
                                     </button>
                                     <button class="btn-filter-small" 
-                                        style="width: 26px; height: 26px;" 
+                                        style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1;" 
                                         data-diskon='{{ json_encode($diskon) }}' 
                                         data-products='{{ json_encode($diskon->products->pluck("uuid")) }}'
                                         data-stores='{{ json_encode($diskon->stores->pluck("uuid")) }}'
                                         onclick="openEditModalDiskon(this)">
                                         <iconify-icon icon="solar:pen-2-bold-duotone" style="font-size: 13px;"></iconify-icon>
                                     </button>
-                                    <button class="btn-filter-small btn-danger-soft" style="width: 26px; height: 26px;" onclick="openDeleteModalDiskon('{{ $diskon->uuid }}')">
+                                    <button class="btn-filter-small btn-danger-soft" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1;" onclick="openDeleteModalDiskon('{{ $diskon->uuid }}')">
                                         <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="font-size: 13px;"></iconify-icon>
                                     </button>
                                 </div>
@@ -274,6 +310,11 @@
                     </tbody>
                 </table>
             </div>
+            @if($diskons->hasPages())
+                <div class="pagination-container" style="margin-top: 24px;">
+                    {{ $diskons->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -532,13 +573,13 @@
 </div>
 
 <!-- View Detail Modal -->
-<div id="viewModalDiskon" class="modal-overlay">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
+<div id="viewModalDiskon" class="modal-overlay" onclick="if(event.target === this) closeModal('viewModalDiskon')">
+    <div class="modal-content" style="max-width: 500px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="flex-shrink: 0;">
             <h3 id="view_title">Rincian Promo</h3>
             <button class="close-modal" onclick="closeModal('viewModalDiskon')">&times;</button>
         </div>
-        <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 5px;">
             <div id="view_banner_container" style="display: none; margin-bottom: 20px;">
                 <div class="banner-preview-4x2" style="max-width: 100%; pointer-events: none; border-style: solid;">
                     <img id="view_banner_img" src="" style="width: 100%; height: 100%; object-fit: cover;">
@@ -608,8 +649,93 @@
                 <div id="view_status" style="display: inline-block;">-</div>
             </div>
         </div>
-        <div class="btn-group-footer" style="padding-top: 0; display: flex; justify-content: center;">
+        <div class="btn-group-footer" style="padding-top: 15px; display: flex; justify-content: center; border-top: 1px solid #f1f5f9; margin-top: 15px; flex-shrink: 0;">
             <button type="button" class="btn-action" style="padding: 10px 40px; justify-content: center;" onclick="closeModal('viewModalDiskon')">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Transaksi -->
+<div id="viewModalTransaksi" class="modal-overlay" onclick="if(event.target === this) closeModal('viewModalTransaksi')">
+    <div class="modal-content" style="max-width: 600px; padding: 25px; border-radius: 24px;">
+        <div class="modal-header" style="margin-bottom: 15px;">
+            <h3 style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; color: var(--primary-blue);">
+                <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                Detail Transaksi
+            </h3>
+            <button class="close-modal" onclick="closeModal('viewModalTransaksi')">&times;</button>
+        </div>
+
+        <div class="modal-body" style="max-height: 480px; overflow-y: auto; padding-right: 5px;">
+            <!-- Order Header Info -->
+            <div style="background: #f8fafc; padding: 15px; border-radius: 16px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Kode Order</div>
+                    <div id="detail_order_code" style="font-weight: 800; color: var(--primary-blue); font-size: 14px;">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Tanggal</div>
+                    <div id="detail_date" style="font-weight: 700; color: #334155; font-size: 13px;">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Pelanggan</div>
+                    <div id="detail_customer" style="font-weight: 700; color: #334155; font-size: 13px; text-transform: capitalize;">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Status</div>
+                    <div id="detail_status" style="margin-top: 2px;">-</div>
+                </div>
+            </div>
+
+            <!-- Delivery Info -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 12px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <iconify-icon icon="solar:delivery-bold-duotone" style="font-size: 18px;"></iconify-icon>
+                    Informasi Pengiriman
+                </h4>
+                <div style="background: #fff; padding: 15px; border-radius: 16px; border: 1.5px solid #e2e8f0;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">Nomor Handphone</div>
+                    <div id="detail_phone" style="font-weight: 700; color: #334155; font-size: 13px; margin-bottom: 10px;">-</div>
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">Alamat Pengiriman</div>
+                    <div id="detail_address" style="font-size: 12px; color: #475569; font-weight: 500; line-height: 1.4;">-</div>
+                </div>
+            </div>
+
+            <!-- Product Items List -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="font-size: 12px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <iconify-icon icon="solar:box-bold-duotone" style="font-size: 18px;"></iconify-icon>
+                    Daftar Produk Terbeli
+                </h4>
+                <div id="detail_items_list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Item template injected by JS -->
+                </div>
+            </div>
+
+            <!-- Pricing Summary -->
+            <div style="background: #f8fafc; padding: 15px; border-radius: 16px; border: 1.5px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+                    <span>Subtotal Produk</span>
+                    <span id="detail_subtotal" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+                    <span>Ongkos Kirim</span>
+                    <span id="detail_shipping" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+                    <span>Total Diskon</span>
+                    <span id="detail_discount" style="font-weight: 600; color: #ef4444;">-</span>
+                </div>
+                <div style="height: 1px; background: #e2e8f0; margin: 5px 0;"></div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; color: #334155;">
+                    <span>Total Pembayaran</span>
+                    <span id="detail_total" style="color: var(--primary-blue);">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group-footer" style="padding-top: 15px; display: flex; justify-content: center; border-top: 1px solid #f1f5f9; margin-top: 15px;">
+            <button type="button" class="btn-action" style="padding: 10px 40px; justify-content: center;" onclick="closeModal('viewModalTransaksi')">Tutup</button>
         </div>
     </div>
 </div>
@@ -617,19 +743,87 @@
 <script>
     let currentTab = '{{ request('tab', 'riwayat') }}';
 
-    window.addEventListener('DOMContentLoaded', () => {
-        switchTab(currentTab);
-        
-        let alertObj = document.getElementById('alertSuccess');
-        if (alertObj) {
-            setTimeout(() => {
-                alertObj.style.opacity = '0';
-                setTimeout(() => alertObj.style.display = 'none', 500);
-            }, 3000);
-        }
-    });
+    // Tab-pill & sections sudah dirender di atas script ini — langsung init
+    switchTab(currentTab, true);
 
-    function switchTab(tabId) {
+    @if(session('success'))
+        Swal.fire({
+            title: 'Berhasil!',
+            text: '{{ session('success') }}',
+            icon: 'success',
+            confirmButtonColor: '#0081C9',
+            timer: 3500,
+            timerProgressBar: true
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            title: 'Gagal!',
+            text: '{{ session('error') }}',
+            icon: 'error',
+            confirmButtonColor: '#ef4444'
+        });
+    @endif
+
+    function openViewModalTransaksi(btn) {
+        const trx = JSON.parse(btn.getAttribute('data-trx'));
+        
+        document.getElementById('detail_order_code').innerText = '#' + trx.id;
+        document.getElementById('detail_date').innerText = trx.tanggal;
+        document.getElementById('detail_customer').innerText = trx.pelanggan;
+        document.getElementById('detail_phone').innerText = trx.phone || '-';
+        document.getElementById('detail_address').innerText = trx.address || '-';
+        
+        // Status Badge
+        let statusClass = 'status-inactive';
+        let statusLower = trx.status.toLowerCase();
+        if (['settlement', 'capture', 'paid', 'success'].includes(statusLower)) {
+            statusClass = 'status-active';
+        } else if (['pending'].includes(statusLower)) {
+            statusClass = 'stat-proses';
+        }
+        
+        document.getElementById('detail_status').innerHTML = `
+            <span class="status-badge ${statusClass}" style="white-space: nowrap; font-size: 11px; padding: 4px 12px;">
+                ${trx.status}
+            </span>
+        `;
+        
+        // Pricing
+        document.getElementById('detail_subtotal').innerText = trx.subtotal;
+        document.getElementById('detail_shipping').innerText = trx.shipping;
+        document.getElementById('detail_discount').innerText = trx.diskon;
+        document.getElementById('detail_total').innerText = trx.total;
+        
+        // Render Items List
+        const itemsList = document.getElementById('detail_items_list');
+        itemsList.innerHTML = '';
+        
+        trx.items_data.forEach(item => {
+            const itemRow = document.createElement('div');
+            itemRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; gap: 12px; transition: all 0.2s;';
+            itemRow.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="${item.image}" alt="${item.product_name}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1.5px solid #f1f5f9; background: #f8fafc;">
+                    <div style="text-align: left;">
+                        <div style="font-weight: 700; font-size: 12.5px; color: #334155; line-height: 1.3;">${item.product_name}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                            <span style="font-weight: 600; color: var(--primary-blue);">${item.qty}x</span> ${item.price}
+                        </div>
+                    </div>
+                </div>
+                <div style="font-weight: 700; font-size: 13px; color: #334155; white-space: nowrap;">
+                    ${item.subtotal}
+                </div>
+            `;
+            itemsList.appendChild(itemRow);
+        });
+        
+        openModal('viewModalTransaksi');
+    }
+
+    function switchTab(tabId, isInitial = false) {
         currentTab = tabId;
         
         // Reset pills
@@ -644,10 +838,15 @@
         let viewObj = document.getElementById('view-' + tabId);
         if(viewObj) viewObj.classList.add('active');
 
+        // Sync semua hidden input[name=tab] agar filter form tidak reset tab
+        document.querySelectorAll('input[name="tab"]').forEach(input => input.value = tabId);
+
         // Update URL without reload (optional but good for UX)
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tabId);
-        window.history.pushState({}, '', url);
+        if (!isInitial) {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.pushState({}, '', url);
+        }
     }
 
     function toggleDropdown(id, btn) {
@@ -840,8 +1039,27 @@
     }
 
     function openDeleteModalDiskon(uuid) {
-        Swal.fire({ title: 'Hapus?', text: "Data hilang permanen!", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya!', cancelButtonText: 'Batal' }).then((result) => {
+        Swal.fire({ 
+            title: 'Hapus Promo?', 
+            text: "Data promo akan dihapus permanen!", 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonText: 'Ya, Hapus!', 
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#cbd5e1'
+        }).then((result) => {
             if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus Promo...',
+                    text: 'Harap tunggu sebentar.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 const form = document.createElement('form'); form.method = 'POST'; form.action = `/transaksi/diskon/${uuid}`;
                 form.innerHTML = `@csrf @method('DELETE')`; document.body.appendChild(form); form.submit();
             }
@@ -908,16 +1126,25 @@
             btn.innerHTML = `<iconify-icon icon="eos-icons:loading"></iconify-icon> ${isUpdate ? 'Memperbarui...' : 'Menyimpan...'}`;
             btn.style.opacity = '0.7';
             btn.style.pointerEvents = 'none';
+
+            Swal.fire({
+                title: isUpdate ? 'Memperbarui Promo...' : 'Menyimpan Promo...',
+                text: 'Harap tunggu, data sedang dikirim ke server.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         } else {
             form.reportValidity();
         }
     }
 
     @if($errors->any() && !old('_method'))
-        window.addEventListener('DOMContentLoaded', () => {
-            switchTab('diskon');
-            openModal('addModalDiskon');
-        });
+        switchTab('diskon');
+        openModal('addModalDiskon');
     @endif
 </script>
 @endsection

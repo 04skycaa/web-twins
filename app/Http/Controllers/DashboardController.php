@@ -46,7 +46,7 @@ class DashboardController extends Controller
 
         $stores = Outlet::all();
 
-        $cacheKey = 'dashboard_v7_data_' . ($storeId ?? 'all') . '_' . $user->role . '_' . ($user->isOwner() ? 'owner' : $user->store_id);
+        $cacheKey = 'dashboard_v8_data_' . ($storeId ?? 'all') . '_' . $user->role . '_' . ($user->isOwner() ? 'owner' : $user->store_id);
 
         if ($request->get('refresh') == '1') {
             \Illuminate\Support\Facades\Cache::forget($cacheKey);
@@ -127,10 +127,14 @@ class DashboardController extends Controller
             $topProductIds = $topProductList->pluck('product_id')->filter()->all();
             $products = Product::whereIn('uuid', $topProductIds)->get()->keyBy('uuid');
 
-            $topProducts = $topProductList->map(function($item) use ($products) {
+            $topProductsArray = $topProductList->map(function($item) use ($products) {
                 $p = $products->get($item['product_id']);
-                return (object)['product' => $p, 'total_qty' => $item['qty'], 'total_revenue' => $item['rev']];
-            });
+                return [
+                    'product' => $p ? $p->toArray() : null,
+                    'total_qty' => $item['qty'],
+                    'total_revenue' => $item['rev']
+                ];
+            })->values()->all();
 
             $combinedActivities = collect();
             Transaction::with('user')
@@ -161,13 +165,33 @@ class DashboardController extends Controller
                 ]));
                 
             $activities = $combinedActivities->sortByDesc('timestamp')->take(5);
+            $activitiesArray = $activities->map(function($act) {
+                return [
+                    'user' => $act['user'] ?? '',
+                    'role' => $act['role'] ?? '',
+                    'action' => $act['action'] ?? '',
+                    'time' => $act['time'] ?? '',
+                    'icon' => $act['icon'] ?? ''
+                ];
+            })->values()->all();
 
-            return compact(
-                'stats', 'chartHarian', 'chartMingguan', 'chartBulanan', 
-                'chartTahunan', 'cfHarian', 'cfMingguan', 'cfBulanan', 'cfTahunan', 
-                'totalPiutang', 'totalHutang', 'lowStockProducts', 'expiredProducts', 
-                'topProducts', 'activities'
-            );
+            return [
+                'stats' => $stats,
+                'chartHarian' => $chartHarian,
+                'chartMingguan' => $chartMingguan,
+                'chartBulanan' => $chartBulanan,
+                'chartTahunan' => $chartTahunan,
+                'cfHarian' => $cfHarian,
+                'cfMingguan' => $cfMingguan,
+                'cfBulanan' => $cfBulanan,
+                'cfTahunan' => $cfTahunan,
+                'totalPiutang' => $totalPiutang,
+                'totalHutang' => $totalHutang,
+                'lowStockProducts' => $lowStockProducts->toArray(),
+                'expiredProducts' => $expiredProducts->toArray(),
+                'topProducts' => $topProductsArray,
+                'activities' => $activitiesArray
+            ];
         });
 
         if (is_string($data)) {
@@ -193,10 +217,10 @@ class DashboardController extends Controller
             'cfTahunan' => $data['cfTahunan'] ?? ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]],
             'totalPiutang' => $data['totalPiutang'] ?? 0, 
             'totalHutang' => $data['totalHutang'] ?? 0,
-            'lowStockProducts' => $data['lowStockProducts'] ?? collect(), 
-            'expiredProducts' => $data['expiredProducts'] ?? collect(), 
-            'topProducts' => $data['topProducts'] ?? collect(), 
-            'activities' => $data['activities'] ?? collect(),
+            'lowStockProducts' => collect($data['lowStockProducts'] ?? []), 
+            'expiredProducts' => collect($data['expiredProducts'] ?? []), 
+            'topProducts' => collect($data['topProducts'] ?? []), 
+            'activities' => collect($data['activities'] ?? []),
             'stores' => $stores, 
             'currentStoreId' => $storeId, 
             'title' => $user->role === 'owner' ? 'Dashboard Owner' : 'Dashboard ' . ucfirst($user->role)

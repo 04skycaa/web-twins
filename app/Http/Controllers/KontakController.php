@@ -24,12 +24,12 @@ class KontakController extends Controller
             if ($sm->nama == 'Supplier' && $user->hasFeature($sm->id)) $hasSupplier = true;
         }
 
-        $active_tab = $request->query('active_tab', 'pelanggan');
-        if ($active_tab == 'pelanggan' && !$hasPelanggan) $active_tab = '';
+        $active_tab = $request->query('tab', 'customer');
+        if ($active_tab == 'customer' && !$hasPelanggan) $active_tab = '';
         if ($active_tab == 'supplier' && !$hasSupplier) $active_tab = '';
 
         if (!$active_tab) {
-            if ($hasPelanggan) $active_tab = 'pelanggan';
+            if ($hasPelanggan) $active_tab = 'customer';
             elseif ($hasSupplier) $active_tab = 'supplier';
         }
 

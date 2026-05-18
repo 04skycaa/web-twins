@@ -9,11 +9,11 @@
     <div class="fitur-container" id="perilaku-app">
         {{-- PILL TABS --}}
         <div class="tab-navigation">
-            <a href="#" class="tab-pill" onclick="switchTab('customer')" id="pill-customer">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'customer') === 'customer' ? 'active' : '' }}" onclick="switchTab('customer')" id="pill-customer">
                 <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
                 <span>Perilaku Customer</span>
             </a>
-            <a href="#" class="tab-pill" onclick="switchTab('produk')" id="pill-produk">
+            <a href="#" class="tab-pill {{ ($active_tab ?? 'customer') === 'produk' ? 'active' : '' }}" onclick="switchTab('produk')" id="pill-produk">
                 <iconify-icon icon="solar:box-minimalistic-bold-duotone"></iconify-icon>
                 <span>Perilaku Produk</span>
             </a>

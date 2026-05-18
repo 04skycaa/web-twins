@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@php $active_tab = request('tab', 'customer'); @endphp
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 <style>
 @keyframes spin {
@@ -29,11 +30,11 @@
 
     {{-- TABS --}}
     <div class="tab-navigation">
-        <button onclick="switchTab('customer')" id="tab-customer-btn" class="tab-pill active">
+        <button onclick="switchTab('customer')" id="tab-customer-btn" class="tab-pill {{ $active_tab === 'customer' ? 'active' : '' }}">
             <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
             <span>Pelanggan</span>
         </button>
-        <button onclick="switchTab('supplier')" id="tab-supplier-btn" class="tab-pill">
+        <button onclick="switchTab('supplier')" id="tab-supplier-btn" class="tab-pill {{ $active_tab === 'supplier' ? 'active' : '' }}">
             <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
             <span>Supplier</span>
         </button>
@@ -116,7 +117,7 @@
     </div>
 
     {{-- TABLE PELANGGAN --}}
-    <div id="tab-customer" class="tab-content">
+    <div id="tab-customer" class="tab-content" style="{{ $active_tab === 'customer' ? '' : 'display: none;' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -198,7 +199,7 @@
     </div>
 
     {{-- TABLE SUPPLIER --}}
-    <div id="tab-supplier" class="tab-content" style="display: none;">
+    <div id="tab-supplier" class="tab-content" style="{{ $active_tab === 'supplier' ? '' : 'display: none;' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -419,7 +420,10 @@
 </div>
 
 <script>
-    let activeTab = 'customer';
+    let activeTab = '{{ $active_tab }}';
+
+    // Synchronize UI tab state on load
+    switchTab(activeTab, true);
 
     function toggleDropdown(event) {
         event.stopPropagation();
@@ -430,7 +434,8 @@
         dropdown.classList.toggle('show');
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, isInitial = false) {
+        activeTab = tab;
         document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
 
@@ -451,6 +456,13 @@
         if(tab !== 'pesanan') {
             document.getElementById('add_user_field').style.display = tab === 'customer' ? 'block' : 'none';
             document.getElementById('edit_user_field').style.display = tab === 'customer' ? 'block' : 'none';
+        }
+
+        // Synchronize browser history and query string on user-triggered click
+        if (!isInitial) {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tab);
+            window.history.pushState({}, '', url);
         }
     }
 

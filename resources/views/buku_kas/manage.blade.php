@@ -38,6 +38,7 @@
 @endpush
 
 @section('content')
+@php $active_tab = request('tab', 'pengeluaran'); @endphp
 <div class="fitur-container" id="bukukas-app">
     {{-- TAB NAVIGATION --}}
     @include('buku_kas.partials.tabs')
@@ -127,7 +128,7 @@
     </div>
 
     {{-- SECTION PENGELUARAN --}}
-    <div id="view-pengeluaran" class="view-section">
+    <div id="view-pengeluaran" class="view-section {{ $active_tab === 'pengeluaran' ? 'active' : '' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -167,7 +168,7 @@
     </div>
 
     {{-- SECTION PEMASUKAN --}}
-    <div id="view-pemasukan" class="view-section">
+    <div id="view-pemasukan" class="view-section {{ $active_tab === 'pemasukan' ? 'active' : '' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -207,7 +208,7 @@
     </div>
 
     {{-- SECTION HUTANG --}}
-    <div id="view-hutang" class="view-section">
+    <div id="view-hutang" class="view-section {{ $active_tab === 'hutang' ? 'active' : '' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -238,7 +239,7 @@
     </div>
 
     {{-- SECTION PIUTANG --}}
-    <div id="view-piutang" class="view-section">
+    <div id="view-piutang" class="view-section {{ $active_tab === 'piutang' ? 'active' : '' }}">
         <div class="main-content-box">
             <div class="table-container">
                 <table class="fitur-table">
@@ -278,11 +279,10 @@
 <script>
     let currentTab = '{{ request('tab', $active_tab ?? 'pengeluaran') }}';
 
-    window.addEventListener('DOMContentLoaded', () => {
-        switchTab(currentTab);
-    });
+    // Tab-pill & sections sudah dirender di atas script ini — langsung init
+    switchTab(currentTab, true);
 
-    function switchTab(tabId) {
+    function switchTab(tabId, isInitial = false) {
         currentTab = tabId;
         
         // Tab UI
@@ -296,9 +296,14 @@
         if(viewObj) viewObj.classList.add('active');
 
         // URL Update
-        const url = new URL(window.location);
-        url.searchParams.set('tab', tabId);
-        window.history.pushState({}, '', url);
+        if (!isInitial) {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.pushState({}, '', url);
+        }
+
+        // Sync semua hidden input[name=tab] agar filter form tidak reset tab
+        document.querySelectorAll('input[name="tab"]').forEach(input => input.value = tabId);
 
         // UI Adjustments
         document.getElementById('statusFilterDropdown').style.display = (tabId === 'hutang' || tabId === 'piutang') ? 'block' : 'none';
