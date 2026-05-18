@@ -894,38 +894,78 @@
 
             window.twinsHeroManual = runHeroReveal;
 
-            // SPLASH TIMELINE
-            const stl = gsap.timeline({
-                onComplete: () => {
-                    document.getElementById('welcome-splash').style.display = 'none';
-                    document.body.classList.remove('hide-overflow');
-                    document.body.classList.add('show-content');
+            // Check if splash screen should be bypassed (e.g. returning from user.blade to outlet)
+            const skipSplash = window.location.href.indexOf('skip_splash') !== -1 || window.location.hash === '#outlet';
+
+            if (skipSplash) {
+                // Instantly remove splash & show content
+                const splashEl = document.getElementById('welcome-splash');
+                if (splashEl) splashEl.style.display = 'none';
+                document.body.classList.remove('hide-overflow');
+                document.body.classList.add('show-content');
+                
+                // Instantly reveal header & beranda
+                gsap.set("header", { y: 0, opacity: 1 });
+                gsap.set("section#beranda", { opacity: 1 });
+                
+                // Instantly show hero section items
+                runHeroReveal();
+                
+                // Update active states in navigation to Outlet
+                const navLinks = document.querySelectorAll('.nav-link');
+                const mobLinks = document.querySelectorAll('.mob-nav-item');
+                navLinks.forEach(l => l.classList.toggle('active', l.id === 'nav-outlet'));
+                mobLinks.forEach(l => l.classList.toggle('active', l.id === 'mob-outlet'));
+                
+                // Perform robust, multi-tick scrolling to target to counteract dynamic layout shift
+                if (window.location.hash) {
+                    const scrollTarget = () => {
+                        const target = document.querySelector(window.location.hash);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'auto' });
+                        }
+                    };
+                    scrollTarget();
+                    setTimeout(scrollTarget, 30);
+                    setTimeout(scrollTarget, 100);
+                    setTimeout(scrollTarget, 300);
+                    setTimeout(scrollTarget, 600);
+                    setTimeout(scrollTarget, 1000);
                 }
-            });
+            } else {
+                // SPLASH TIMELINE
+                const stl = gsap.timeline({
+                    onComplete: () => {
+                        document.getElementById('welcome-splash').style.display = 'none';
+                        document.body.classList.remove('hide-overflow');
+                        document.body.classList.add('show-content');
+                    }
+                });
 
-            stl.to("#splashLogo", { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out", filter: "brightness(2) contrast(1.5)" })
-               .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
-               .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
-               .set("#energyRing", { opacity: 1 })
-               .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
-               .to("#splashText", { opacity: 0, scale: 0.8, duration: 0.4, ease: "power2.in" }, "+=0.3")
-               .to("#splashLogo", { scale: 0, opacity: 0, duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
-               .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
-               .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
-               .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
-               .to("section#beranda", { opacity: 1, duration: 0.8, ease: "power2.out" }, "-=1.0")
-               
-               // PRECISE SYNC: Trigger hero reveal earlier (1.2s before end)
-               .add(() => {
-                   console.log("[TWINS] Double-Trigger: Cinematic Reveal Started");
-                   runHeroReveal();
-               }, "-=1.2")
+                stl.to("#splashLogo", { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out", filter: "brightness(2) contrast(1.5)" })
+                   .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
+                   .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
+                   .set("#energyRing", { opacity: 1 })
+                   .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
+                   .to("#splashText", { opacity: 0, scale: 0.8, duration: 0.4, ease: "power2.in" }, "+=0.3")
+                   .to("#splashLogo", { scale: 0, opacity: 0, duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
+                   .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
+                   .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
+                   .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
+                   .to("section#beranda", { opacity: 1, duration: 0.8, ease: "power2.out" }, "-=1.0")
+                   
+                   // PRECISE SYNC: Trigger hero reveal earlier (1.2s before end)
+                   .add(() => {
+                       console.log("[TWINS] Double-Trigger: Cinematic Reveal Started");
+                       runHeroReveal();
+                   }, "-=1.2")
 
-               .to("header", { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, "-=0.6")
-               .set("body", { onStart: () => {
-                   document.body.classList.add('show-content');
-                   if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
-               }}, "-=0.2");
+                   .to("header", { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, "-=0.6")
+                   .set("body", { onStart: () => {
+                       document.body.classList.add('show-content');
+                       if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
+                   }}, "-=0.2");
+            }
         }
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -1537,11 +1577,44 @@
                     }
                 });
             });
+
         });
+
+        function showLoaderAndNavigate(url) {
+            const loader = document.getElementById('dashboard-transition-loader');
+            if (loader) {
+                loader.style.opacity = '1';
+                loader.style.pointerEvents = 'auto';
+            }
+            setTimeout(() => {
+                window.location.href = url;
+            }, 50);
+        }
     </script>
+
+    <!-- Beautiful Premium Transition Loader -->
+    <div id="dashboard-transition-loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <div style="position: absolute; width: 80px; height: 80px; border-radius: 50%; border: 4px solid rgba(139, 92, 246, 0.1); border-top-color: #8b5cf6; animation: spin-loader 1s linear infinite;"></div>
+            <div style="position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 4px solid rgba(236, 72, 153, 0.1); border-bottom-color: #ec4899; animation: spin-loader-reverse 1.2s linear infinite;"></div>
+            <img src="{{ asset('images/logo.png') }}" alt="Twins Logo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+        </div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #f8fafc; letter-spacing: 1px; text-transform: uppercase;">Memuat Dashboard...</div>
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">Mempersiapkan data administrasi Anda</div>
+    </div>
+    
+    <style>
+        @keyframes spin-loader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-loader-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
 
     <!-- Animasi premium hero beranda -->
     <script src="{{ asset('js/premium-animations.js') }}"></script>
-    </script>
 </body>
 </html>

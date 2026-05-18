@@ -292,11 +292,7 @@
 </script>
 
 <body id="body">
-    <div id="global-page-loader" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color, #0f172a); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999999; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.4s;">
-        <div style="width: 50px; height: 50px; border: 4px solid var(--card-border, rgba(255,255,255,0.1)); border-top-color: var(--orange-brand, #f97316); border-radius: 50%; animation: globalSpin 1s linear infinite; margin-bottom: 20px;"></div>
-        <style>@keyframes globalSpin { to { transform: rotate(360deg); } }</style>
-        <div id="global-page-loader-text" style="color: var(--text-color, #ffffff); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px;">Memuat TWINS...</div>
-    </div>
+
     <div class="animated-bg"></div>
     <div class="light-rays-container">
         <div class="god-ray ray1"></div>
@@ -306,7 +302,7 @@
     </div>
     <header id="mainHeader">
         <div class="logo">
-            <a href="{{ route('home') }}" class="back-btn-icon" title="Kembali ke Daftar Outlet">
+            <a href="{{ route('home') }}?skip_splash=1#outlet" class="back-btn-icon" title="Kembali ke Daftar Outlet">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="19" y1="12" x2="5" y2="12"></line>
                     <polyline points="12 19 5 12 12 5"></polyline>
@@ -3212,7 +3208,42 @@
                 }
             }
         }
+
+
+
+        function showLoaderAndNavigate(url) {
+            const loader = document.getElementById('dashboard-transition-loader');
+            if (loader) {
+                loader.style.opacity = '1';
+                loader.style.pointerEvents = 'auto';
+            }
+            setTimeout(() => {
+                window.location.href = url;
+            }, 50);
+        }
     </script>
+
+    <!-- Beautiful Premium Transition Loader -->
+    <div id="dashboard-transition-loader" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <div style="position: absolute; width: 80px; height: 80px; border-radius: 50%; border: 4px solid rgba(139, 92, 246, 0.1); border-top-color: #8b5cf6; animation: spin-loader 1s linear infinite;"></div>
+            <div style="position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 4px solid rgba(236, 72, 153, 0.1); border-bottom-color: #ec4899; animation: spin-loader-reverse 1.2s linear infinite;"></div>
+            <img src="{{ asset('images/logo.png') }}" alt="Twins Logo" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+        </div>
+        <div style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #f8fafc; letter-spacing: 1px; text-transform: uppercase;">Memuat Dashboard...</div>
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">Mempersiapkan data administrasi Anda</div>
+    </div>
+    
+    <style>
+        @keyframes spin-loader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-loader-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
 
     <nav class="mobile-nav">
         <div id="mob-home" class="mob-nav-item active" onclick="switchPage('home')">

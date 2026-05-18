@@ -605,7 +605,7 @@
                             </select>
                             <div class="invalid-feedback">Outlet asal wajib dipilih</div>
                         @else
-                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama }}" readonly style="background: #f8fafc;">
+                            <input type="text" class="form-control" value="{{ Auth::user()->outlet->nama ?? 'Cabang' }}" readonly style="background: #f8fafc;">
                             <input type="hidden" name="store_id" id="sourceStoreSelect" value="{{ Auth::user()->store_id }}">
                         @endif
                     </div>
@@ -727,7 +727,7 @@
                             <div class="invalid-feedback">Outlet wajib dipilih</div>
                         @else
                             <input type="hidden" name="store_id" id="opname_store_id" value="{{ Auth::user()->store_id }}">
-                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa;">
+                            <input type="text" class="form-control" value="{{ Auth::user()->outlet->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa;">
                         @endif
                     </div>
                 </div>
@@ -799,7 +799,7 @@
                             <div class="invalid-feedback">Outlet wajib dipilih</div>
                         @else
                             <input type="hidden" name="store_id" value="{{ Auth::user()->store_id }}">
-                            <input type="text" class="form-control" value="{{ Auth::user()->store->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa; font-weight: 600;">
+                            <input type="text" class="form-control" value="{{ Auth::user()->outlet->nama ?? 'Cabang' }}" readonly style="background: #f8f9fa; font-weight: 600;">
                         @endif
                     </div>
                     <div class="form-group">

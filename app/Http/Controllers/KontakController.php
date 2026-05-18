@@ -41,22 +41,15 @@ class KontakController extends Controller
 
         $query = Contact::where('tipe', 'customer');
         
-        // Menghitung transaksi dan mengambil username otomatis dengan Super Normalisasi
+        // Menghitung transaksi dan mengambil username otomatis dengan Super Normalisasi (highly optimized SQL, no regexp table scans)
         $query->select('contacts.*')
             ->selectSub(function ($q) {
                 $q->from('payment_orders')
                   ->whereIn('payment_status', ['paid', 'settlement', 'success', 'capture', 'pending'])
                   ->where(function($sub) {
-                      // 1. Cari berdasarkan User ID yang cocok dengan kontak ini (via HP/Nama di tabel users)
-                      $sub->whereIn('payment_orders.user_id', function($sq) {
-                          $sq->selectRaw("uuid::text")
-                             ->from('users')
-                             ->whereRaw("regexp_replace(regexp_replace(users.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')")
-                             ->orWhereRaw("LOWER(TRIM(users.username)) = LOWER(TRIM(contacts.nama))");
-                      })
-                      // 2. Cari berdasarkan HP/Nama langsung di tabel orders (sebagai backup)
-                      ->orWhereRaw("regexp_replace(regexp_replace(payment_orders.recipient_phone, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')")
-                      ->orWhereRaw("LOWER(TRIM(payment_orders.recipient_name)) = LOWER(TRIM(contacts.nama))");
+                      $sub->whereRaw('CAST(payment_orders.user_id AS varchar) = CAST(contacts.user_id AS varchar)')
+                          ->orWhereColumn('payment_orders.recipient_phone', 'contacts.no_hp')
+                          ->orWhereRaw('LOWER(TRIM(payment_orders.recipient_name)) = LOWER(TRIM(contacts.nama))');
                   })
                   ->selectRaw('count(*)');
             }, 'total_transaksi')
@@ -64,17 +57,11 @@ class KontakController extends Controller
                 $hasUserId = Schema::hasColumn('contacts', 'user_id');
                 $q->from('users')
                   ->where(function($sub) use ($hasUserId) {
-                      $sub->whereRaw("regexp_replace(regexp_replace(users.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')")
-                          ->orWhereRaw("LOWER(TRIM(users.username)) = LOWER(TRIM(contacts.nama))")
-                          ->orWhereIn('users.uuid', function($sq) {
-                              $sq->selectRaw("user_id::uuid")
-                                 ->from('payment_orders')
-                                 ->whereRaw("user_id IS NOT NULL")
-                                 ->whereRaw("regexp_replace(regexp_replace(payment_orders.recipient_phone, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')");
-                          });
                       if ($hasUserId) {
-                          $sub->orWhereRaw("users.uuid::text = contacts.user_id::text");
+                          $sub->whereRaw('CAST(users.uuid AS varchar) = CAST(contacts.user_id AS varchar)');
                       }
+                      $sub->orWhereColumn('users.no_hp', 'contacts.no_hp')
+                          ->orWhereRaw('LOWER(TRIM(users.username)) = LOWER(TRIM(contacts.nama))');
                   })
                   ->select('username')
                   ->limit(1);
@@ -83,34 +70,31 @@ class KontakController extends Controller
                 $hasUserId = Schema::hasColumn('contacts', 'user_id');
                 $q->from('users')
                   ->where(function($sub) use ($hasUserId) {
-                      $sub->whereRaw("regexp_replace(regexp_replace(users.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')")
-                          ->orWhereRaw("LOWER(TRIM(users.username)) = LOWER(TRIM(contacts.nama))")
-                          ->orWhereIn('users.uuid', function($sq) {
-                              $sq->selectRaw("user_id::uuid")
-                                 ->from('payment_orders')
-                                 ->whereRaw("user_id IS NOT NULL")
-                                 ->whereRaw("regexp_replace(regexp_replace(payment_orders.recipient_phone, '[^0-9]', '', 'g'), '^(0|62)', '') = regexp_replace(regexp_replace(contacts.no_hp, '[^0-9]', '', 'g'), '^(0|62)', '')");
-                          });
                       if ($hasUserId) {
-                          $sub->orWhereRaw("users.uuid::text = contacts.user_id::text");
+                          $sub->whereRaw('CAST(users.uuid AS varchar) = CAST(contacts.user_id AS varchar)');
                       }
+                      $sub->orWhereColumn('users.no_hp', 'contacts.no_hp')
+                          ->orWhereRaw('LOWER(TRIM(users.username)) = LOWER(TRIM(contacts.nama))');
                   })
                   ->select('email')
                   ->limit(1);
             }, 'matching_email');
 
+        // Eager load only lightweight user relation (no heavy paymentOrders.items.product nested graphs)
         if (Schema::hasColumn('contacts', 'user_id')) {
-            $query->with(['user', 'paymentOrders.items.product']);
+            $query->with(['user']);
         }
         
         $pelanggan = $query->orderBy($sortBy, $order)->get();
         $supplier = Contact::where('tipe', 'supplier');
         if (Schema::hasColumn('contacts', 'user_id')) {
-            $supplier->with(['user', 'paymentOrders.items.product']);
+            $supplier->with(['user']);
         }
         $supplier = $supplier->orderBy($sortBy, $order)->get();
         $users = \App\Models\User::orderBy('username')->get();
-        $orders = \App\Models\PaymentOrder::orderBy('created_at', 'desc')->get();
+        
+        // Removed heavy all orders query (unused in view index)
+        $orders = collect();
 
         // QUICK STATS
         $totalPelanggan = Contact::where('tipe', 'customer')->count();
@@ -122,6 +106,27 @@ class KontakController extends Controller
         $topSpender = $pelanggan->sortByDesc('total_transaksi')->first();
 
         return view('kontak.index', compact('pelanggan', 'supplier', 'orders', 'sort', 'users', 'totalPelanggan', 'aktifBulanIni', 'topSpender', 'hasPelanggan', 'hasSupplier', 'sub_menus', 'active_tab'));
+    }
+
+    public function getTransactions($id)
+    {
+        $contact = Contact::findOrFail($id);
+        $hasUserId = Schema::hasColumn('contacts', 'user_id');
+
+        $query = \App\Models\PaymentOrder::with(['items.product'])
+            ->whereIn('payment_status', ['paid', 'settlement', 'success', 'capture', 'pending']);
+
+        $query->where(function($sub) use ($contact, $hasUserId) {
+            if ($hasUserId && $contact->user_id) {
+                $sub->whereRaw('CAST(user_id AS varchar) = CAST(? AS varchar)', [(string)$contact->user_id]);
+            }
+            $sub->orWhere('recipient_phone', $contact->no_hp)
+                ->orWhereRaw('LOWER(TRIM(recipient_name)) = LOWER(TRIM(?))', [$contact->nama]);
+        });
+
+        $orders = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json($orders);
     }
 
     public function store(Request $request)

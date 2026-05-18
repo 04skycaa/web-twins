@@ -57,7 +57,7 @@
                             {{ $product->current_stok }}
                         </div>
                         <div style="font-size: 10px; color: #64748b; font-weight: 500;">Exp: {{ $product->current_kadaluarsa }}</div>
-                        <div style="font-size: 10px; color: #94a3b8;">Di {{ Auth::user()->store->nama ?? 'Cabang' }}</div>
+                        <div style="font-size: 10px; color: #94a3b8;">Di {{ Auth::user()->outlet->nama ?? 'Cabang' }}</div>
                     @endif
                 </td>
                 <td style="white-space: nowrap;">

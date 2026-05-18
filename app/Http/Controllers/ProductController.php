@@ -111,7 +111,7 @@ class ProductController extends Controller
             'active_tab' => 'produk',
             'products' => $products,
             'categories' => Category::all(),
-            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $selectedStoreId,
             'all_products' => $this->mapProductsForJs(
                 Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
@@ -208,8 +208,8 @@ class ProductController extends Controller
             'selesai_count' => $selesai_count,
             'total_loss' => $total_loss,
             'categories' => Category::all(),
-            'outlets' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
-            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'outlets' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $request->store_id,
             'all_products' => $this->mapProductsForJs(
                 Product::whereHas('stores', function($q) use ($user, $request) {
@@ -218,7 +218,7 @@ class ProductController extends Controller
                     } elseif ($request->store_id && $request->store_id != 'all') {
                         $q->where('store_id', $request->store_id);
                     }
-                })->get(), 
+                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
                 $user, 
                 $request->store_id
             ),
@@ -289,7 +289,7 @@ class ProductController extends Controller
             'active_tab' => 'stok',
             'alerts' => $alerts,
             'categories' => Category::all(),
-            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $selectedStoreId,
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
@@ -300,7 +300,7 @@ class ProductController extends Controller
                     } elseif ($selectedStoreId && $selectedStoreId != 'all') {
                         $q->where('store_id', $selectedStoreId);
                     }
-                })->get(), 
+                })->with(['category', 'priceLevels', 'stores.store'])->get(), 
                 $user, 
                 $selectedStoreId
             ),
@@ -357,7 +357,7 @@ class ProductController extends Controller
             'purchases' => $query->paginate(10),
             'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
             'categories' => Category::all(),
-            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]),
+            'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'all_products' => Product::all(),
             'filter' => $request->filter,
             'status_bayar' => $request->status_bayar,
@@ -384,54 +384,50 @@ class ProductController extends Controller
         $user = Auth::user();
         $active_tab = $request->get('tab', $defaultTab);
         
-        // If it's an AJAX request, we prioritize the active tab to ensure "zero-loading" speed.
-        if ($request->ajax()) {
-            $data = ['active_tab' => $active_tab];
-            
-            switch ($active_tab) {
-                case 'produk':
-                    $data = array_merge($data, $this->getProductsData($request));
-                    break;
-                case 'opname':
-                    $data = array_merge($data, $this->getOpnameData($request));
-                    break;
-                case 'stok':
-                    $data = array_merge($data, $this->getAlertData($request));
-                    break;
-                case 'restok':
-                    $data = array_merge($data, $this->getRestokData($request));
-                    break;
-                case 'transfer':
-                    $data = array_merge($data, $this->getTransferData($request));
-                    break;
-            }
-            
-            // Fill missing variables with empty collections to prevent Blade errors
-            $data['products'] = $data['products'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
-            $data['opnames'] = $data['opnames'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
-            $data['opname_details'] = $data['opname_details'] ?? collect();
-            $data['alerts'] = $data['alerts'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
-            $data['purchases'] = $data['purchases'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
-            $data['transfers'] = $data['transfers'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
-            
-            $data['categories'] = $data['categories'] ?? Category::all();
-            $data['stores'] = $data['stores'] ?? ($user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->store]));
-            $data['sub_menus'] = $data['sub_menus'] ?? Fitur::where('parent_id', 2)->orderBy('id')->get();
-            $data['suppliers'] = $data['suppliers'] ?? Contact::where('tipe', 'ilike', 'supplier')->get();
-            $data['payment_methods'] = $data['payment_methods'] ?? \App\Models\PaymentMethod::all();
-            
-            return $data;
+        $data = ['active_tab' => $active_tab];
+        
+        switch ($active_tab) {
+            case 'produk':
+                $data = array_merge($data, $this->getProductsData($request));
+                break;
+            case 'opname':
+                $data = array_merge($data, $this->getOpnameData($request));
+                break;
+            case 'stok':
+                $data = array_merge($data, $this->getAlertData($request));
+                break;
+            case 'restok':
+                $data = array_merge($data, $this->getRestokData($request));
+                break;
+            case 'transfer':
+                $data = array_merge($data, $this->getTransferData($request));
+                break;
         }
-
-        // Full load: Fetch all data for instant SPA-like switching
-        return array_merge(
-            $this->getProductsData($request),
-            $this->getOpnameData($request),
-            $this->getAlertData($request),
-            $this->getRestokData($request),
-            $this->getTransferData($request),
-            ['active_tab' => $active_tab]
-        );
+        
+        // Fill missing variables with empty collections/paginators to prevent Blade errors
+        $data['products'] = $data['products'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        $data['opnames'] = $data['opnames'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        $data['opname_details'] = $data['opname_details'] ?? collect();
+        $data['alerts'] = $data['alerts'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        $data['purchases'] = $data['purchases'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        $data['transfers'] = $data['transfers'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        
+        $data['categories'] = $data['categories'] ?? Category::all();
+        $data['stores'] = $data['stores'] ?? ($user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]));
+        $data['sub_menus'] = $data['sub_menus'] ?? Fitur::where('parent_id', 2)->orderBy('id')->get();
+        $data['suppliers'] = $data['suppliers'] ?? Contact::where('tipe', 'ilike', 'supplier')->get();
+        $data['payment_methods'] = $data['payment_methods'] ?? \App\Models\PaymentMethod::all();
+        $data['all_products'] = $data['all_products'] ?? collect();
+        
+        // Tab-specific default layout fallbacks
+        $data['sub_tab'] = $data['sub_tab'] ?? 'semua';
+        $data['pending_count'] = $data['pending_count'] ?? 0;
+        $data['total_loss'] = $data['total_loss'] ?? 0;
+        $data['selesai_count'] = $data['selesai_count'] ?? 0;
+        $data['stok_habis_count'] = $data['stok_habis_count'] ?? 0;
+        $data['expired_count'] = $data['expired_count'] ?? 0;
+        
+        return $data;
     }
 
     private function getTransferData(Request $request)

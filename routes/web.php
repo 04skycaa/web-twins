@@ -120,6 +120,7 @@ Route::prefix('keuangan')->middleware(['auth', 'verified', 'role:owner,kepala_to
 
 Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
     Route::get('/', [KontakController::class, 'index'])->name('kontak.index');
+    Route::get('/{id}/transactions', [KontakController::class, 'getTransactions'])->name('kontak.transactions');
     Route::post('/sync', [KontakController::class, 'syncFromOrders'])->name('kontak.sync');
     Route::post('/', [KontakController::class, 'store'])->name('kontak.store');
     Route::put('/{id}', [KontakController::class, 'update'])->name('kontak.update');

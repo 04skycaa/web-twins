@@ -22,7 +22,7 @@
 
     <div class="info">
         <strong>Tanggal Cetak:</strong> {{ $date }}<br>
-        <strong>Outlet:</strong> {{ Auth::user()->store->nama ?? 'Semua Outlet' }}<br>
+        <strong>Outlet:</strong> {{ Auth::user()->outlet->nama ?? 'Semua Outlet' }}<br>
         <strong>Dicetak Oleh:</strong> {{ Auth::user()->name }}
     </div>
 

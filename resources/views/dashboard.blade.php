@@ -11,7 +11,6 @@
 
     .dashboard-wrapper {
         padding: 0.5rem 1.5rem;
-        animation: fadeIn 0.6s ease-out;
     }
 
     @keyframes fadeIn {
@@ -34,7 +33,6 @@
         justify-content: space-between;
         transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         position: relative;
         overflow: hidden;
     }
@@ -105,7 +103,6 @@
         padding: 2rem;
         box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
         position: relative;
     }
 
@@ -365,11 +362,10 @@
         position: absolute;
         bottom: -2px;
         left: 0;
-        width: 0;
+        width: 100%;
         height: 3px;
         background: #0477bf;
         border-radius: 50px;
-        animation: underlineIn 1s ease-out forwards;
     }
 
     @keyframes underlineIn {
@@ -404,7 +400,6 @@
         align-items: center;
         gap: 10px;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        animation: slideInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
     }
 
     @keyframes slideInRight {
@@ -455,6 +450,12 @@
                         @endforeach
                     </select>
                 </div>
+
+                <!-- Refresh Button -->
+                <button onclick="refreshDashboard()" class="filter-group-minimal cursor-pointer" style="padding: 8px 15px; display: flex; align-items: center; gap: 5px; border: 1px solid #e2e8f0; border-radius: 50px; background: #f8fafc; outline: none;">
+                    <iconify-icon icon="solar:restart-bold-duotone" style="color: #10b981; font-size: 1.25rem;"></iconify-icon>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Refresh Data</span>
+                </button>
             </div>
         </div>
     <!-- Top Row Stats -->
@@ -675,23 +676,48 @@
                         </thead>
                         <tbody>
                             @forelse($lowStockProducts as $ps)
+                            @php
+                                $psObj = (object) $ps;
+                                $productObj = isset($psObj->product) ? (object) $psObj->product : null;
+                                $storeObj = isset($psObj->store) ? (object) $psObj->store : null;
+                                $stokVal = $psObj->stok ?? 0;
+                            @endphp
+                            @if($productObj)
+                            @php
+                                $imageUrl = $productObj->resolved_image_url ?? null;
+                                if (!$imageUrl) {
+                                    $path = $productObj->image_url ?? null;
+                                    if (!$path) {
+                                        $imageUrl = asset('images/placeholder-product.png');
+                                    } elseif (str_starts_with($path, 'http')) {
+                                        $imageUrl = $path;
+                                    } else {
+                                        $cleanPath = ltrim($path, '/');
+                                        if (str_starts_with($cleanPath, 'storage/')) {
+                                            $cleanPath = substr($cleanPath, 8);
+                                        }
+                                        $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+                                    }
+                                }
+                            @endphp
                             <tr>
                                 <td>
                                     <div class="flex items-center gap-3">
-                                        <img src="{{ $ps->product->resolved_image_url }}" class="product-img w-8 h-8">
+                                        <img src="{{ $imageUrl }}" class="product-img w-8 h-8">
                                         <div>
-                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $ps->product->nama_produk }}</p>
-                                            <p class="text-[9px] text-slate-400 mb-0">{{ $ps->store->nama ?? '-' }}</p>
+                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $productObj->nama_produk ?? 'Unknown' }}</p>
+                                            <p class="text-[9px] text-slate-400 mb-0">{{ $storeObj->nama ?? '-' }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td style="text-align: center;" class="font-extrabold">{{ $ps->stok }}</td>
+                                <td style="text-align: center;" class="font-extrabold">{{ $stokVal }}</td>
                                 <td style="text-align: right;">
-                                    <span class="status-badge {{ $ps->stok <= 2 ? 'badge-critical' : 'badge-low' }}" style="padding: 2px 6px; font-size: 0.6rem;">
-                                        {{ $ps->stok <= 2 ? 'Kritis' : 'Rendah' }}
+                                    <span class="status-badge {{ $stokVal <= 2 ? 'badge-critical' : 'badge-low' }}" style="padding: 2px 6px; font-size: 0.6rem;">
+                                        {{ $stokVal <= 2 ? 'Kritis' : 'Rendah' }}
                                     </span>
                                 </td>
                             </tr>
+                            @endif
                             @empty
                             <tr><td colspan="3" class="text-center py-8 text-slate-400">Semua stok aman.</td></tr>
                             @endforelse
@@ -714,20 +740,42 @@
                         <tbody>
                             @forelse($expiredProducts ?? [] as $ps)
                             @php
-                                $daysLeft = \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($ps->kadaluarsa), false);
+                                $psObj = (object) $ps;
+                                $productObj = isset($psObj->product) ? (object) $psObj->product : null;
+                                $storeObj = isset($psObj->store) ? (object) $psObj->store : null;
+                                $kadaluarsaVal = $psObj->kadaluarsa ?? null;
+                            @endphp
+                            @if($productObj && $kadaluarsaVal)
+                            @php
+                                $daysLeft = \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($kadaluarsaVal), false);
+                                $imageUrl = $productObj->resolved_image_url ?? null;
+                                if (!$imageUrl) {
+                                    $path = $productObj->image_url ?? null;
+                                    if (!$path) {
+                                        $imageUrl = asset('images/placeholder-product.png');
+                                    } elseif (str_starts_with($path, 'http')) {
+                                        $imageUrl = $path;
+                                    } else {
+                                        $cleanPath = ltrim($path, '/');
+                                        if (str_starts_with($cleanPath, 'storage/')) {
+                                            $cleanPath = substr($cleanPath, 8);
+                                        }
+                                        $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+                                    }
+                                }
                             @endphp
                             <tr>
                                 <td>
                                     <div class="flex items-center gap-3">
-                                        <img src="{{ $ps->product->resolved_image_url }}" class="product-img w-8 h-8">
+                                        <img src="{{ $imageUrl }}" class="product-img w-8 h-8">
                                         <div>
-                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $ps->product->nama_produk }}</p>
-                                            <p class="text-[9px] text-slate-400 mb-0">{{ $ps->store->nama ?? '-' }}</p>
+                                            <p class="font-bold text-[11px] mb-0 line-clamp-1">{{ $productObj->nama_produk ?? 'Unknown' }}</p>
+                                            <p class="text-[9px] text-slate-400 mb-0">{{ $storeObj->nama ?? '-' }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td style="text-align: center;" class="font-extrabold text-[10px]">
-                                    {{ \Carbon\Carbon::parse($ps->kadaluarsa)->format('d/m/y') }}
+                                    {{ \Carbon\Carbon::parse($kadaluarsaVal)->format('d/m/y') }}
                                 </td>
                                 <td style="text-align: right;">
                                     <span class="status-badge {{ $daysLeft <= 7 ? 'badge-critical' : 'badge-low' }}" style="padding: 2px 6px; font-size: 0.6rem;">
@@ -735,6 +783,7 @@
                                     </span>
                                 </td>
                             </tr>
+                            @endif
                             @empty
                             <tr><td colspan="3" class="text-center py-8 text-slate-400">Tidak ada produk segera expired.</td></tr>
                             @endforelse
@@ -760,17 +809,42 @@
                 </thead>
                 <tbody>
                     @foreach($topProducts as $index => $tp)
+                    @php
+                        $tpObj = (object) $tp;
+                        $productObj = isset($tpObj->product) ? (object) $tpObj->product : null;
+                        $totalQtyVal = $tpObj->total_qty ?? 0;
+                        $totalRevVal = $tpObj->total_revenue ?? 0;
+                    @endphp
+                    @if($productObj)
+                    @php
+                        $imageUrl = $productObj->resolved_image_url ?? null;
+                        if (!$imageUrl) {
+                            $path = $productObj->image_url ?? null;
+                            if (!$path) {
+                                $imageUrl = asset('images/placeholder-product.png');
+                            } elseif (str_starts_with($path, 'http')) {
+                                $imageUrl = $path;
+                            } else {
+                                $cleanPath = ltrim($path, '/');
+                                if (str_starts_with($cleanPath, 'storage/')) {
+                                    $cleanPath = substr($cleanPath, 8);
+                                }
+                                $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+                            }
+                        }
+                    @endphp
                     <tr>
                         <td class="font-bold text-slate-400">{{ $index + 1 }}</td>
                         <td>
                             <div class="flex items-center gap-2">
-                                <img src="{{ $tp->product->resolved_image_url }}" class="product-img w-8 h-8">
-                                <span class="font-bold text-xs truncate max-w-[100px]">{{ $tp->product->nama_produk }}</span>
+                                <img src="{{ $imageUrl }}" class="product-img w-8 h-8">
+                                <span class="font-bold text-xs truncate max-w-[100px]">{{ $productObj->nama_produk ?? 'Unknown' }}</span>
                             </div>
                         </td>
-                        <td style="text-align: center;" class="font-extrabold">{{ $tp->total_qty }}</td>
-                        <td style="text-align: right;" class="font-extrabold text-blue-600">Rp {{ number_format($tp->total_revenue / 1000, 0) }}k</td>
+                        <td style="text-align: center;" class="font-extrabold">{{ $totalQtyVal }}</td>
+                        <td style="text-align: right;" class="font-extrabold text-blue-600">Rp {{ number_format($totalRevVal / 1000, 0) }}k</td>
                     </tr>
+                    @endif
                     @endforeach
                 </tbody>
             </table>
@@ -784,22 +858,28 @@
             </div>
             <div class="activity-feed">
                 @forelse($activities as $act)
+                @php
+                    $actObj = (object) $act;
+                    $roleVal = $actObj->role ?? null;
+                @endphp
+                @if($roleVal)
                 <div class="activity-item">
-                    <div class="activity-icon" style="background: {{ $act['role'] == 'Online' ? '#e0e7ff' : '#f1f5f9' }};">
-                        <iconify-icon icon="{{ $act['icon'] }}" style="color: {{ $act['role'] == 'Online' ? '#4f46e5' : '#64748b' }};"></iconify-icon>
+                    <div class="activity-icon" style="background: {{ $roleVal == 'Online' ? '#e0e7ff' : '#f1f5f9' }};">
+                        <iconify-icon icon="{{ $actObj->icon ?? '' }}" style="color: {{ $roleVal == 'Online' ? '#4f46e5' : '#64748b' }};"></iconify-icon>
                     </div>
                     <div class="activity-content">
                         <div class="flex justify-between items-start">
-                            <span class="activity-user">{{ $act['user'] }}</span>
-                            <span class="activity-time">{{ $act['time'] }}</span>
+                            <span class="activity-user">{{ $actObj->user ?? '' }}</span>
+                            <span class="activity-time">{{ $actObj->time ?? '' }}</span>
                         </div>
                         <p class="activity-text">
-                            <span class="font-bold text-[10px] uppercase {{ $act['role'] == 'Online' ? 'text-teal-600' : 'text-slate-400' }}">
-                                {{ $act['role'] }}
-                            </span> | {{ $act['action'] }}
+                            <span class="font-bold text-[10px] uppercase {{ $roleVal == 'Online' ? 'text-teal-600' : 'text-slate-400' }}">
+                                {{ $roleVal }}
+                            </span> | {{ $actObj->action ?? '' }}
                         </p>
                     </div>
                 </div>
+                @endif
                 @empty
                 <div class="text-center py-8">
                     <p class="text-slate-400 text-sm font-bold">Belum ada aktivitas penjualan hari ini.</p>
@@ -816,7 +896,7 @@
                     <span class="waving-hand">👋</span>
                 </h1>
                 <p style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin-top: 2px;">
-                    Mengelola outlet: <span style="color: #0477bf;">{{ Auth::user()->store->nama ?? 'Semua Outlet' }}</span>
+                    Mengelola outlet: <span style="color: #0477bf;">{{ Auth::user()->outlet->nama ?? 'Semua Outlet' }}</span>
                 </p>
             </div>
         </div>
@@ -949,17 +1029,42 @@
                     </thead>
                     <tbody>
                         @foreach($topProducts as $index => $tp)
+                        @php
+                            $tpObj = (object) $tp;
+                            $productObj = isset($tpObj->product) ? (object) $tpObj->product : null;
+                            $totalQtyVal = $tpObj->total_qty ?? 0;
+                            $totalRevVal = $tpObj->total_revenue ?? 0;
+                        @endphp
+                        @if($productObj)
+                        @php
+                            $imageUrl = $productObj->resolved_image_url ?? null;
+                            if (!$imageUrl) {
+                                $path = $productObj->image_url ?? null;
+                                if (!$path) {
+                                    $imageUrl = asset('images/placeholder-product.png');
+                                } elseif (str_starts_with($path, 'http')) {
+                                    $imageUrl = $path;
+                                } else {
+                                    $cleanPath = ltrim($path, '/');
+                                    if (str_starts_with($cleanPath, 'storage/')) {
+                                        $cleanPath = substr($cleanPath, 8);
+                                    }
+                                    $imageUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($cleanPath);
+                                }
+                            }
+                        @endphp
                         <tr>
                             <td class="font-bold text-slate-400">{{ $index + 1 }}</td>
                             <td>
                                 <div class="flex items-center gap-2">
-                                    <img src="{{ $tp->product->resolved_image_url ?? '' }}" class="product-img w-8 h-8" style="border-radius: 8px;">
-                                    <span class="font-bold text-xs">{{ $tp->product->nama_produk ?? 'Unknown' }}</span>
+                                    <img src="{{ $imageUrl }}" class="product-img w-8 h-8" style="border-radius: 8px;">
+                                    <span class="font-bold text-xs">{{ $productObj->nama_produk ?? 'Unknown' }}</span>
                                 </div>
                             </td>
-                            <td style="text-align: center;" class="font-extrabold">{{ $tp->total_qty }}</td>
-                            <td style="text-align: right;" class="font-extrabold text-blue-600">Rp {{ number_format($tp->total_revenue, 0, ',', '.') }}</td>
+                            <td style="text-align: center;" class="font-extrabold">{{ $totalQtyVal }}</td>
+                            <td style="text-align: right;" class="font-extrabold text-blue-600">Rp {{ number_format($totalRevVal, 0, ',', '.') }}</td>
                         </tr>
+                        @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -973,21 +1078,27 @@
                 </div>
                 <div class="activity-feed">
                     @forelse($activities as $act)
+                    @php
+                        $actObj = (object) $act;
+                        $userVal = $actObj->user ?? null;
+                    @endphp
+                    @if($userVal)
                     <div class="activity-item" style="margin-bottom: 1rem;">
                         <div class="activity-icon" style="background: #f1f5f9; border-radius: 50%;">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($act['user']) }}&background=random" class="w-full h-full rounded-full">
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($userVal) }}&background=random" class="w-full h-full rounded-full">
                         </div>
                         <div class="activity-content">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <p class="activity-user" style="margin-bottom: 0;">{{ $act['user'] }}</p>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase">{{ $act['role'] }}</p>
+                                    <p class="activity-user" style="margin-bottom: 0;">{{ $userVal }}</p>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase">{{ $actObj->role ?? '' }}</p>
                                 </div>
-                                <span class="activity-time">{{ $act['time'] }}</span>
+                                <span class="activity-time">{{ $actObj->time ?? '' }}</span>
                             </div>
-                            <p class="activity-text" style="margin-top: 2px;">{{ $act['action'] }}</p>
+                            <p class="activity-text" style="margin-top: 2px;">{{ $actObj->action ?? '' }}</p>
                         </div>
                     </div>
+                    @endif
                     @empty
                     <div class="text-center py-8 text-slate-400">Belum ada aktivitas.</div>
                     @endforelse
@@ -1059,7 +1170,6 @@
     mainChart.render();
 
     function updateMainChart(preset) {
-        const d = datasets[preset];
         const picker = document.getElementById('year-range-picker');
         
         if (preset === 'tahunan') {
@@ -1068,6 +1178,25 @@
             picker.classList.add('hidden');
         }
 
+        const d = datasets[preset];
+        if (!d || !d.offline || d.offline.length === 0) {
+            const currentStoreId = document.querySelector('.outlet-select')?.value || '';
+            fetch(`${window.location.pathname}?preset=${preset}&type=main&store_id=${currentStoreId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                datasets[preset] = data;
+                applyMainChartUpdate(preset);
+            })
+            .catch(err => console.error('Error loading chart:', err));
+        } else {
+            applyMainChartUpdate(preset);
+        }
+    }
+
+    function applyMainChartUpdate(preset) {
+        const d = datasets[preset];
         mainChart.updateOptions({
             xaxis: {
                 categories: d.labels,
@@ -1110,6 +1239,24 @@
     eChart.render();
 
     function updateCashFlow(preset) {
+        const d = cfData[preset];
+        if (!d || !d.p_series || (d.p_series.length <= 1 && d.p_series[0] === 0)) {
+            const currentStoreId = document.querySelector('.outlet-select')?.value || '';
+            fetch(`${window.location.pathname}?preset=${preset}&type=cashflow&store_id=${currentStoreId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                cfData[preset] = data;
+                applyCashFlowUpdate(preset);
+            })
+            .catch(err => console.error('Error loading cashflow:', err));
+        } else {
+            applyCashFlowUpdate(preset);
+        }
+    }
+
+    function applyCashFlowUpdate(preset) {
         const d = cfData[preset];
         document.getElementById('cf-total-pemasukan').innerText = 'Rp ' + (d.total_pemasukan / 1000).toFixed(0) + 'k';
         document.getElementById('cf-total-pengeluaran').innerText = 'Rp ' + (d.total_pengeluaran / 1000).toFixed(0) + 'k';
@@ -1161,6 +1308,17 @@
     };
 
     new ApexCharts(document.querySelector("#debtChart"), debtOptions).render();
+
+    function refreshDashboard() {
+        const btn = document.querySelector('[onclick="refreshDashboard()"]');
+        const icon = btn.querySelector('iconify-icon');
+        icon.style.transition = 'transform 1s ease';
+        icon.style.transform = 'rotate(360deg)';
+        
+        const url = new URL(window.location.href);
+        url.searchParams.set('refresh', '1');
+        window.location.href = url.toString();
+    }
 
     function filterByStore(storeId) {
         const url = new URL(window.location.href);

@@ -37,148 +37,187 @@ class OutletController extends Controller
 
         $outlets = Outlet::with(['users.operator'])->get();
         
-        // Fetch Performance Data per Outlet
-        $performanceData = $outlets->map(function($outlet) {
-            // Omset & Laba Kotor from Transactions (Hanya status 'Selesai' atau 'Disetujui')
-            $sales = \App\Models\Transaction::where('store_id', $outlet->uuid)
-                ->where('jenis', 'penjualan')
-                ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui'])
-                ->with('details')
-                ->get();
+        $performanceData = collect();
+        $top3All = [];
 
-            
-            $omset = $sales->sum('total');
-            $volumeTransaksi = $sales->count();
-            
-            $labaKotor = $sales->flatMap->details->sum(function($detail) {
-                return ($detail->harga_jual - $detail->harga_modal) * $detail->jmlh;
-            });
+        // Tab Isolation: Only calculate performance stats if 'kinerja' tab is active
+        if ($activeTab === 'kinerja') {
+            $cacheKey = 'outlet_performance_data_v2';
+            if ($request->get('refresh') == '1') {
+                \Illuminate\Support\Facades\Cache::forget($cacheKey);
+            }
 
-            // Pemasukan & Pengeluaran from CashFlows
-            $cashFlows = \App\Models\CashFlow::where('store_id', $outlet->uuid)->get();
-            $pemasukan = $cashFlows->where('jenis', 'pemasukan')->sum('nominal');
-            $pengeluaran = $cashFlows->where('jenis', 'pengeluaran')->sum('nominal');
+            $cachedData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($outlets) {
+                // Fetch Performance Data per Outlet
+                $performanceData = $outlets->map(function($outlet) {
+                    // Omset & Volume Transaksi from Transactions (optimized SQL aggregation)
+                    $salesQuery = \App\Models\Transaction::where('store_id', $outlet->uuid)
+                        ->where('jenis', 'penjualan')
+                        ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
 
-            // Laba Bersih (Laba Kotor - Pengeluaran)
-            $labaBersih = $labaKotor - $pengeluaran;
+                    $omset = $salesQuery->sum('total');
+                    $volumeTransaksi = $salesQuery->count();
 
-            // 1. Get POS Top Product (transaction_detail)
-            $posSales = \App\Models\TransactionDetail::whereIn('transaction_id', $sales->pluck('uuid'))
-                ->select('product_id', \DB::raw('SUM(jmlh) as qty'))
-                ->groupBy('product_id')
-                ->get()
-                ->pluck('qty', 'product_id');
+                    // Laba Kotor directly via Database Aggregation (extremely fast, no hydrating models)
+                    $labaKotor = \App\Models\TransactionDetail::whereHas('transaction', function($q) use ($outlet) {
+                            $q->where('store_id', $outlet->uuid)
+                              ->where('jenis', 'penjualan')
+                              ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
+                        })
+                        ->select(\DB::raw('SUM((harga_jual - harga_modal) * jmlh) as total_laba'))
+                        ->value('total_laba') ?? 0;
 
-            // 2. Get Online Top Product (payment_order_items)
-            $onlineSales = \App\Models\PaymentOrderItem::whereHas('paymentOrder', function($query) use ($outlet) {
-                    $query->where('outlet_id', $outlet->uuid)
-                          ->whereIn('payment_status', ['paid', 'settlement', 'success']);
-                })
-                ->select('product_id', \DB::raw('SUM(quantity) as qty'))
-                ->groupBy('product_id')
-                ->get()
-                ->pluck('qty', 'product_id');
+                    // Pemasukan & Pengeluaran directly via Database aggregation
+                    $pemasukan = \App\Models\CashFlow::where('store_id', $outlet->uuid)
+                        ->where('jenis', 'pemasukan')
+                        ->sum('nominal');
+                    $pengeluaran = \App\Models\CashFlow::where('store_id', $outlet->uuid)
+                        ->where('jenis', 'pengeluaran')
+                        ->sum('nominal');
 
-            // Combine both sources
-            $allProductIds = $posSales->keys()->concat($onlineSales->keys())->unique();
-            $mergedSales = $allProductIds->mapWithKeys(function($id) use ($posSales, $onlineSales) {
-                return [$id => (float)($posSales->get($id, 0) + $onlineSales->get($id, 0))];
-            })->sortDesc();
+                    // Laba Bersih
+                    $labaBersih = $labaKotor - $pengeluaran;
 
-            $top3 = $mergedSales->take(3)->map(function($qty, $id) {
-                $prod = \App\Models\Product::find($id);
-                if (!$prod) return null;
-                return [
-                    'nama' => $prod->nama_produk,
-                    'image' => $prod->resolved_image_url,
-                    'qty' => $qty
-                ];
-            })->filter()->values()->toArray();
+                    // 1. Get POS Top Product (transaction_detail)
+                    $posSales = \App\Models\TransactionDetail::whereHas('transaction', function($q) use ($outlet) {
+                            $q->where('store_id', $outlet->uuid)
+                              ->where('jenis', 'penjualan')
+                              ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
+                        })
+                        ->select('product_id', \DB::raw('SUM(jmlh) as qty'))
+                        ->groupBy('product_id')
+                        ->orderByDesc('qty')
+                        ->take(3)
+                        ->pluck('qty', 'product_id');
 
+                    // 2. Get Online Top Product (payment_order_items)
+                    $onlineSales = \App\Models\PaymentOrderItem::whereHas('paymentOrder', function($query) use ($outlet) {
+                            $query->where('outlet_id', $outlet->uuid)
+                                  ->whereIn('payment_status', ['paid', 'settlement', 'success']);
+                        })
+                        ->select('product_id', \DB::raw('SUM(quantity) as qty'))
+                        ->groupBy('product_id')
+                        ->orderByDesc('qty')
+                        ->take(3)
+                        ->pluck('qty', 'product_id');
 
-            // Nilai Aset Stok (Stok x Harga Modal)
-            $nilaiAset = \App\Models\ProductStore::where('store_id', $outlet->uuid)
-                ->get()
-                ->sum(function($ps) {
-                    return $ps->stok * ($ps->product->harga_modal ?? 0);
+                    // Combine both sources
+                    $allProductIds = $posSales->keys()->concat($onlineSales->keys())->unique();
+                    $mergedSales = $allProductIds->mapWithKeys(function($id) use ($posSales, $onlineSales) {
+                        return [$id => (float)($posSales->get($id, 0) + $onlineSales->get($id, 0))];
+                    })->sortDesc();
+
+                    // Bulk fetch products to avoid N+1 query
+                    $productIds = $mergedSales->take(3)->keys()->toArray();
+                    $products = \App\Models\Product::whereIn('uuid', $productIds)->get()->keyBy('uuid');
+
+                    $top3 = $mergedSales->take(3)->map(function($qty, $id) use ($products) {
+                        $prod = $products->get($id);
+                        if (!$prod) return null;
+                        return [
+                            'nama' => $prod->nama_produk,
+                            'image' => $prod->resolved_image_url,
+                            'qty' => $qty
+                        ];
+                    })->filter()->values()->toArray();
+
+                    // Nilai Aset Stok via optimized single join query
+                    $nilaiAset = \App\Models\ProductStore::where('store_id', $outlet->uuid)
+                        ->join('products', 'product_store.product_id', '=', 'products.uuid')
+                        ->select(\DB::raw('SUM(product_store.stok * COALESCE(products.harga_modal, 0)) as total_asset'))
+                        ->value('total_asset') ?? 0;
+
+                    return [
+                        'outlet_uuid' => $outlet->uuid,
+                        'nama' => $outlet->nama,
+                        'omset' => $omset,
+                        'laba_kotor' => $labaKotor,
+                        'laba_bersih' => $labaBersih,
+                        'pemasukan' => $pemasukan,
+                        'pengeluaran' => $pengeluaran,
+                        'volume_transaksi' => $volumeTransaksi,
+                        'top_products' => $top3,
+                        'nilai_aset' => $nilaiAset
+                    ];
                 });
 
-            return [
-                'outlet_uuid' => $outlet->uuid,
-                'nama' => $outlet->nama,
-                'omset' => $omset,
-                'laba_kotor' => $labaKotor,
-                'laba_bersih' => $labaBersih,
-                'pemasukan' => $pemasukan,
-                'pengeluaran' => $pengeluaran,
-                'volume_transaksi' => $volumeTransaksi,
-                'top_products' => $top3,
-                'nilai_aset' => $nilaiAset
-            ];
-        });
+                // Global Top Product (All Outlets) - Merged POS & Online
+                $posSalesAll = \App\Models\TransactionDetail::whereHas('transaction', function($q) {
+                        $q->where('jenis', 'penjualan')
+                          ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
+                    })
+                    ->select('product_id', \DB::raw('SUM(jmlh) as qty'))
+                    ->groupBy('product_id')
+                    ->orderByDesc('qty')
+                    ->take(3)
+                    ->pluck('qty', 'product_id');
 
-        // Global Top Product (All Outlets) - Merged POS & Online
-        $posSalesAll = \App\Models\TransactionDetail::whereHas('transaction', function($q) {
-                $q->where('jenis', 'penjualan')
-                  ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
-            })
-            ->select('product_id', \DB::raw('SUM(jmlh) as qty'))
-            ->groupBy('product_id')
-            ->get()->pluck('qty', 'product_id');
+                $onlineSalesAll = \App\Models\PaymentOrderItem::whereHas('paymentOrder', function($q) {
+                        $q->whereIn('payment_status', ['paid', 'settlement', 'success']);
+                    })
+                    ->select('product_id', \DB::raw('SUM(quantity) as qty'))
+                    ->groupBy('product_id')
+                    ->orderByDesc('qty')
+                    ->take(3)
+                    ->pluck('qty', 'product_id');
 
+                $allIdsAll = $posSalesAll->keys()->concat($onlineSalesAll->keys())->unique();
+                $mergedAll = $allIdsAll->mapWithKeys(function($id) use ($posSalesAll, $onlineSalesAll) {
+                    return [$id => (float)($posSalesAll->get($id, 0) + $onlineSalesAll->get($id, 0))];
+                })->sortDesc();
 
-        $onlineSalesAll = \App\Models\PaymentOrderItem::whereHas('paymentOrder', function($q) {
-                $q->whereIn('payment_status', ['paid', 'settlement', 'success']);
-            })
-            ->select('product_id', \DB::raw('SUM(quantity) as qty'))
-            ->groupBy('product_id')
-            ->get()->pluck('qty', 'product_id');
+                // Bulk fetch global top products to avoid N+1 query
+                $productIdsAll = $mergedAll->take(3)->keys()->toArray();
+                $productsAll = \App\Models\Product::whereIn('uuid', $productIdsAll)->get()->keyBy('uuid');
 
-        $allIdsAll = $posSalesAll->keys()->concat($onlineSalesAll->keys())->unique();
-        $mergedAll = $allIdsAll->mapWithKeys(function($id) use ($posSalesAll, $onlineSalesAll) {
-            return [$id => (float)($posSalesAll->get($id, 0) + $onlineSalesAll->get($id, 0))];
-        })->sortDesc();
+                $top3All = $mergedAll->take(3)->map(function($qty, $id) use ($productsAll) {
+                    $prod = $productsAll->get($id);
+                    if (!$prod) return null;
+                    return [
+                        'nama' => $prod->nama_produk,
+                        'image' => $prod->resolved_image_url,
+                        'qty' => $qty
+                    ];
+                })->filter()->values()->toArray();
 
-        $top3All = $mergedAll->take(3)->map(function($qty, $id) {
-            $prod = \App\Models\Product::find($id);
-            if (!$prod) return null;
-            return [
-                'nama' => $prod->nama_produk,
-                'image' => $prod->resolved_image_url,
-                'qty' => $qty
-            ];
-        })->filter()->values()->toArray();
-
-
-        $activeTab = $request->query('active_tab', 'data');
-
-        // Stock History (Stock Card)
-        $stockHistoryQuery = \App\Models\StockCard::with(['product', 'store'])
-            ->orderBy('created_at', 'desc');
-
-        if ($request->has('search') && $request->search != '') {
-            $search = strtolower($request->search);
-            $stockHistoryQuery->where(function($q) use ($search) {
-                $q->whereHas('product', function($sq) use ($search) {
-                    $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"])
-                       ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
-                })->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"]);
+                return compact('performanceData', 'top3All');
             });
+
+            $performanceData = $cachedData['performanceData'];
+            $top3All = $cachedData['top3All'];
         }
 
-        if ($request->has('store_id') && $request->store_id != 'all' && $request->store_id != '') {
-            $stockHistoryQuery->where('store_id', $request->store_id);
-        }
+        // Tab Isolation: Only query stock history if 'riwayat' tab or AJAX filtering is active
+        $stockHistory = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 50);
 
-        if ($request->has('start_date') && $request->start_date != '') {
-            $stockHistoryQuery->whereDate('created_at', '>=', $request->start_date);
-        }
+        if ($activeTab === 'riwayat' || $request->ajax()) {
+            $stockHistoryQuery = \App\Models\StockCard::with(['product', 'store'])
+                ->orderBy('created_at', 'desc');
 
-        if ($request->has('end_date') && $request->end_date != '') {
-            $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
-        }
+            if ($request->has('search') && $request->search != '') {
+                $search = strtolower($request->search);
+                $stockHistoryQuery->where(function($q) use ($search) {
+                    $q->whereHas('product', function($sq) use ($search) {
+                        $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"])
+                           ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
+                    })->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"]);
+                });
+            }
 
-        $stockHistory = $stockHistoryQuery->paginate(50)->withQueryString();
+            if ($request->has('store_id') && $request->store_id != 'all' && $request->store_id != '') {
+                $stockHistoryQuery->where('store_id', $request->store_id);
+            }
+
+            if ($request->has('start_date') && $request->start_date != '') {
+                $stockHistoryQuery->whereDate('created_at', '>=', $request->start_date);
+            }
+
+            if ($request->has('end_date') && $request->end_date != '') {
+                $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
+            }
+
+            $stockHistory = $stockHistoryQuery->paginate(50)->withQueryString();
+        }
 
         if ($request->ajax()) {
             return view('outlet.index', [
