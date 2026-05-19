@@ -76,47 +76,6 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    lucide.createIcons();
-
-    function togglePassword(inputId, iconId) {
-        const passInput = document.getElementById(inputId);
-        const eyeIcon = document.getElementById(iconId);
-        
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            eyeIcon.setAttribute('data-lucide', 'eye-off');
-        } else {
-            passInput.type = 'password';
-            eyeIcon.setAttribute('data-lucide', 'eye');
-        }
-        lucide.createIcons(); 
-    }
-
-    function tampilkanLoading(btn) {
-        const form = document.getElementById('resetForm');
-        if(form.checkValidity()) {
-            btn.innerHTML = 'Memproses...';
-            btn.style.opacity = '0.7';
-            btn.style.cursor = 'not-allowed';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const sessionData = document.getElementById('session-data');
-        const errors = JSON.parse(sessionData.dataset.errors || '[]');
-
-        if (errors.length > 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal Update',
-                text: errors[0],
-                confirmButtonColor: '#0477bf',
-                showClass: { popup: 'animate__animated animate__shakeX' }
-            });
-        }
-    });
-</script>
+<script src="{{ asset('js/auth.js') }}"></script>
 </body>
 </html>

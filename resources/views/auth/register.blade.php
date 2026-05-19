@@ -87,67 +87,6 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    lucide.createIcons();
-
-    function togglePassword(inputId, iconId) {
-        const passInput = document.getElementById(inputId);
-        const eyeIcon = document.getElementById(iconId);
-        
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            eyeIcon.setAttribute('data-lucide', 'eye-off');
-        } else {
-            passInput.type = 'password';
-            eyeIcon.setAttribute('data-lucide', 'eye');
-        }
-        lucide.createIcons(); 
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const sessionData = document.getElementById('session-data');
-        const errors = JSON.parse(sessionData.dataset.errors || '[]');
-        const successMessage = sessionData.dataset.success;
-
-        if (errors.length > 0) {
-            let listHtml = '<ul style="text-align: left; font-size: 14px; color: #555; list-style-type: none; padding: 0;">';
-            errors.forEach(function(msg) {
-                listHtml += `<li style="margin-bottom: 8px; display: flex; align-items: center;">
-                    <span style="color: #ef4444; margin-right: 8px;">●</span> ${msg}
-                </li>`;
-            });
-            listHtml += '</ul>';
-
-            Swal.fire({
-                icon: 'error',
-                title: 'Registrasi Gagal',
-                html: listHtml,
-                confirmButtonColor: '#0477bf',
-                confirmButtonText: 'Coba Lagi',
-                showClass: {
-                    popup: 'animate__animated animate__shakeX'
-                }
-            });
-        }
-
-        if (successMessage) {
-            Swal.fire({
-                title: 'Berhasil!',
-                text: successMessage,
-                icon: 'success',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                showClass: {
-                    popup: 'animate__animated animate__backInDown'
-                },
-                hideClass: {
-                    popup: 'animate__animated animate__backOutUp'
-                }
-            });
-        }
-    });
-</script>
+<script src="{{ asset('js/auth.js') }}"></script>
 </body>
 </html>

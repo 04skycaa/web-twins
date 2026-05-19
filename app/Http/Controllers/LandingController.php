@@ -27,6 +27,8 @@ class LandingController extends Controller
         $now = Carbon::now();
         $promos = Promo::with('stores')
             ->where('status', true)
+            ->where('tanggal_mulai', '<=', $now)
+            ->where('tanggal_selesai', '>=', $now)
             ->whereNotNull('image_banner')
             ->orderBy('tanggal_mulai', 'desc')
             ->get();
@@ -56,10 +58,16 @@ class LandingController extends Controller
     public function showOutlet($id)
     {
         $outlet = Outlet::findOrFail($id);
-        // 1. Ambil promo aktif untuk store ini
+        $now = Carbon::now();
+        // 1. Ambil promo aktif untuk store ini (atau promo global tanpa toko tertentu) yang dalam masa berlaku
         $activePromos = Promo::where('status', true)
-            ->whereHas('stores', function ($q) use ($outlet) {
-                $q->where('store_id', $outlet->uuid);
+            ->where('tanggal_mulai', '<=', $now)
+            ->where('tanggal_selesai', '>=', $now)
+            ->where(function ($query) use ($outlet) {
+                $query->whereHas('stores', function ($q) use ($outlet) {
+                    $q->where('store_id', $outlet->uuid);
+                })
+                ->orDoesntHave('stores'); // Global voucher/promo if no stores are explicitly selected
             })
             ->with([
                 'products' => function ($q) {
@@ -92,6 +100,7 @@ class LandingController extends Controller
         $products = Product::with('priceLevels')
             ->join('product_store', 'products.uuid', '=', 'product_store.product_id')
             ->where('product_store.store_id', $outlet->uuid)
+            ->where('product_store.status_aktif', true)
             ->select(
                 'products.*',
                 'product_store.stok as stok'

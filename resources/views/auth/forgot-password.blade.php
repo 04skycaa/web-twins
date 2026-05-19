@@ -54,44 +54,6 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    lucide.createIcons();
-
-    function tampilkanLoading(btn) {
-        const form = document.getElementById('forgotForm');
-        if(form.checkValidity()) {
-            btn.innerHTML = 'Mengirim...';
-            btn.style.opacity = '0.7';
-            btn.style.cursor = 'not-allowed';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const sessionData = document.getElementById('session-data');
-        const errors = JSON.parse(sessionData.dataset.errors || '[]');
-        const statusMessage = sessionData.dataset.status;
-
-        if (statusMessage) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Email Terkirim!',
-                text: statusMessage,
-                confirmButtonColor: '#0477bf',
-                showClass: { popup: 'animate__animated animate__fadeInDown' }
-            });
-        }
-
-        if (errors.length > 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Opps!',
-                text: errors[0], 
-                confirmButtonColor: '#0477bf',
-                showClass: { popup: 'animate__animated animate__shakeX' }
-            });
-        }
-    });
-</script>
+<script src="{{ asset('js/auth.js') }}"></script>
 </body>
 </html>

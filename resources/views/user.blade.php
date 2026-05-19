@@ -23,15 +23,22 @@
     <meta name="user-name" content="{{ optional(auth()->user())->name ?? '' }}">
     <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org">
+    <link rel="dns-prefetch" href="https://router.project-osrm.org">
+    
     <link rel="stylesheet" href="{{ asset('css/home.css') }}">
     <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="{{ asset('vendor/leaflet/leaflet.js') }}" defer></script>
     @if (config('services.midtrans.client_key'))
         <script
             src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
-            data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+            data-client-key="{{ config('services.midtrans.client_key') }}" defer></script>
     @endif
 
     <style>
@@ -865,6 +872,27 @@
     </nav>
 
     <script>
+        // Safe LocalStorage Wrapper - Mencegah SecurityError di browser/auditing tool yang menonaktifkan cookies/localStorage
+        const safeLocalStorage = {
+            getItem(key) {
+                try {
+                    return window.localStorage ? window.localStorage.getItem(key) : null;
+                } catch (e) {
+                    return null;
+                }
+            },
+            setItem(key, value) {
+                try {
+                    if (window.localStorage) window.localStorage.setItem(key, value);
+                } catch (e) {}
+            },
+            removeItem(key) {
+                try {
+                    if (window.localStorage) window.localStorage.removeItem(key);
+                } catch (e) {}
+            }
+        };
+
         function toggleUserMenu() {
             const menu = document.getElementById('userMenu');
             menu.classList.toggle('show');
@@ -1026,34 +1054,34 @@
 
         function savePersistence() {
             if (!isAuthenticated) return;
-            localStorage.setItem('twins_cart', JSON.stringify(cart));
-            localStorage.setItem('twins_history', JSON.stringify(historyData));
+            safeLocalStorage.setItem('twins_cart', JSON.stringify(cart));
+            safeLocalStorage.setItem('twins_history', JSON.stringify(historyData));
             if (window.deliveryDetailAddress) {
-                localStorage.setItem('twins_delivery_detail', window.deliveryDetailAddress);
+                safeLocalStorage.setItem('twins_delivery_detail', window.deliveryDetailAddress);
             }
         }
 
         function loadPersistence() {
             if (!isAuthenticated) {
                 // Bersihkan jika tidak login (untuk keamanan)
-                localStorage.removeItem('twins_cart');
-                localStorage.removeItem('twins_history');
-                localStorage.removeItem('twins_delivery_detail');
+                safeLocalStorage.removeItem('twins_cart');
+                safeLocalStorage.removeItem('twins_history');
+                safeLocalStorage.removeItem('twins_delivery_detail');
                 return;
             }
-            const savedCart = localStorage.getItem('twins_cart');
+            const savedCart = safeLocalStorage.getItem('twins_cart');
             if (savedCart) {
                 try {
                     cart = JSON.parse(savedCart);
                 } catch (e) {}
             }
-            const savedHistory = localStorage.getItem('twins_history');
+            const savedHistory = safeLocalStorage.getItem('twins_history');
             if (savedHistory) {
                 try {
                     historyData = JSON.parse(savedHistory);
                 } catch (e) {}
             }
-            const savedDetail = localStorage.getItem('twins_delivery_detail');
+            const savedDetail = safeLocalStorage.getItem('twins_delivery_detail');
             if (savedDetail) window.deliveryDetailAddress = savedDetail;
         }
 
@@ -1250,8 +1278,18 @@
 
         function resolveOutletCoordinatesFromAddress() {
             if (outletCoordinates) return Promise.resolve(outletCoordinates);
-            if (outletGeocodeTried) return Promise.resolve(null);
+            
+            // Performa Tinggi: Gunakan cache localStorage agar terhindar dari pemanggilan API lambat berulang kali
+            const cacheKey = 'twins_outlet_coords_' + btoa(unescape(encodeURIComponent(outletAddress)));
+            const cachedCoords = localStorage.getItem(cacheKey);
+            if (cachedCoords) {
+                try {
+                    outletCoordinates = JSON.parse(cachedCoords);
+                    return Promise.resolve(outletCoordinates);
+                } catch (e) {}
+            }
 
+            if (outletGeocodeTried) return Promise.resolve(null);
             outletGeocodeTried = true;
 
             return fetch(
@@ -1268,6 +1306,9 @@
                         lat,
                         lng
                     };
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify(outletCoordinates));
+                    } catch (e) {}
                     return outletCoordinates;
                 })
                 .catch(() => null);
@@ -2542,7 +2583,7 @@
                     savePersistence();
                     
                     // Reload otomatis ke halaman riwayat
-                    localStorage.setItem('open_history_on_load', 'true');
+                    safeLocalStorage.setItem('open_history_on_load', 'true');
                     
                     const loader = document.getElementById('global-page-loader');
                     if (loader) {
@@ -2999,7 +3040,7 @@
 
         function setTheme(themeName) {
             body.setAttribute('data-theme', themeName);
-            localStorage.setItem('twins_theme', themeName);
+            safeLocalStorage.setItem('twins_theme', themeName);
             document.getElementById('themeMenu').classList.remove('show');
             updateActiveThemeBtn(themeName);
         }
@@ -3023,7 +3064,7 @@
         }, true);
 
         // Initialize Theme from Storage
-        const savedTheme = localStorage.getItem('twins_theme') || 'dark';
+        const savedTheme = safeLocalStorage.getItem('twins_theme') || 'dark';
         setTheme(savedTheme);
 
         document.querySelectorAll('.anim-fade-up, .anim-zoom-in, .white-card').forEach(el => {
@@ -3037,6 +3078,13 @@
         renderProducts();
         renderCart();
         syncPersistedDeliveryDistance();
+
+        // Performa Instan: Sembunyikan loader utama segera setelah HTML ter-parsing tanpa menunggu download library CDN selesai!
+        const globalLoader = document.getElementById('global-page-loader');
+        if (globalLoader) {
+            globalLoader.style.opacity = '0';
+            globalLoader.style.visibility = 'hidden';
+        }
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -3115,39 +3163,40 @@
         const _sessionError = document.querySelector('meta[name="session-error"]')?.content || null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (_sessionSuccess) {
-                Swal.fire({
-                    title: 'Berhasil!',
-                    text: _sessionSuccess,
-                    icon: 'success',
-                    background: 'var(--bg-color)',
-                    color: 'var(--text-color)',
-                    confirmButtonColor: 'var(--accent-purple)',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
-            }
+            // Optimasi LCP & Paint: Tunda pop-up SweetAlert2 otomatis agar elemen Largest Contentful Paint (LCP) halaman utama dirender terlebih dahulu
+            setTimeout(() => {
+                if (_sessionSuccess) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: _sessionSuccess,
+                        icon: 'success',
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        confirmButtonColor: 'var(--accent-purple)',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                }
 
-            if (_sessionError) {
-                Swal.fire({
-                    title: 'Oops!',
-                    text: _sessionError,
-                    icon: 'error',
-                    background: 'var(--bg-color)',
-                    color: 'var(--text-color)',
-                    confirmButtonColor: 'var(--accent-pink)',
-                });
-            }
+                if (_sessionError) {
+                    Swal.fire({
+                        title: 'Oops!',
+                        text: _sessionError,
+                        icon: 'error',
+                        background: 'var(--bg-color)',
+                        color: 'var(--text-color)',
+                        confirmButtonColor: 'var(--accent-pink)',
+                    });
+                }
+            }, 600);
         });
 
         // --- DASHBOARD PREMIUM HEADER ANIMATION ---
         document.addEventListener('DOMContentLoaded', () => {
             const globalLoader = document.getElementById('global-page-loader');
             if (globalLoader) {
-                setTimeout(() => {
-                    globalLoader.style.opacity = '0';
-                    globalLoader.style.visibility = 'hidden';
-                }, 400);
+                globalLoader.style.opacity = '0';
+                globalLoader.style.visibility = 'hidden';
             }
 
             if (typeof gsap !== 'undefined') {
@@ -3207,8 +3256,8 @@
             }
 
             // Buka riwayat jika ada flag auto-reload setelah checkout
-            if (localStorage.getItem('open_history_on_load') === 'true') {
-                localStorage.removeItem('open_history_on_load');
+            if (safeLocalStorage.getItem('open_history_on_load') === 'true') {
+                safeLocalStorage.removeItem('open_history_on_load');
                 setTimeout(() => { switchPage('history'); }, 100);
             }
 
@@ -3232,7 +3281,7 @@
                 }
             } catch (error) {
                 console.error('Failed to fetch history:', error);
-                const savedHistory = localStorage.getItem('twins_history');
+                const savedHistory = safeLocalStorage.getItem('twins_history');
                 if (savedHistory) {
                     try {
                         historyData = JSON.parse(savedHistory);

@@ -20,7 +20,7 @@ class RoleMiddleware
 
         $user = Auth::user();
         
-        // Handle special 'admin' role check
+        // untuk ngecek role admin
         if (in_array('admin', $roles) && $user->canAccessAdmin()) {
             return $next($request);
         }

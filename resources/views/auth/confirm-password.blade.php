@@ -77,54 +77,6 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    lucide.createIcons();
-
-    function togglePassword(inputId, iconId) {
-        const passInput = document.getElementById(inputId);
-        const eyeIcon = document.getElementById(iconId);
-        
-        if (passInput.type === 'password') {
-            passInput.type = 'text';
-            eyeIcon.setAttribute('data-lucide', 'eye-off');
-        } else {
-            passInput.type = 'password';
-            eyeIcon.setAttribute('data-lucide', 'eye');
-        }
-        lucide.createIcons(); 
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const sessionData = document.getElementById('session-data');
-        const errors = JSON.parse(sessionData.dataset.errors || '[]');
-        const status = sessionData.dataset.status;
-        const confirmed = sessionData.dataset.confirmed;
-
-        if (errors.length > 0) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Konfirmasi Gagal',
-                text: 'Kata sandi yang Anda masukkan salah.',
-                confirmButtonColor: '#0477bf',
-                showClass: { popup: 'animate__animated animate__shakeX' }
-            });
-        }
-
-        if (confirmed && !errors.length) {
-            const now = Math.floor(Date.now() / 1000);
-            if (now - confirmed < 5) { 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Identitas Terverifikasi',
-                    text: 'Akses diberikan. Silakan lanjut.',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    timerProgressBar: true
-                });
-            }
-        }
-    });
-</script>
+<script src="{{ asset('js/auth.js') }}"></script>
 </body>
 </html>

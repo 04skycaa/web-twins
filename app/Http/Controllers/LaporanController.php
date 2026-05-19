@@ -44,13 +44,16 @@ class LaporanController extends Controller
         $date = $request->query('date', date('Y-m-d'));
         $paidStatuses = ['paid', 'settlement', 'success', 'capture'];
 
+        $start = \Carbon\Carbon::parse($date)->startOfDay();
+        $end = \Carbon\Carbon::parse($date)->endOfDay();
+
         $hppSubQuery = DB::table('transaction_detail')
             ->select('transaction_id', DB::raw('COALESCE(SUM(harga_modal * jmlh), 0) as total_hpp'))
             ->groupBy('transaction_id');
 
         $offlineOmsetQuery = DB::table('transactions')
             ->where('jenis', 'penjualan')
-            ->whereDate('tanggal', $date);
+            ->whereBetween('tanggal', [$start, $end]);
 
         if ($store !== null && $store !== '') {
             $offlineOmsetQuery->where('store_id', $store);
@@ -59,7 +62,7 @@ class LaporanController extends Controller
         $offlineOmset = (float) $offlineOmsetQuery->sum('total');
 
         $onlineOmsetQuery = DB::table('payment_orders')
-            ->whereDate('created_at', $date)
+            ->whereBetween('created_at', [$start, $end])
             ->whereIn('payment_status', $paidStatuses);
 
         if ($store !== null && $store !== '') {
@@ -73,7 +76,7 @@ class LaporanController extends Controller
                 $join->on('hpp.transaction_id', '=', 't.uuid');
             })
             ->where('t.jenis', 'penjualan')
-            ->whereDate('t.tanggal', $date);
+            ->whereBetween('t.tanggal', [$start, $end]);
 
         if ($store !== null && $store !== '') {
             $offlineHppQuery->where('t.store_id', $store);
@@ -83,7 +86,7 @@ class LaporanController extends Controller
 
         $pembelian = (float) DB::table('transactions')
             ->where('jenis', 'pembelian')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -91,7 +94,7 @@ class LaporanController extends Controller
 
         $retur = (float) DB::table('transactions')
             ->where('jenis', 'retur')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -99,7 +102,7 @@ class LaporanController extends Controller
 
         $rugi = (float) DB::table('transactions')
             ->where('jenis', 'rugi')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -107,7 +110,7 @@ class LaporanController extends Controller
 
         $transfer = (float) DB::table('transactions')
             ->where('jenis', 'transfer')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -115,7 +118,7 @@ class LaporanController extends Controller
 
         $pemasukanCashFlow = (float) DB::table('cash_flows')
             ->where('jenis', 'pemasukan')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -124,7 +127,7 @@ class LaporanController extends Controller
         $pemasukanPiutang = (float) DB::table('detail_debts as dd')
             ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
             ->where('d.tipe', 'piutang')
-            ->whereDate('dd.tanggal', $date)
+            ->whereBetween('dd.tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('d.store_id', $store);
             })
@@ -132,7 +135,7 @@ class LaporanController extends Controller
 
         $pengeluaranCashFlow = (float) DB::table('cash_flows')
             ->where('jenis', 'pengeluaran')
-            ->whereDate('tanggal', $date)
+            ->whereBetween('tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('store_id', $store);
             })
@@ -141,7 +144,7 @@ class LaporanController extends Controller
         $pengeluaranUtang = (float) DB::table('detail_debts as dd')
             ->join('debts as d', 'd.uuid', '=', 'dd.debts_id')
             ->where('d.tipe', 'utang')
-            ->whereDate('dd.tanggal', $date)
+            ->whereBetween('dd.tanggal', [$start, $end])
             ->when($store !== null && $store !== '', function ($query) use ($store) {
                 $query->where('d.store_id', $store);
             })

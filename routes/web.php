@@ -234,4 +234,27 @@ Route::post('/submit-general-review', [LandingController::class, 'generalReview'
     ->middleware(['auth', 'verified'])
     ->name('landing.review.store');
 
+Route::get('/apply-indexes', function () {
+    try {
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_cash_flows_store_tanggal ON cash_flows(store_id, tanggal)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_cash_flows_jenis ON cash_flows(jenis)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_cash_flows_tanggal ON cash_flows(tanggal)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_transactions_store_tanggal ON transactions(store_id, tanggal)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_transactions_jenis ON transactions(jenis)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_transactions_tanggal ON transactions(tanggal)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_product_store_composite ON product_store(product_id, store_id)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_product_store_stok ON product_store(stok)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_product_store_kadaluarsa ON product_store(kadaluarsa)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_debts_store_tipe_sisa ON debts(store_id, tipe, sisa)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_debts_jatuh_tempo ON debts(jatuh_tempo)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_transaction_detail_transaction_id ON transaction_detail(transaction_id)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_payment_orders_paid_at ON payment_orders(paid_at)');
+        \Illuminate\Support\Facades\DB::statement('CREATE INDEX IF NOT EXISTS idx_payment_order_items_order_id ON payment_order_items(payment_order_id)');
+        return "SUKSES: Semua index performa tinggi berhasil diterapkan langsung ke Supabase!";
+    } catch (\Exception $e) {
+        return "ERROR: " . $e->getMessage();
+    }
+});
+
 require __DIR__ . '/auth.php';
+

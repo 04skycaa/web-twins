@@ -179,7 +179,8 @@ class TransaksiController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date',
             'image_banner' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
-            'product_ids' => 'nullable|array'
+            'product_ids' => 'nullable|array',
+            'store_ids' => 'nullable|array'
         ]);
 
         $updateData = $request->except(['product_ids', 'store_ids', '_token', '_method']);
@@ -211,6 +212,20 @@ class TransaksiController extends Controller
                     'nilai_diskon' => $promo->nilai
                 ]);
             }
+        }
+
+        // Update Relasi Toko/Outlet
+        if ($request->has('store_ids')) {
+            \Illuminate\Support\Facades\DB::table('promo_store')->where('promo_id', $promo->uuid)->delete();
+            foreach ($request->store_ids as $storeId) {
+                \Illuminate\Support\Facades\DB::table('promo_store')->insert([
+                    'uuid' => \Illuminate\Support\Str::uuid(),
+                    'promo_id' => $promo->uuid,
+                    'store_id' => $storeId
+                ]);
+            }
+        } else {
+            \Illuminate\Support\Facades\DB::table('promo_store')->where('promo_id', $promo->uuid)->delete();
         }
         
         return redirect()->route('transaksi.index', ['tab' => 'diskon'])->with('success', 'Promo berhasil diperbarui');
