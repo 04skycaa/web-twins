@@ -43,31 +43,34 @@
             color: var(--text-color) !important;
         }
 
-        /* --- Walking Cake Background (Black Emojis) --- */
         .walking-cake {
             position: absolute;
-            opacity: 0.35;
+            opacity: 0.15; /* hitam sedikit transparan */
             filter: grayscale(100%) brightness(0%);
             user-select: none;
-            pointer-events: none;
+            pointer-events: auto; /* allow proximity/hover interaction */
             z-index: -1;
-            transition: opacity 0.5s ease;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
             font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+            animation: centerCakeFloat 6s ease-in-out infinite alternate;
+            will-change: transform, opacity;
         }
 
-        .dir-right { animation: walk-right linear infinite; }
-        .dir-left { animation: walk-left linear infinite; }
-
-        @keyframes walk-right {
-            0% { left: -10%; transform: translateX(0) rotate(0deg); }
-            50% { transform: translateX(5vw) rotate(10deg); }
-            100% { left: 110%; transform: translateX(0) rotate(0deg); }
+        .walking-cake:hover {
+            opacity: 0.55 !important;
+            transform: scale(1.5) rotate(25deg) !important;
         }
 
-        @keyframes walk-left {
-            0% { left: 110%; transform: translateX(0) rotate(0deg); }
-            50% { transform: translateX(-5vw) rotate(-10deg); }
-            100% { left: -10%; transform: translateX(0) rotate(0deg); }
+        @keyframes centerCakeFloat {
+            0% {
+                transform: translate3d(0, 0, 0) rotate(0deg);
+            }
+            50% {
+                transform: translate3d(15px, -20px, 0) rotate(8deg);
+            }
+            100% {
+                transform: translate3d(-15px, 20px, 0) rotate(-8deg);
+            }
         }
 
         [data-theme="light"] .walking-cake {
@@ -1243,11 +1246,16 @@
 
                 for(let i = 0; i < layerCount; i++) {
                     const el = document.createElement('div');
-                    el.className = 'walking-cake ' + (Math.random() > 0.5 ? 'dir-right' : 'dir-left');
+                    el.className = 'walking-cake';
                     el.innerText = items[Math.floor(Math.random() * items.length)];
-                    el.style.top = (Math.random() * 90) + 'vh';
-                    el.style.animationDuration = (Math.random() * 25 + 20) + 's';
-                    el.style.animationDelay = '-' + (Math.random() * 20) + 's';
+                    
+                    // Cluster coordinates around the center of the viewport (left: 30% to 70%, top: 20% to 70%)
+                    el.style.left = (Math.random() * 40 + 30) + '%';
+                    el.style.top = (Math.random() * 50 + 20) + 'vh';
+                    
+                    // Gentle randomized float speeds
+                    el.style.animationDuration = (Math.random() * 6 + 4) + 's';
+                    el.style.animationDelay = '-' + (Math.random() * 5) + 's';
                     el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
                     
                     const wrapper = document.createElement('div');
@@ -1270,16 +1278,14 @@
 
                 let targetX = 0, targetY = 0;
                 let currentX = 0, currentY = 0;
+                let mouseX = 0, mouseY = 0;
                 let rafId = null;
-                let isIdle = true;
 
                 document.addEventListener("mousemove", (e) => {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
                     targetX = (e.clientX - window.innerWidth / 2) * 0.08;
                     targetY = (e.clientY - window.innerHeight / 2) * 0.08;
-                    if (isIdle) {
-                        isIdle = false;
-                        if (!rafId) rafId = requestAnimationFrame(animate3D);
-                    }
                 });
 
                 function animate3D() {
@@ -1298,17 +1304,38 @@
                         layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
                     });
 
-                    // Stop loop if motion is negligible
-                    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
-                        isIdle = true;
-                        rafId = null;
-                        return;
-                    }
+                    // Proximity tracking for all walking background cakes
+                    const cakes = document.querySelectorAll('.walking-cake');
+                    cakes.forEach((cake) => {
+                        const rect = cake.getBoundingClientRect();
+                        const cakeCenterX = rect.left + rect.width / 2;
+                        const cakeCenterY = rect.top + rect.height / 2;
+                        
+                        const distanceX = mouseX - cakeCenterX;
+                        const distanceY = mouseY - cakeCenterY;
+                        const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                        
+                        // Influence radius of 200px
+                        if (distance < 200) {
+                            const intensity = (200 - distance) / 200; // 0 to 1
+                            
+                            // Pull cakes towards the cursor center (attraction pull)
+                            const pullX = distanceX * intensity * 0.25;
+                            const pullY = distanceY * intensity * 0.25;
+                            
+                            cake.style.transform = `translate3d(${pullX}px, ${pullY}px, 0) scale(${1 + intensity * 0.6}) rotate(${intensity * 45}deg)`;
+                            cake.style.opacity = 0.15 + intensity * 0.45;
+                        } else {
+                            cake.style.transform = '';
+                            cake.style.opacity = '';
+                        }
+                    });
 
+                    // Keep running continuously to track floating cakes even if the mouse is stationary
                     rafId = requestAnimationFrame(animate3D);
                 }
                 
-                // Initial run
+                // Start continuous rendering loop
                 rafId = requestAnimationFrame(animate3D);
             }
 
