@@ -3,11 +3,11 @@
  * Migrated from welcome.blade.php for maximum performance and caching.
  */
 
-(function() {
+(function () {
     function initFinalReliability() {
         if (window._twinsStarted) return;
         window._twinsStarted = true;
-        
+
         if (typeof gsap === 'undefined') {
             console.error("[TWINS] GSAP missing.");
             return;
@@ -41,7 +41,7 @@
                 // I. Initial State (Clean & Fast)
                 gsap.set(["#hero-badge", "#hero-word-left", "#hero-word-right", "#hero-paragraph"], { autoAlpha: 0 });
                 gsap.set(clips, { overflow: 'visible' }); // No clipping during entry
-                
+
                 const finals = cards.map(card => {
                     const t = parseTransform(card.style.transform);
                     return {
@@ -72,7 +72,7 @@
                 // III. THE SHOW (Parallel Action)
                 // Start Text & Cards together for energy
                 htl.to(cards, { scale: 0.75, autoAlpha: 1, duration: 0.8, stagger: 0.05, ease: "back.out(1.7)" }, 0);
-                
+
                 if (badge) htl.to(badge, { y: 0, autoAlpha: 1, duration: 1.2, ease: 'elastic.out(1, 0.6)' }, 0.1);
                 if (wordLeft) htl.to(wordLeft, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.2);
                 if (wordRight) htl.to(wordRight, { x: 0, autoAlpha: 1, duration: 1.4 }, 0.3);
@@ -112,20 +112,20 @@
             if (splashEl) splashEl.style.display = 'none';
             document.body.classList.remove('hide-overflow');
             document.body.classList.add('show-content');
-            
+
             // Instantly reveal header & beranda
             gsap.set("header", { y: 0, opacity: 1 });
             gsap.set("section#beranda", { opacity: 1 });
-            
+
             // Instantly show hero section items
             runHeroReveal();
-            
+
             // Update active states in navigation to Outlet
             const navLinks = document.querySelectorAll('.nav-link');
             const mobLinks = document.querySelectorAll('.mob-nav-item');
             navLinks.forEach(l => l.classList.toggle('active', l.id === 'nav-outlet'));
             mobLinks.forEach(l => l.classList.toggle('active', l.id === 'mob-outlet'));
-            
+
             // Perform robust, multi-tick scrolling to target to counteract dynamic layout shift
             if (window.location.hash) {
                 const scrollTarget = () => {
@@ -152,28 +152,30 @@
             });
 
             stl.to("#splashLogo", { scale: 1, opacity: 1, duration: 0.6, ease: "expo.out", filter: "brightness(2) contrast(1.5)" })
-               .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
-               .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
-               .set("#energyRing", { opacity: 1 })
-               .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
-               .to("#splashText", { opacity: 0, scale: 0.8, duration: 0.4, ease: "power2.in" }, "+=0.3")
-               .to("#splashLogo", { scale: 0, opacity: 0, duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
-               .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
-               .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
-               .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
-               .to("section#beranda", { opacity: 1, duration: 0.8, ease: "power2.out" }, "-=1.0")
-               
-               // PRECISE SYNC: Trigger hero reveal earlier (1.2s before end)
-               .add(() => {
-                   console.log("[TWINS] Double-Trigger: Cinematic Reveal Started");
-                   runHeroReveal();
-               }, "-=1.2")
+                .to("#splashLogo", { filter: "brightness(1) contrast(1)", duration: 0.4 }, "-=0.2")
+                .to(".splash-char", { opacity: 1, y: 0, rotateX: 0, duration: 0.8, stagger: 0.08, ease: "power4.out" }, "-=0.4")
+                .set("#energyRing", { opacity: 1 })
+                .to("#energyRing", { rotate: 270, scale: 1.3, opacity: 0.6, duration: 1.2, ease: "power2.out" }, "-=0.5")
+                .to("#splashText", { opacity: 0, scale: 0.8, duration: 0.4, ease: "power2.in" }, "+=0.3")
+                .to("#splashLogo", { scale: 0, opacity: 0, duration: 0.5, ease: "back.in(1.5)" }, "-=0.2")
+                .to("#energyRing", { scale: 2.5, opacity: 0, duration: 0.6, ease: "expo.out" }, "<")
+                .to(".splash-panel.top", { yPercent: -100, duration: 1.4, ease: "expo.inOut" }, "+=0.1")
+                .to(".splash-panel.bottom", { yPercent: 100, duration: 1.4, ease: "expo.inOut" }, "<")
+                .to("section#beranda", { opacity: 1, duration: 0.8, ease: "power2.out" }, "-=1.0")
 
-               .to("header", { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, "-=0.6")
-               .set("body", { onStart: () => {
-                   document.body.classList.add('show-content');
-                   if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
-               }}, "-=0.2");
+                // PRECISE SYNC: Trigger hero reveal earlier (1.2s before end)
+                .add(() => {
+                    console.log("[TWINS] Double-Trigger: Cinematic Reveal Started");
+                    runHeroReveal();
+                }, "-=1.2")
+
+                .to("header", { y: 0, opacity: 1, duration: 1.0, ease: "expo.out" }, "-=0.6")
+                .set("body", {
+                    onStart: () => {
+                        document.body.classList.add('show-content');
+                        if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
+                    }
+                }, "-=0.2");
         }
     }
 
@@ -206,7 +208,7 @@ function toggleUserMenu() {
 // Make globally accessible for inline onclick events
 window.toggleUserMenu = toggleUserMenu;
 
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     const menu = document.getElementById('userMenu');
     const btn = document.querySelector('.user-icon-btn');
     if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
@@ -304,7 +306,7 @@ if (nftContainer) {
     nftContainer.addEventListener('touchstart', handleDragStart, { passive: true });
     window.addEventListener('touchmove', handleDragMove, { passive: true });
     window.addEventListener('touchend', handleDragEnd);
-    
+
     nftContainer.style.cursor = 'grab';
 }
 
@@ -322,15 +324,15 @@ function switchPage(pageId) {
     if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
     }
-    
+
     // Manual active for mobile bottom nav
     const mobItems = document.querySelectorAll('.mob-nav-item');
     mobItems.forEach(item => item.classList.remove('active'));
-    
+
     // Find which one was clicked based on pageId
-    if(pageId === 'beranda') document.getElementById('mob-home')?.classList.add('active');
-    else if(pageId === 'promo-outlet') document.getElementById('mob-promo')?.classList.add('active');
-    else if(pageId === 'keunggulan') document.getElementById('mob-features')?.classList.add('active');
+    if (pageId === 'beranda') document.getElementById('mob-home')?.classList.add('active');
+    else if (pageId === 'promo-outlet') document.getElementById('mob-promo')?.classList.add('active');
+    else if (pageId === 'keunggulan') document.getElementById('mob-features')?.classList.add('active');
 }
 
 window.switchPage = switchPage;
@@ -340,9 +342,9 @@ function scrollToCategory(id) {
     if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
     }
-    
+
     // Manual active for Outlet in bottom nav
-    if(id === 'outlet') {
+    if (id === 'outlet') {
         document.querySelectorAll('.mob-nav-item').forEach(item => item.classList.remove('active'));
         document.getElementById('mob-outlet')?.classList.add('active');
     }
@@ -389,14 +391,14 @@ window.setTheme = setTheme;
 function updateActiveThemeBtn(themeName) {
     document.querySelectorAll('#themeMenu button').forEach(btn => {
         btn.classList.remove('active');
-        if(btn.getAttribute('data-theme-val') === themeName) {
+        if (btn.getAttribute('data-theme-val') === themeName) {
             btn.classList.add('active');
         }
     });
 }
 
 // Close dropdown when clicking outside
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     const menu = document.getElementById('themeMenu');
     const btn = document.querySelector('.theme-btn');
     const userMenu = document.getElementById('userMenu');
@@ -433,7 +435,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
 window.addEventListener('resize', updateLayout);
 updateLayout();
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const params = new URLSearchParams(window.location.search);
 
     if (params.get('verified') === '1') {
@@ -456,33 +458,33 @@ document.addEventListener('DOMContentLoaded', function() {
    3D Background Interactive Swaying Cakes Engine
    ========================================================================== */
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
     const bgContainer = document.getElementById('bakery-bg');
     let parallaxLayers = [];
 
-    if(bgContainer) {
+    if (bgContainer) {
         const isMobile = window.innerWidth <= 768;
         const layerCount = isMobile ? 10 : 20;
-        
+
         // Initialize 3D Engine for Background
         bgContainer.style.perspective = '1200px';
         bgContainer.style.transformStyle = 'preserve-3d';
 
-        for(let i = 0; i < layerCount; i++) {
+        for (let i = 0; i < layerCount; i++) {
             const el = document.createElement('div');
             el.className = 'walking-cake';
             el.innerText = items[Math.floor(Math.random() * items.length)];
-            
+
             // Spread coordinates across the entire viewport background
             el.style.left = (Math.random() * 90 + 5) + '%';
             el.style.top = (Math.random() * 85 + 5) + 'vh';
-            
+
             // Gentle randomized float speeds
             el.style.animationDuration = (Math.random() * 6 + 4) + 's';
             el.style.animationDelay = '-' + (Math.random() * 5) + 's';
             el.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
-            
+
             const wrapper = document.createElement('div');
             wrapper.style.position = 'absolute';
             wrapper.style.width = '100%';
@@ -492,10 +494,10 @@ document.addEventListener("DOMContentLoaded", function() {
             wrapper.style.pointerEvents = 'none';
             wrapper.style.transformStyle = 'preserve-3d';
             wrapper.style.willChange = 'transform';
-            
+
             const depth = Math.random() * 200 - 100;
             wrapper.dataset.depthZ = depth;
-            
+
             wrapper.appendChild(el);
             bgContainer.appendChild(wrapper);
             parallaxLayers.push(wrapper);
@@ -516,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function() {
         function animate3D() {
             const dx = targetX - currentX;
             const dy = targetY - currentY;
-            
+
             currentX += dx * 0.05;
             currentY += dy * 0.05;
 
@@ -524,7 +526,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             parallaxLayers.forEach((layer) => {
                 const z = parseFloat(layer.dataset.depthZ);
-                const moveX = currentX * (z / 50); 
+                const moveX = currentX * (z / 50);
                 const moveY = currentY * (z / 50);
                 layer.style.transform = `translate3d(${moveX}px, ${moveY}px, ${z}px)`;
             });
@@ -535,19 +537,19 @@ document.addEventListener("DOMContentLoaded", function() {
                 const rect = cake.getBoundingClientRect();
                 const cakeCenterX = rect.left + rect.width / 2;
                 const cakeCenterY = rect.top + rect.height / 2;
-                
+
                 const distanceX = mouseX - cakeCenterX;
                 const distanceY = mouseY - cakeCenterY;
                 const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-                
+
                 // Influence radius of 200px
                 if (distance < 200) {
                     const intensity = (200 - distance) / 200; // 0 to 1
-                    
+
                     // Pull cakes towards the cursor center (attraction pull)
                     const pullX = distanceX * intensity * 0.25;
                     const pullY = distanceY * intensity * 0.25;
-                    
+
                     cake.style.transform = `translate3d(${pullX}px, ${pullY}px, 0) scale(${1 + intensity * 0.6}) rotate(${intensity * 45}deg)`;
                     cake.style.opacity = 0.15 + intensity * 0.45;
                 } else {
@@ -559,7 +561,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // Keep running continuously to track floating cakes even if the mouse is stationary
             rafId = requestAnimationFrame(animate3D);
         }
-        
+
         // Start continuous rendering loop
         rafId = requestAnimationFrame(animate3D);
     }
@@ -619,7 +621,7 @@ class TestimonialMarquee {
             this.row.scrollLeft += this.speed;
 
             const loopPoint = this.row.scrollWidth / 3;
-            
+
             if (this.speed > 0 && this.row.scrollLeft >= loopPoint) {
                 this.row.scrollLeft = 0;
             } else if (this.speed < 0 && this.row.scrollLeft <= 0) {
@@ -642,21 +644,21 @@ class TestimonialMarquee {
 
 // Modified init to include observer
 const originalInit = TestimonialMarquee.prototype.init;
-TestimonialMarquee.prototype.init = function() {
+TestimonialMarquee.prototype.init = function () {
     this.initObserver();
     originalInit.call(this);
 };
 
 // Initialize Rows: ATAS KE KANAN (speed negatif), BAWAH KE KIRI (speed positif)
 window.onload = () => {
-    const rowTop = new TestimonialMarquee('.marquee-row-right', -0.8); 
+    const rowTop = new TestimonialMarquee('.marquee-row-right', -0.8);
     const rowBottom = new TestimonialMarquee('.marquee-row-left', 0.8);
-    
+
     // Set posisi awal random agar tidak terlihat terlalu sinkron di awal
     const topTrack = document.querySelector('.marquee-row-right');
     const bottomTrack = document.querySelector('.marquee-row-left');
-    if(topTrack) topTrack.scrollLeft = topTrack.scrollWidth / 3;
-    if(bottomTrack) bottomTrack.scrollLeft = (bottomTrack.scrollWidth / 3) * 0.5;
+    if (topTrack) topTrack.scrollLeft = topTrack.scrollWidth / 3;
+    if (bottomTrack) bottomTrack.scrollLeft = (bottomTrack.scrollWidth / 3) * 0.5;
 };
 
 /* ==========================================================================
@@ -665,7 +667,7 @@ window.onload = () => {
 
 function openReviewModal() {
     const modal = document.getElementById('reviewModal');
-    if(modal) {
+    if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; // Prevent scroll
     }
@@ -675,7 +677,7 @@ window.openReviewModal = openReviewModal;
 
 function closeReviewModal() {
     const modal = document.getElementById('reviewModal');
-    if(modal) {
+    if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
     }
@@ -688,10 +690,10 @@ function selectOutlet(id, element) {
     document.querySelectorAll('.outlet-option-card').forEach(card => {
         card.classList.remove('selected');
     });
-    
+
     // Add to clicked one
     element.classList.add('selected');
-    
+
     // Set hidden value
     const storeInput = document.getElementById('selectedStoreId');
     if (storeInput) storeInput.value = id;
@@ -700,7 +702,7 @@ function selectOutlet(id, element) {
 window.selectOutlet = selectOutlet;
 
 // Close on overlay click
-window.onclick = function(event) {
+window.onclick = function (event) {
     const modal = document.getElementById('reviewModal');
     if (event.target == modal) {
         closeReviewModal();
@@ -709,7 +711,7 @@ window.onclick = function(event) {
 
 function smoothScroll(target) {
     const element = document.querySelector(target);
-    if(element) {
+    if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
     }
 }
@@ -718,7 +720,7 @@ window.smoothScroll = smoothScroll;
 
 // SweetAlert2 Session Messages
 const _sessionSuccess = document.querySelector('meta[name="session-success"]')?.content || null;
-const _sessionError   = document.querySelector('meta[name="session-error"]')?.content || null;
+const _sessionError = document.querySelector('meta[name="session-error"]')?.content || null;
 const _sessionErrorRole = document.querySelector('meta[name="session-error-role"]')?.content || null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -783,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry.isIntersecting) {
                 const sectionId = entry.target.id;
                 const target = spyTargets.find(t => t.section === sectionId);
-                
+
                 if (target) {
                     navLinks.forEach(link => {
                         link.classList.toggle('active', link.id === target.linkId);
@@ -810,16 +812,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
 
     navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
             const targetId = this.getAttribute('href');
             const targetElement = document.querySelector(targetId);
-            
+
             if (targetElement) {
                 isScrolling = true;
                 navLinks.forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
-                
+
                 const offset = 100;
                 const elementPosition = targetElement.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.pageYOffset - offset;
@@ -828,7 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     top: offsetPosition,
                     behavior: "smooth"
                 });
-                
+
                 setTimeout(() => {
                     isScrolling = false;
                 }, 1000);

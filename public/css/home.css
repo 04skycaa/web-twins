@@ -4607,3 +4607,248 @@ section {
     max-width: 100vw !important;
     overflow: hidden !important;
 }
+
+/* ==========================================================================
+   User Blade Custom Styles (Migrated from user.blade.php)
+   ========================================================================== */
+
+/* Address Popup Premium Styling */
+.address-popup-wrap {
+    text-align: left;
+    padding: 5px;
+}
+
+.address-popup-layout {
+    display: flex;
+    gap: 24px;
+    flex-direction: row;
+}
+
+.address-popup-left {
+    flex: 1;
+    min-width: 360px;
+}
+
+.address-popup-right {
+    flex: 1.2;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .address-popup-layout {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .address-popup-left,
+    .address-popup-right {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+.address-popup-left label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--sub-text);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.address-popup-left input,
+.address-popup-left textarea {
+    width: 100%;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 12px !important;
+    padding: 12px 15px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--text-color) !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.address-popup-left input:focus,
+.address-popup-left textarea:focus {
+    border-color: var(--accent-purple) !important;
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    transform: translateY(-1px);
+}
+
+.route-tracking-card {
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.03));
+    backdrop-filter: blur(10px);
+    margin-bottom: 20px;
+    border-left: 5px solid var(--accent-purple);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+#addressMapCanvas {
+    width: 100%;
+    height: 380px;
+    border-radius: 18px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--glow);
+    overflow: hidden;
+}
+
+.swal2-popup.address-modal-custom {
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    border-radius: 32px !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+}
+
+/* Global SweetAlert2 Z-Index & Glassmorphism */
+.swal2-container {
+    z-index: 10000 !important;
+}
+
+.swal2-popup {
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border-radius: 32px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+    will-change: transform, opacity;
+}
+
+[data-theme="light"] .swal2-popup {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    color: #1e293b !important;
+}
+
+.premium-swal-success {
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(6, 78, 59, 0.4)) !important;
+}
+
+.swal2-success-circular-line-left,
+.swal2-success-circular-line-right,
+.swal2-success-fix {
+    background-color: transparent !important;
+}
+
+.swal2-title,
+.swal2-html-container {
+    color: var(--text-color) !important;
+}
+
+@keyframes swalPremiumIn {
+    from { transform: scale(0.85); opacity: 0; filter: blur(4px); }
+    to { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes swalPremiumOut {
+    from { transform: scale(1); opacity: 1; filter: blur(0); }
+    to { transform: scale(0.95); opacity: 0; filter: blur(4px); }
+}
+
+.premium-swal-show {
+    animation: swalPremiumIn 0.3s cubic-bezier(0.19, 1, 0.22, 1) forwards !important;
+}
+
+.premium-swal-hide {
+    animation: swalPremiumOut 0.2s cubic-bezier(0.19, 1, 0.22, 1) forwards !important;
+}
+
+.stars-gold {
+    color: #f59e0b;
+    display: flex;
+    gap: 2px;
+}
+
+.back-btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-color);
+    margin-right: 15px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--card-border);
+    text-decoration: none;
+}
+
+.back-btn-icon:hover {
+    background: var(--accent-purple);
+    color: white !important;
+    transform: translateX(-3px);
+    box-shadow: var(--glow);
+    border-color: transparent;
+}
+
+#mainHeader {
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0 15px !important;
+}
+
+.container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 110px 4% 30px !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 90px 20px 30px !important;
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .main-content {
+        padding: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .promo-banner {
+        padding: 25px 20px !important;
+        border-radius: 20px !important;
+        margin: 0 0 25px 0 !important;
+        min-height: auto !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+    }
+    .promo-banner h1 {
+        font-size: 1.4rem !important;
+        line-height: 1.2 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
+        margin: 10px 0 !important;
+    }
+    .promo-banner p {
+        font-size: 0.8rem !important;
+        white-space: normal !important;
+        margin-bottom: 15px !important;
+    }
+    .cart-panel {
+        width: 100% !important;
+        border-radius: 0 !important;
+        border-top-left-radius: 20px !important;
+        border-top-right-radius: 20px !important;
+    }
+}
