@@ -61,10 +61,10 @@ class DashboardController extends Controller
             $chartBulanan = ['labels' => [], 'offline' => [], 'online' => []];
             $chartTahunan = ['labels' => [], 'offline' => [], 'online' => []];
 
-            // 2. CASHFLOW DATA PRESETS (Lazy load non-active presets)
+            // 2. CASHFLOW DATA PRESETS (All lazy loaded - fetched via AJAX on demand)
             $cfHarian = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
             $cfMingguan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
-            $cfBulanan = $this->getCashFlowPresetData('bulanan', $storeId);
+            $cfBulanan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
             $cfTahunan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
 
             // 3. OTHER WIDGETS
@@ -103,24 +103,27 @@ class DashboardController extends Controller
                 ->groupBy('payment_order_items.product_id')
                 ->get();
 
-            $mergedTop = collect();
+            $mergedMap = [];
             foreach ($topOffline as $off) {
-                $mergedTop->push(['product_id' => $off->product_id, 'qty' => (int)$off->total_qty, 'rev' => (float)$off->total_revenue]);
+                $mergedMap[$off->product_id] = [
+                    'product_id' => $off->product_id,
+                    'qty' => (int)$off->total_qty,
+                    'rev' => (float)$off->total_revenue
+                ];
             }
             foreach ($topOnline as $on) {
-                $existing = $mergedTop->firstWhere('product_id', $on->product_id);
-                if ($existing) {
-                    $mergedTop = $mergedTop->map(function($item) use ($on) {
-                        if ($item['product_id'] == $on->product_id) {
-                            $item['qty'] += (int)$on->total_qty;
-                            $item['rev'] += (float)$on->total_revenue;
-                        }
-                        return $item;
-                    });
+                if (isset($mergedMap[$on->product_id])) {
+                    $mergedMap[$on->product_id]['qty'] += (int)$on->total_qty;
+                    $mergedMap[$on->product_id]['rev'] += (float)$on->total_revenue;
                 } else {
-                    $mergedTop->push(['product_id' => $on->product_id, 'qty' => (int)$on->total_qty, 'rev' => (float)$on->total_revenue]);
+                    $mergedMap[$on->product_id] = [
+                        'product_id' => $on->product_id,
+                        'qty' => (int)$on->total_qty,
+                        'rev' => (float)$on->total_revenue
+                    ];
                 }
             }
+            $mergedTop = collect(array_values($mergedMap));
 
             // Eliminated Loop N+1 query: fetch all products in 1 whereIn query instead of 5 separate queries
             $topProductList = $mergedTop->sortByDesc('qty')->take(5);
@@ -136,44 +139,52 @@ class DashboardController extends Controller
                 ];
             })->values()->all();
 
-            $combinedActivities = collect();
-            Transaction::with('user')
+            // Fetch only 5 latest from each source at DB level, then merge max 10 records in PHP
+            $offlineActs = Transaction::with('user:uuid,username')
+                ->select('uuid', 'user_id', 'tanggal', 'store_id')
                 ->whereBetween('tanggal', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
                 ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+                ->orderByDesc('tanggal')
+                ->limit(5)
                 ->get()
-                ->each(fn($trx) => $combinedActivities->push([
-                    'user' => $trx->user->name ?? 'Guest',
-                    'role' => 'Offline',
-                    'action' => 'melakukan pembelian kasir',
-                    'time' => Carbon::parse($trx->tanggal)->format('H:i'),
-                    'timestamp' => Carbon::parse($trx->tanggal),
-                    'icon' => 'solar:cart-large-minimalistic-bold'
-                ]));
+                ->map(fn($trx) => [
+                    'user'      => $trx->user->name ?? 'Guest',
+                    'role'      => 'Offline',
+                    'action'    => 'melakukan pembelian kasir',
+                    'time'      => Carbon::parse($trx->tanggal)->format('H:i'),
+                    'timestamp' => $trx->tanggal,
+                    'icon'      => 'solar:cart-large-minimalistic-bold'
+                ]);
 
-            PaymentOrder::with('user')
+            $onlineActs = PaymentOrder::with('user:uuid,username')
+                ->select('id', 'user_id', 'paid_at', 'outlet_id', 'recipient_name')
                 ->whereBetween('paid_at', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
                 ->whereNotNull('paid_at')
                 ->when($storeId, fn($q) => $q->where('outlet_id', $storeId))
+                ->orderByDesc('paid_at')
+                ->limit(5)
                 ->get()
-                ->each(fn($po) => $combinedActivities->push([
-                    'user' => $po->user->name ?? $po->recipient_name,
-                    'role' => 'Online',
-                    'action' => 'melakukan pembelian web',
-                    'time' => Carbon::parse($po->paid_at)->format('H:i'),
-                    'timestamp' => Carbon::parse($po->paid_at),
-                    'icon' => 'solar:global-bold'
-                ]));
-                
-            $activities = $combinedActivities->sortByDesc('timestamp')->take(5);
-            $activitiesArray = $activities->map(function($act) {
-                return [
-                    'user' => $act['user'] ?? '',
-                    'role' => $act['role'] ?? '',
+                ->map(fn($po) => [
+                    'user'      => $po->user->name ?? $po->recipient_name,
+                    'role'      => 'Online',
+                    'action'    => 'melakukan pembelian web',
+                    'time'      => Carbon::parse($po->paid_at)->format('H:i'),
+                    'timestamp' => $po->paid_at,
+                    'icon'      => 'solar:global-bold'
+                ]);
+
+            $activitiesArray = $offlineActs->concat($onlineActs)
+                ->sortByDesc('timestamp')
+                ->take(5)
+                ->map(fn($act) => [
+                    'user'   => $act['user'] ?? '',
+                    'role'   => $act['role'] ?? '',
                     'action' => $act['action'] ?? '',
-                    'time' => $act['time'] ?? '',
-                    'icon' => $act['icon'] ?? ''
-                ];
-            })->values()->all();
+                    'time'   => $act['time'] ?? '',
+                    'icon'   => $act['icon'] ?? ''
+                ])
+                ->values()
+                ->all();
 
             return [
                 'stats' => $stats,
