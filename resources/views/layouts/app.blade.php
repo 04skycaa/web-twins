@@ -195,59 +195,7 @@
         </main>
     </div>
 
-    <script>
-        lucide.createIcons();
 
-        function updateDateTime() {
-            const now = new Date();
-            const optionsDate = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            };
-            const dateStr = now.toLocaleDateString('id-ID', optionsDate);
-            const timeStr = now.toLocaleTimeString('id-ID', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            }).replace(/\./g, ':');
-
-            const dateEl = document.getElementById('date-text');
-            const timeEl = document.getElementById('time-text');
-            const greetEl = document.getElementById('greeting-text');
-
-            if (dateEl) dateEl.innerText = dateStr;
-            if (timeEl) timeEl.innerText = timeStr;
-
-            const hour = now.getHours();
-            let greeting = "Selamat Malam";
-            if (hour < 11) greeting = "Selamat Pagi";
-            else if (hour < 15) greeting = "Selamat Siang";
-            else if (hour < 19) greeting = "Selamat Sore";
-            if (greetEl) greetEl.innerText = greeting;
-        }
-
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-
-        function setActive(element, title, iconName) {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            element.classList.add('active');
-
-            const titleEl = document.getElementById('topbar-title');
-            const topIcon = document.getElementById('topbar-icon');
-
-            if (titleEl) titleEl.innerText = title;
-            if (topIcon) {
-                topIcon.setAttribute('data-lucide', iconName);
-                lucide.createIcons();
-            }
-        }
-    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             @if (session('success'))

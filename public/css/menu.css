@@ -95,8 +95,8 @@ body {
     justify-content: center;
     align-items: center;
     padding: 10px;
-    padding-top: 30px;
-    padding-bottom: 30px;
+    padding-top: 20px;
+    padding-bottom: 15px;
     text-align: center;
 }
 
@@ -149,9 +149,9 @@ body {
 }
 
 .menu-item iconify-icon {
-    font-size: 33px;
-    width: 37px;
-    height: 37px;
+    font-size: 30px;
+    width: 35px;
+    height: 35px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -172,21 +172,21 @@ body {
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding-top: 10px;
+    padding-top: 5px;
     position: relative;
 }
 
 .menu-item {
     display: flex;
     align-items: center;
-    height: 50px;
+    height: 49px;
     border: none;
     background: none;
     cursor: pointer;
     width: 100%;
     position: relative;
     color: #ffffff !important;
-    padding-left: 28px;
+    padding-left: 27px;
     text-decoration: none !important;
     transition: color 0.3s;
     user-select: none;
@@ -273,25 +273,25 @@ body {
 .menu-item.active::after {
     content: "";
     position: absolute;
-    top: -40px;
+    top: -39px;
     right: 0;
-    width: 40px;
-    height: 40px;
+    width: 39px;
+    height: 39px;
     background-color: transparent;
     border-radius: 50%;
-    box-shadow: 20px 20px 0 0 var(--content-area-bg);
+    box-shadow: 19.5px 19.5px 0 0 var(--content-area-bg);
     z-index: 1;
 }
 
 .menu-item.active .curve-helper {
     position: absolute;
-    bottom: -40px;
+    bottom: -39px;
     right: 0;
-    width: 40px;
-    height: 40px;
+    width: 39px;
+    height: 39px;
     background-color: transparent;
     border-radius: 50%;
-    box-shadow: 20px -20px 0 0 var(--content-area-bg);
+    box-shadow: 19.5px -19.5px 0 0 var(--content-area-bg);
     z-index: 1;
 }
 

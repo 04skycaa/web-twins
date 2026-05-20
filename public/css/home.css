@@ -980,9 +980,14 @@ header.scrolled,
 }
 
 .nft-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 25px;
+}
+.nft-grid > .nft-item {
+    flex: 1 1 300px;
+    max-width: 400px;
 }
 
 .nft-item {
