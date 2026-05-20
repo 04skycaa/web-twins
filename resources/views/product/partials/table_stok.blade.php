@@ -19,6 +19,7 @@
     </div>
 </div>
 
+<div class="table-container">
 <table class="fitur-table" id="stokTable">
     <thead>
         <tr>
@@ -104,6 +105,7 @@
         @endforelse
     </tbody>
 </table>
+</div>
 
 {{-- Data transfer for JS Maps (Syncing during AJAX) --}}
 <div id="js-data-transfer" style="display: none;" 

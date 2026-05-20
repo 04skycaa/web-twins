@@ -3,10 +3,10 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous">
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js" defer></script>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js" defer></script>
 
 <style>
     .is-invalid + .invalid-feedback { display: block !important; }
@@ -2294,13 +2294,12 @@
             }
         });
         
-        // Update URL and trigger AJAX refresh to ensure filtered data
+        // Update URL and ensure we keep the query parameters clean
         const url = new URL(window.location);
         url.searchParams.set('tab', tabName);
         window.history.pushState({ tab: tabName }, '', url);
         
-        // Refresh the table content for the newly active tab
-        updateTableContent(url.toString());
+        // No need to fetch via AJAX here because all tabs are loaded on initial request now!
     }
 
     // Handle initial load and back/forward buttons

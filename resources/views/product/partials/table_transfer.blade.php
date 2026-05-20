@@ -1,4 +1,5 @@
 @if($transfers->count() > 0)
+    <div class="table-container">
     <table class="fitur-table" id="transferTable">
         <thead>
             <tr>
@@ -55,6 +56,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     <div class="pagination-container">
         {{ $transfers->links() }}
     </div>

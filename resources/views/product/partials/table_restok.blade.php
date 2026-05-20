@@ -1,4 +1,5 @@
 @if($purchases->count() > 0)
+    <div class="table-container">
     <table class="fitur-table" id="restokTable">
         <thead>
             <tr>
@@ -53,6 +54,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     <div class="pagination-container">
         {{ $purchases->links() }}
     </div>

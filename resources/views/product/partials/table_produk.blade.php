@@ -1,3 +1,4 @@
+<div class="table-container">
 <table class="fitur-table" id="produkTable">
     <thead>
         <tr>
@@ -20,7 +21,7 @@
                 </td>
                 <td>
                     <div class="product-info">
-                        <img src="{{ $product->resolved_image_url }}?t={{ time() }}" class="product-img">
+                        <img src="{{ $product->resolved_image_url }}" class="product-img" loading="lazy">
                         <div>
                             <div style="font-weight: 600;">{{ $product->nama_produk }}</div>
                             <div style="font-size: 12px; color: #888;">{{ $product->barcode ?? '-' }}</div>
@@ -81,12 +82,15 @@
         @endforelse
     </tbody>
 </table>
+</div>
 
-{{-- Data transfer for JS Maps (Syncing during AJAX) --}}
+{{-- Only send all_products JSON on initial full-page load, not on AJAX pagination --}}
+@if(!request()->ajax())
 <div id="js-data-transfer" style="display: none;" 
      data-products="{{ json_encode($all_products ?? []) }}"
      data-alerts="{{ json_encode($alerts ?? []) }}">
 </div>
+@endif
 
 @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
     <div class="pagination-container">

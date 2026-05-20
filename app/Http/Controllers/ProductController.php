@@ -38,14 +38,61 @@ class ProductController extends Controller
         $data = $this->getConsolidatedData($request);
         
         if ($request->ajax()) {
+            $tabViews = [
+                'produk' => 'product.partials.table_produk',
+                'stok' => 'product.partials.table_stok',
+                'restok' => 'product.partials.table_restok',
+                'transfer' => 'product.partials.table_transfer',
+                'opname' => 'product.partials.table_opname',
+            ];
+            
+            if (isset($tabViews[$data['active_tab']])) {
+                return view($tabViews[$data['active_tab']], $data);
+            }
+            
             return view('product.index', $data)->fragment('tab-content-' . $data['active_tab']);
         }
-
         return view('product.index', $data);
+    }
+
+    private function getAllProductsCached($user, $selectedStoreId)
+    {
+        return \Illuminate\Support\Facades\Cache::remember(
+            'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($selectedStoreId ?? 'all'),
+            3600,
+            function() use ($user, $selectedStoreId) {
+                return $this->mapProductsForJs(
+                    Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
+                        if (!$user->isOwner()) {
+                            $q->where('store_id', $user->store_id);
+                        } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                            $q->where('store_id', $selectedStoreId);
+                        }
+                    })
+                    ->select('uuid', 'nama_produk', 'barcode', 'harga_jual', 'harga_modal', 'kategori_id')
+                    ->with([
+                        'category:uuid,nama_category',
+                        'priceLevels:uuid,product_id,jmlh,harga',
+                        'stores' => function($q) use ($user, $selectedStoreId) {
+                            $q->select('product_id', 'store_id', 'stok');
+                            if (!$user->isOwner()) {
+                                $q->where('store_id', $user->store_id);
+                            } elseif ($selectedStoreId && $selectedStoreId != 'all') {
+                                $q->where('store_id', $selectedStoreId);
+                            }
+                        }
+                    ])
+                    ->get(),
+                    $user,
+                    $selectedStoreId
+                );
+            }
+        );
     }
 
     private function getProductsData(Request $request)
     {
+        $start = microtime(true);
         /** @var User $user */
         $user = Auth::user();
         $selectedStoreId = $request->get('store_id');
@@ -107,31 +154,18 @@ class ProductController extends Controller
             return $product;
         });
 
-        return [
+        $result = [
             'active_tab' => 'produk',
             'products' => $products,
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $selectedStoreId,
-            'all_products' => \Illuminate\Support\Facades\Cache::remember(
-                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($selectedStoreId ?? 'all'),
-                3600,
-                function() use ($user, $selectedStoreId) {
-                    return $this->mapProductsForJs(
-                        Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
-                            if (!$user->isOwner()) {
-                                $q->where('store_id', $user->store_id);
-                            } elseif ($selectedStoreId && $selectedStoreId != 'all') {
-                                $q->where('store_id', $selectedStoreId);
-                            }
-                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                        $user, 
-                        $selectedStoreId
-                    );
-                }
-            ),
+            'all_products' => $request->ajax() ? collect() : $this->getAllProductsCached($user, $selectedStoreId),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
+        
+        \Illuminate\Support\Facades\Log::info('getProductsData took ' . (microtime(true) - $start) . 's');
+        return $result;
     }
 
     /**
@@ -217,24 +251,7 @@ class ProductController extends Controller
             'outlets' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
             'selected_store_id' => $request->store_id,
-            'all_products' => \Illuminate\Support\Facades\Cache::remember(
-                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($request->store_id ?? 'all'),
-                3600,
-                function() use ($user, $request) {
-                    $storeId = $request->store_id;
-                    return $this->mapProductsForJs(
-                        Product::whereHas('stores', function($q) use ($user, $storeId) {
-                            if (!$user->isOwner()) {
-                                $q->where('store_id', $user->store_id);
-                            } elseif ($storeId && $storeId != 'all') {
-                                $q->where('store_id', $storeId);
-                            }
-                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                        $user, 
-                        $storeId
-                    );
-                }
-            ),
+            'all_products' => $request->ajax() ? collect() : $this->getAllProductsCached($user, $request->store_id),
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
     }
@@ -255,7 +272,7 @@ class ProductController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $query = ProductStore::with(['product.category', 'store']);
+        $query = ProductStore::with(['product.category', 'product.priceLevels', 'store']);
 
         $selectedStoreId = 'all';
         if (!$user->isOwner()) {
@@ -291,7 +308,6 @@ class ProductController extends Controller
         $alerts->getCollection()->each(function($alert) {
             if ($alert->product) {
                 $alert->product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($alert->product->image_url);
-                $alert->product->load('priceLevels');
             }
         });
         
@@ -306,23 +322,7 @@ class ProductController extends Controller
             'selected_store_id' => $selectedStoreId,
             'stok_habis_count' => $stok_habis_count,
             'expired_count' => $expired_count,
-            'all_products' => \Illuminate\Support\Facades\Cache::remember(
-                'all_products_mapped_' . ($user->isOwner() ? 'owner' : $user->store_id) . '_' . ($selectedStoreId ?? 'all'),
-                3600,
-                function() use ($user, $selectedStoreId) {
-                    return $this->mapProductsForJs(
-                        Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
-                            if (!$user->isOwner()) {
-                                $q->where('store_id', $user->store_id);
-                            } elseif ($selectedStoreId && $selectedStoreId != 'all') {
-                                $q->where('store_id', $selectedStoreId);
-                            }
-                        })->with(['category', 'priceLevels', 'stores.store'])->get(), 
-                        $user, 
-                        $selectedStoreId
-                    );
-                }
-            ),
+            'all_products' => $request->ajax() ? collect() : $this->getAllProductsCached($user, $selectedStoreId),
             'type' => $type,
             'sub_menus' => Fitur::where('parent_id', 2)->orderBy('id')->get()
         ];
@@ -377,13 +377,7 @@ class ProductController extends Controller
             'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
-            'all_products' => \Illuminate\Support\Facades\Cache::remember(
-                'all_products_raw',
-                3600,
-                function() {
-                    return Product::all();
-                }
-            ),
+            'all_products' => $request->ajax() ? collect() : $this->getAllProductsCached($user, $request->store_id),
             'filter' => $request->filter,
             'status_bayar' => $request->status_bayar,
             'start_date' => $request->start_date,
@@ -405,28 +399,39 @@ class ProductController extends Controller
 
     private function getConsolidatedData(Request $request, $defaultTab = 'produk')
     {
+        $startCons = microtime(true);
         /** @var User $user */
         $user = Auth::user();
         $active_tab = $request->get('tab', $defaultTab);
         
         $data = ['active_tab' => $active_tab];
         
-        switch ($active_tab) {
-            case 'produk':
-                $data = array_merge($data, $this->getProductsData($request));
-                break;
-            case 'opname':
-                $data = array_merge($data, $this->getOpnameData($request));
-                break;
-            case 'stok':
-                $data = array_merge($data, $this->getAlertData($request));
-                break;
-            case 'restok':
-                $data = array_merge($data, $this->getRestokData($request));
-                break;
-            case 'transfer':
-                $data = array_merge($data, $this->getTransferData($request));
-                break;
+        if ($request->ajax()) {
+            switch ($active_tab) {
+                case 'produk':
+                    $data = array_merge($data, $this->getProductsData($request));
+                    break;
+                case 'opname':
+                    $data = array_merge($data, $this->getOpnameData($request));
+                    break;
+                case 'stok':
+                    $data = array_merge($data, $this->getAlertData($request));
+                    break;
+                case 'restok':
+                    $data = array_merge($data, $this->getRestokData($request));
+                    break;
+                case 'transfer':
+                    $data = array_merge($data, $this->getTransferData($request));
+                    break;
+            }
+        } else {
+            // Load all data so all tabs are instantly populated on first load
+            $data = array_merge($data, $this->getProductsData($request));
+            $data = array_merge($data, $this->getOpnameData($request));
+            $data = array_merge($data, $this->getAlertData($request));
+            $data = array_merge($data, $this->getRestokData($request));
+            $data = array_merge($data, $this->getTransferData($request));
+            $data['active_tab'] = $active_tab; // Restore correct active tab after merges
         }
         
         // Fill missing variables with empty collections/paginators to prevent Blade errors
@@ -437,12 +442,22 @@ class ProductController extends Controller
         $data['purchases'] = $data['purchases'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
         $data['transfers'] = $data['transfers'] ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
         
-        $data['categories'] = $data['categories'] ?? Category::all();
-        $data['stores'] = $data['stores'] ?? ($user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]));
-        $data['sub_menus'] = $data['sub_menus'] ?? Fitur::where('parent_id', 2)->orderBy('id')->get();
-        $data['suppliers'] = $data['suppliers'] ?? Contact::where('tipe', 'ilike', 'supplier')->get();
-        $data['payment_methods'] = $data['payment_methods'] ?? \App\Models\PaymentMethod::all();
-        $data['all_products'] = $data['all_products'] ?? collect();
+        // On AJAX requests, these are already in the browser — skip to save bandwidth & CPU
+        if (!$request->ajax()) {
+            $data['categories'] = $data['categories'] ?? Category::select('uuid', 'nama_category')->get();
+            $data['stores'] = $data['stores'] ?? ($user->isOwner() ? Outlet::where('status_aktif', true)->select('uuid', 'nama')->get() : collect([$user->outlet]));
+            $data['sub_menus'] = $data['sub_menus'] ?? Fitur::where('parent_id', 2)->orderBy('id')->select('id', 'nama', 'url', 'icon')->get();
+            $data['all_products'] = $data['all_products'] ?? collect();
+        } else {
+            // AJAX: only provide minimal fallbacks needed by the Blade partial
+            $data['categories'] = $data['categories'] ?? collect();
+            $data['stores'] = $data['stores'] ?? collect();
+            $data['sub_menus'] = $data['sub_menus'] ?? collect();
+            $data['all_products'] = collect(); // Client already has this — don't re-send
+        }
+        
+        $data['suppliers'] = $data['suppliers'] ?? collect();
+        $data['payment_methods'] = $data['payment_methods'] ?? collect();
         
         // Tab-specific default layout fallbacks
         $data['sub_tab'] = $data['sub_tab'] ?? 'semua';
@@ -452,6 +467,7 @@ class ProductController extends Controller
         $data['stok_habis_count'] = $data['stok_habis_count'] ?? 0;
         $data['expired_count'] = $data['expired_count'] ?? 0;
         
+        \Illuminate\Support\Facades\Log::info('getConsolidatedData end took ' . (microtime(true) - $startCons) . 's');
         return $data;
     }
 
@@ -960,6 +976,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'store_id' => 'nullable|exists:store,uuid',
             'nama_produk' => 'required|string|max:255',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'kategori_id' => 'required|exists:category,uuid',
@@ -1014,16 +1031,17 @@ class ProductController extends Controller
             'keterangan' => 'Produk baru ditambahkan ke sistem',
         ]);
 
-        // Initialize ProductStore for all active stores with 0 stock
-        $activeStores = Outlet::where('status_aktif', true)->get();
-        foreach ($activeStores as $s) {
-            ProductStore::create([
-                'product_id' => $product->uuid,
-                'store_id' => $s->uuid,
-                'stok' => 0,
-                'status_aktif' => true,
-            ]);
-        }
+        // Initialize ProductStore for the appropriate store (owner can specify store_id)
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $storeId = $user->isOwner()
+            ? ($request->input('store_id') ?? $user->store_id)
+            : $user->store_id;
+        ProductStore::create([
+            'product_id' => $product->uuid,
+            'store_id' => $storeId,
+            'stok' => 0,
+            'status_aktif' => true,
+        ]);
 
         \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan!');

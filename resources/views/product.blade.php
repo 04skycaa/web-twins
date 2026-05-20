@@ -320,10 +320,7 @@
                                     onclick="handleEdit(this)" title="Edit Produk">
                                 <iconify-icon icon="solar:pen-bold"></iconify-icon>
                             </button>
-                            <button class="btn-action-premium btn-delete-premium"
-                                    onclick="confirmDelete('{{ $product['id'] }}', '{{ addslashes($product['nama_produk']) }}')" title="Hapus Produk">
-                                <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
-                            </button>
+                            <button class="btn-action-premium btn-delete-premium" onclick="confirmDelete('{{ $product['id'] }}', '{{ addslashes($product['nama_produk']) }}')" title="Hapus Produk"><iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon></button>
                         </div>
                     </td>
                 </tr>
@@ -480,7 +477,22 @@
                 <label class="form-label">Nama Produk</label>
                 <input type="text" name="nama_produk" class="form-input" required>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+    <div class="form-group">
+        <label class="form-label">SKU</label>
+        <input type="text" name="sku" class="form-input" required>
+    </div>
+    <div class="form-group">
+        <label class="form-label">Kategori</label>
+        <input type="text" name="kategori" class="form-input">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Cabang</label>
+        <select name="store_id" class="form-input">
+            <option value="">Pilih Cabang</option>
+        </select>
+    </div>
+</div>
                 <div class="form-group">
                     <label class="form-label">SKU</label>
                     <input type="text" name="sku" class="form-input" required>
@@ -706,7 +718,22 @@
         if(targetTab) targetTab.classList.add('active');
         document.getElementById('searchInput').value = '';
         document.querySelectorAll('.table-body tr').forEach(row => row.style.display = '');
+
+        // Update URL without reload so tab persists on refresh
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabId);
+        history.replaceState(null, '', url);
     }
+
+    // Restore active tab from URL on page load
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab) {
+            const btn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+            switchTab(btn, tab);
+        }
+    })();
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const searchText = this.value.toLowerCase();

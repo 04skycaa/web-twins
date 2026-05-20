@@ -84,6 +84,7 @@
 @endif
 
 @if(($sub_tab ?? 'semua') == 'semua')
+<div class="table-container">
     <table class="fitur-table" id="opnameTable">
         <thead>
             <tr>
@@ -139,10 +140,12 @@
             @endforelse
         </tbody>
     </table>
+</div>
     <div class="pagination-container">
         {{ $opnames->links() }}
     </div>
 @else
+<div class="table-container">
     <table class="fitur-table" id="rugiTable">
         <thead>
             <tr>
@@ -173,6 +176,7 @@
             @endforelse
         </tbody>
     </table>
+</div>
     <div class="pagination-container">
         {{ $opname_details->links() }}
     </div>
