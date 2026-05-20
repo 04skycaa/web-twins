@@ -12,17 +12,17 @@
 
 <div class="kontainer-utama">
     <div class="panel-visual">
-        <div class="nama-brand">TWINS</div>
+        <div class="header-brand">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo TWINS" class="logo-brand-bulat">
+            <span class="nama-brand-teks">TWINS</span>
+        </div>
         <div class="teks-hero">
-            <h1>Join the Family</h1>
-            <p>Daftar sekarang dan nikmati kemudahan belanja bahan kue premium hanya dalam satu aplikasi.</p>
+            <h1>Gabung Sekarang</h1>
+            <p>Daftar dan nikmati kemudahan belanja bahan kue premium hanya dalam satu aplikasi.</p>
         </div>
 
         <div class="container-visual-bawah">
-            <img src="{{ asset('images/toko-luar.png') }}" alt="Visual 1" class="gambar-satu">
-            <div id="wrapperGambarDua" class="wrapper-gambar-dua-register">
-                <img src="{{ asset('images/orang2.png') }}" alt="Visual 2" class="gambar-dua-register">
-            </div>
+            <img src="{{ asset('images/register.png') }}" alt="Visual 1" class="gambar-register">
         </div>
     </div>
 
@@ -30,43 +30,57 @@
         <div class="bungkus-form">
             <h2 class="judul-form">Daftar Akun</h2>
             <p class="subjudul-form">Lengkapi data di bawah ini untuk mulai bergabung dengan Twins.</p>
-            
-            <form method="POST" action="{{ route('register') }}">
+                        <form method="POST" action="{{ route('register') }}">
                 @csrf
 
                 <div class="grup-input">
                     <label class="label-input">Nama Lengkap</label>
-                    <input type="text" name="name" class="field-input" placeholder="Masukkan nama lengkap" value="{{ old('name') }}" required autofocus>
+                    <input type="text" name="name" class="field-input @error('name') is-invalid @enderror" placeholder="Masukkan nama lengkap" value="{{ old('name') }}" autofocus>
+                    @error('name')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Email</label>
-                    <input type="email" name="email" class="field-input" placeholder="nama@email.com" value="{{ old('email') }}" required>
+                    <input type="email" name="email" class="field-input @error('email') is-invalid @enderror" placeholder="nama@email.com" value="{{ old('email') }}">
+                    @error('email')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Nomor Handphone</label>
-                    <input type="tel" name="no_hp" id="inputTel" class="field-input" placeholder="0812xxxxxxx" value="{{ old('no_hp') }}" required>
+                    <input type="tel" name="no_hp" id="inputTel" class="field-input @error('no_hp') is-invalid @enderror" placeholder="0812xxxxxxx" value="{{ old('no_hp') }}">
+                    @error('no_hp')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Password</label>
                     <div class="wrapper-password">
-                        <input type="password" name="password" id="inputPass" class="field-input" placeholder="Min. 8 karakter" required>
+                        <input type="password" name="password" id="inputPass" class="field-input @error('password') is-invalid @enderror" placeholder="Min. 8 karakter">
                         <div class="toggle-password" onclick="togglePassword('inputPass', 'eyeIcon')">
                             <i id="eyeIcon" data-lucide="eye" style="width: 20px;"></i>
                         </div>
                     </div>
+                    @error('password')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Konfirmasi Password</label>
                     <div class="wrapper-password">
-                        <input type="password" name="password_confirmation" id="inputConfirm" class="field-input" placeholder="Ulangi password" required>
+                        <input type="password" name="password_confirmation" id="inputConfirm" class="field-input @error('password_confirmation') is-invalid @enderror" placeholder="Ulangi password">
                         <div class="toggle-password" onclick="togglePassword('inputConfirm', 'eyeIconConfirm')">
                             <i id="eyeIconConfirm" data-lucide="eye" style="width: 20px;"></i>
                         </div>
                     </div>
+                    @error('password_confirmation')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <button type="submit" class="tombol-masuk">Buat Akun</button>
@@ -82,6 +96,7 @@
 
 <div id="session-data" 
      data-errors="{{ json_encode($errors->all()) }}" 
+     data-error="{{ session('error') }}" 
      data-success="{{ session('success') }}">
 </div>
 

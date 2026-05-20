@@ -12,7 +12,10 @@
 
 <div class="kontainer-utama">
     <div class="panel-visual">
-        <div class="nama-brand">TWINS</div>
+        <div class="header-brand">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo TWINS" class="logo-brand-bulat">
+            <span class="nama-brand-teks">TWINS</span>
+        </div>
         <div class="teks-hero">
             <h1>Lupa Password?</h1>
             <p>Tenang aja! Masukkan email kamu, nanti kami kirim link buat atur ulang password biar kamu bisa lanjut belanja di Twins </p>
@@ -49,6 +52,7 @@
 
 <div id="session-data" 
      data-errors="{{ json_encode($errors->all()) }}" 
+     data-error="{{ session('error') }}" 
      data-status="{{ session('status') }}">
 </div>
 

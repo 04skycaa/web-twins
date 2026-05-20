@@ -155,69 +155,15 @@ function handleSessionAlerts() {
     // 2. Generic Pages Session Data (Register, Forgot, Reset, Confirm)
     const sessionDataEl = document.getElementById('session-data');
     if (sessionDataEl) {
-        const errors = JSON.parse(sessionDataEl.dataset.errors || '[]');
         const successMessage = sessionDataEl.dataset.success;
         const statusMessage = sessionDataEl.dataset.status;
         const confirmed = sessionDataEl.dataset.confirmed;
+        const errors = JSON.parse(sessionDataEl.dataset.errors || '[]');
 
-        if (errors.length > 0) {
-            const isRegisterPage = document.querySelector('form[action*="register"]');
-            const isForgotPage = document.getElementById('forgotForm');
-            const isResetPage = document.getElementById('resetForm');
-            const isConfirmPage = document.querySelector('form[action*="password-confirm"]') || sessionDataEl.dataset.confirmed !== undefined;
-
-            if (isRegisterPage) {
-                let listHtml = '<ul style="text-align: left; font-size: 14px; color: #555; list-style-type: none; padding: 0;">';
-                errors.forEach(function(msg) {
-                    listHtml += `<li style="margin-bottom: 8px; display: flex; align-items: center;">
-                        <span style="color: #ef4444; margin-right: 8px;">●</span> ${msg}
-                    </li>`;
-                });
-                listHtml += '</ul>';
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Registrasi Gagal',
-                    html: listHtml,
-                    confirmButtonColor: '#0477bf',
-                    confirmButtonText: 'Coba Lagi',
-                    showClass: {
-                        popup: 'animate__animated animate__shakeX'
-                    }
-                });
-            } else if (isForgotPage) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Opps!',
-                    text: errors[0], 
-                    confirmButtonColor: '#0477bf',
-                    showClass: { popup: 'animate__animated animate__shakeX' }
-                });
-            } else if (isResetPage) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Update',
-                    text: errors[0],
-                    confirmButtonColor: '#0477bf',
-                    showClass: { popup: 'animate__animated animate__shakeX' }
-                });
-            } else if (isConfirmPage) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Konfirmasi Gagal',
-                    text: 'Kata sandi yang Anda masukkan salah.',
-                    confirmButtonColor: '#0477bf',
-                    showClass: { popup: 'animate__animated animate__shakeX' }
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: errors[0],
-                    confirmButtonColor: '#0477bf',
-                    showClass: { popup: 'animate__animated animate__shakeX' }
-                });
-            }
+        // Tampilkan singleError (session error) sebagai inline error card — tanpa SweetAlert
+        const singleError = sessionDataEl.dataset.error;
+        if (singleError) {
+            tampilkanKartuError(singleError);
         }
 
         if (successMessage) {
@@ -260,5 +206,46 @@ function handleSessionAlerts() {
                 });
             }
         }
+    }
+}
+
+/**
+ * Tampilkan pesan error sebagai kartu merah inline di atas tombol submit
+ * (digunakan untuk session error seperti gagal Supabase)
+ * @param {string} pesan
+ */
+function tampilkanKartuError(pesan) {
+    // Hindari duplikat
+    const existing = document.getElementById('kartu-error-inline');
+    if (existing) existing.remove();
+
+    const kartu = document.createElement('div');
+    kartu.id = 'kartu-error-inline';
+    kartu.style.cssText = `
+        background-color: #fef2f2;
+        border: 1.5px solid #ef4444;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        animation: fadeInError 0.3s ease forwards;
+    `;
+    kartu.innerHTML = `
+        <svg style="width:18px;height:18px;flex-shrink:0;margin-top:1px;color:#ef4444;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span style="color:#b91c1c;font-size:13px;line-height:1.5;">${pesan}</span>
+    `;
+
+    // Sisipkan sebelum tombol submit
+    const tombol = document.querySelector('.tombol-masuk');
+    if (tombol) {
+        tombol.parentNode.insertBefore(kartu, tombol);
+    } else {
+        // Fallback: taruh di akhir form
+        const form = document.querySelector('form');
+        if (form) form.appendChild(kartu);
     }
 }

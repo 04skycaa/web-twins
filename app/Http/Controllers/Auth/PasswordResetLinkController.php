@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\SupabaseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -28,18 +29,78 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
         ]);
 
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        // Verify the user exists in our local database
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Alamat email tidak terdaftar di sistem.']);
+        }
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // Trigger Supabase recovery OTP email
+        $supabase = new SupabaseService();
+        $success = $supabase->sendRecoveryEmail($request->email);
+
+        if ($success) {
+            return redirect()->route('password.verify-otp-view', ['email' => $request->email])
+                ->with('status', 'Kode verifikasi telah dikirim ke email Anda.');
+        }
+
+        return back()->withInput($request->only('email'))
+            ->withErrors(['email' => 'Gagal mengirimkan kode verifikasi. Silakan coba lagi nanti.']);
+    }
+
+    /**
+     * Display the OTP verification form for recovery.
+     */
+    public function showVerifyForm(Request $request): View|RedirectResponse
+    {
+        $email = $request->query('email');
+        if (!$email) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'Masukkan email Anda terlebih dahulu.']);
+        }
+
+        return view('auth.verify-recovery-otp', ['email' => $email]);
+    }
+
+    /**
+     * Verify the recovery OTP code.
+     */
+    public function verifyOTP(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'otp.required' => 'Kode OTP wajib diisi.',
+            'otp.size' => 'Kode OTP harus tepat 6 digit.',
+        ]);
+
+        $supabase = new SupabaseService();
+        $response = $supabase->verifyOTP($request->email, $request->otp, 'recovery');
+
+        if ($response) {
+            // Store reset verification status in session
+            session([
+                'reset_email' => $request->email,
+                'reset_token' => $request->otp,
+                'reset_verified' => true
+            ]);
+
+            return redirect()->route('password.reset', [
+                'token' => $request->otp,
+                'email' => $request->email
+            ]);
+        }
+
+        return back()->withInput($request->only('email'))
+            ->withErrors(['otp' => 'Kode OTP salah atau telah kedaluwarsa. Silakan periksa kembali email Anda.']);
     }
 }

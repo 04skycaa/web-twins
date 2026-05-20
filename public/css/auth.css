@@ -58,23 +58,51 @@ body {
 
 .panel-visual {
     flex: 1.2;
-    padding: 60px;
+    min-width: 0;
+    max-width: 700px;
+    padding: 40px 60px 0 60px;
     color: white;
     position: relative;
     display: flex;
     flex-direction: column;
     z-index: 10;
+    overflow: hidden;
 }
 
-.nama-brand {
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-self: flex-start;
+}
+
+.logo-brand-bulat {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #ffffff;
+    background-color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.logo-brand-bulat:hover {
+    transform: rotate(5deg) scale(1.05);
+}
+
+.nama-brand-teks {
     font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 20px;
-    letter-spacing: 2px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #ffffff;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .teks-hero {
-    margin-top: 10px;
+    margin-top: 0;
 }
 
 .teks-hero h1 {
@@ -139,8 +167,15 @@ body {
 }
 
 @keyframes fadeInError {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .label-input {
@@ -222,32 +257,64 @@ input::-ms-clear {
 }
 
 .container-visual-bawah {
-    position: absolute;
-    bottom: 0px;
-    left: 60px;
-    right: 0;
-    height: 250px;
+    flex: 1;
+    position: relative;
+    min-height: 0;
     pointer-events: none;
+    overflow: visible;
 }
 
 .gambar-satu-password {
     position: absolute;
-    left: 40%;
-    bottom: 25px;
+    left: 50%;
+    bottom: 0;
     transform: translateX(-50%);
-    max-width: 420px;
-    height: auto;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
     z-index: 1;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
 }
 
 .gambar-satu-verif {
     position: absolute;
-    left: 40%;
-    bottom: 25px;
+    left: 50%;
+    bottom: 0;
     transform: translateX(-50%);
-    max-width: 420px;
-    height: auto;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.gambar-tengah {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    max-width: 90%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom;
+    z-index: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.gambar-register {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom center;
     z-index: 1;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
 }
@@ -255,19 +322,22 @@ input::-ms-clear {
 .gambar-satu {
     position: absolute;
     left: 0;
-    bottom: 25px;
-    max-width: 350px;
-    height: auto;
+    bottom: 0;
+    width: auto;
+    max-width: 70%;
+    height: 100%;
+    object-fit: contain;
+    object-position: bottom left;
     z-index: 1;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
 }
 
 .wrapper-gambar-dua {
     position: absolute;
-    left: 50%;
+    right: 0;
     bottom: 0;
-    transform: translateX(-50%);
-    width: 200px;
+    width: 40%;
+    max-width: 220px;
     z-index: 2;
     transition: var(--transition-smooth);
 }
@@ -275,14 +345,15 @@ input::-ms-clear {
 .gambar-dua {
     width: 100%;
     height: auto;
+    object-position: bottom;
 }
 
 .wrapper-gambar-dua-register {
     position: absolute;
-    left: 50%;
+    right: 0;
     bottom: 0;
-    transform: translateX(-50%);
-    width: 260px;
+    width: 40%;
+    max-width: 280px;
     z-index: 2;
     transition: var(--transition-smooth);
 }
@@ -290,6 +361,42 @@ input::-ms-clear {
 .gambar-dua-register {
     width: 100%;
     height: auto;
+}
+
+/* ===== LOGIN VISUAL LAYOUT ===== */
+.container-login {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: visible;
+    padding: 0 10px;
+}
+
+.wrapper-login-gambar {
+    position: relative;
+    width: 72%;
+    max-width: 360px;
+    flex-shrink: 0;
+    margin-right: 14%;
+    margin-bottom: 15px;
+}
+
+.gambar-rak-login {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.gambar-orang-login {
+    position: absolute;
+    bottom: -15px;
+    right: -18%;
+    width: 52%;
+    height: auto;
+    z-index: 2;
+    transition: var(--transition-smooth);
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
 }
 
 .image-slide-out-right {

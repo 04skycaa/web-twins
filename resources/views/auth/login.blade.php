@@ -34,16 +34,19 @@
         {{-- Error overlay removed to use inline validation instead --}}
 
         <div class="panel-visual">
-            <div class="nama-brand">TWINS</div>
+            <div class="header-brand">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo TWINS" class="logo-brand-bulat">
+                <span class="nama-brand-teks">TWINS</span>
+            </div>
             <div class="teks-hero">
                 <h1>SELAMAT DATANG</h1>
                 <p>Belanja bahan kue jadi lebih gampang di Twins. Lengkap, cepat, dan siap bantu kamu bikin kue impian.</p>
             </div>
 
-            <div class="container-visual-bawah">
-                <img src="{{ asset('images/toko-luar.png') }}" alt="Visual 1" class="gambar-satu">
-                <div id="wrapperGambarDua" class="wrapper-gambar-dua">
-                    <img src="{{ asset('images//orang.png') }}" alt="Visual 2" class="gambar-dua">
+            <div class="container-visual-bawah container-login">
+                <div class="wrapper-login-gambar">
+                    <img src="{{ asset('images/toko-luar.png') }}" alt="Rak Toko" class="gambar-rak-login">
+                    <img id="wrapperGambarDua" src="{{ asset('images/orang.png') }}" alt="Karakter" class="gambar-orang-login">
                 </div>
             </div>
         </div>

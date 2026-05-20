@@ -151,4 +151,111 @@ class SupabaseService
             return null;
         }
     }
+
+    /**
+     * Register a user using public signup (triggers confirmation email).
+     */
+    public function signup(array $data)
+    {
+        try {
+            $payload = [
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'options' => [
+                    'data' => [
+                        'username' => $data['username'],
+                        'no_hp' => $data['no_hp'] ?? '',
+                        'operator_id' => $data['operator_id'] ?? null,
+                        'store_id' => $data['store_id'] ?? null,
+                        'role' => $data['role'] ?? 'user',
+                    ]
+                ]
+            ];
+
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->url . '/auth/v1/signup', $payload);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            $body = $response->json();
+            $errorMessage = $body['msg'] ?? ($body['error_description'] ?? 'Unexpected failure');
+            Log::error('Supabase Public Signup Error: ' . $response->body());
+            return ['error' => $errorMessage];
+        } catch (\Exception $e) {
+            Log::error('Supabase Public Signup Exception: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Verify an OTP token (type: 'signup' or 'recovery').
+     */
+    public function verifyOTP($email, $token, $type = 'signup')
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->url . '/auth/v1/verify', [
+                'type' => $type,
+                'email' => $email,
+                'token' => $token,
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error("Supabase Verify OTP Error ($type): " . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error("Supabase Verify OTP Exception ($type): " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Resend signup confirmation OTP.
+     */
+    public function resendSignupOTP($email)
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->url . '/auth/v1/resend', [
+                'type' => 'signup',
+                'email' => $email,
+            ]);
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Supabase Resend OTP Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Trigger recovery (password reset) OTP email via Supabase.
+     */
+    public function sendRecoveryEmail($email)
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->serviceKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->url . '/auth/v1/recover', [
+                'email' => $email,
+            ]);
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Supabase Send Recovery Email Exception: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

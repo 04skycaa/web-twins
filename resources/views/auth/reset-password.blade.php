@@ -12,9 +12,12 @@
 
 <div class="kontainer-utama">
     <div class="panel-visual">
-        <div class="nama-brand">TWINS</div>
+        <div class="header-brand">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo TWINS" class="logo-brand-bulat">
+            <span class="nama-brand-teks">TWINS</span>
+        </div>
         <div class="teks-hero">
-            <h1>New Beginning</h1>
+            <h1>Password Baru</h1>
             <p>Buat kata sandi baru yang kuat untuk menjaga keamanan akun belanja Twins Anda.</p>
         </div>
 
@@ -35,15 +38,18 @@
 
                 <div class="grup-input">
                     <label class="label-input">Email</label>
-                    <input type="email" name="email" class="field-input" 
+                    <input type="email" name="email" class="field-input @error('email') is-invalid @enderror" 
                            value="{{ old('email', $request->email) }}" required readonly 
                            style="background-color: #f9f9f9; cursor: not-allowed;">
+                    @error('email')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Password Baru</label>
                     <div style="position: relative;">
-                        <input type="password" name="password" id="inputPass" class="field-input" 
+                        <input type="password" name="password" id="inputPass" class="field-input @error('password') is-invalid @enderror" 
                                placeholder="Minimal 8 karakter" required autofocus style="padding-right: 45px;">
                         
                         <div class="toggle-password" onclick="togglePassword('inputPass', 'eyeIcon')" 
@@ -51,12 +57,15 @@
                             <i id="eyeIcon" data-lucide="eye" style="width: 20px; color: #666;"></i>
                         </div>
                     </div>
+                    @error('password')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <div class="grup-input">
                     <label class="label-input">Ulangi Password</label>
                     <div style="position: relative;">
-                        <input type="password" name="password_confirmation" id="inputConfirm" class="field-input" 
+                        <input type="password" name="password_confirmation" id="inputConfirm" class="field-input @error('password_confirmation') is-invalid @enderror" 
                                placeholder="Konfirmasi password baru" required style="padding-right: 45px;">
                         
                         <div class="toggle-password" onclick="togglePassword('inputConfirm', 'eyeIconConfirm')" 
@@ -64,6 +73,9 @@
                             <i id="eyeIconConfirm" data-lucide="eye" style="width: 20px; color: #666;"></i>
                         </div>
                     </div>
+                    @error('password_confirmation')
+                        <span class="pesan-error">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <button type="submit" class="tombol-masuk" onclick="tampilkanLoading(this)">Simpan Password Baru</button>
@@ -72,7 +84,10 @@
     </div>
 </div>
 
-<div id="session-data" data-errors="{{ json_encode($errors->all()) }}"></div>
+<div id="session-data" 
+     data-errors="{{ json_encode($errors->all()) }}" 
+     data-error="{{ session('error') }}">
+</div>
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

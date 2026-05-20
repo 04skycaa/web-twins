@@ -35,35 +35,44 @@ class NewPasswordController extends Controller
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'token.required' => 'Token reset password tidak valid.',
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        // Verify that this email and token have been verified via OTP
+        if (!session('reset_verified') || session('reset_email') !== $request->email || session('reset_token') !== $request->token) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'Sesi reset password tidak valid atau telah kedaluwarsa. Silakan ulangi proses lupa password.']);
+        }
 
-                // Sync to Supabase
-                $supabase = new \App\Services\SupabaseService();
-                $supabase->updateUser($user->uuid, [
-                    'password' => $request->password,
-                ]);
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Alamat email tidak terdaftar di sistem.']);
+        }
 
-                event(new PasswordReset($user));
-            }
-        );
+        // 1. Update password in Local Database
+        $user->forceFill([
+            'password' => Hash::make($request->password),
+            'remember_token' => Str::random(60),
+        ])->save();
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // 2. Sync to Supabase Authentication
+        $supabase = new \App\Services\SupabaseService();
+        $supabase->updateUser($user->uuid, [
+            'password' => $request->password,
+        ]);
+
+        event(new PasswordReset($user));
+
+        // 3. Clear session keys
+        session()->forget(['reset_email', 'reset_token', 'reset_verified']);
+
+        return redirect()->route('login')
+            ->with('status', 'Kata sandi Anda telah berhasil diperbarui! Silakan masuk menggunakan kata sandi baru.');
     }
 }

@@ -17,11 +17,29 @@ Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
 Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
     ->name('password.email');
 
+Route::get('forgot-password/verify', [PasswordResetLinkController::class, 'showVerifyForm'])
+    ->name('password.verify-otp-view');
+
+Route::post('forgot-password/verify', [PasswordResetLinkController::class, 'verifyOTP'])
+    ->name('password.verify-otp');
+
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
+
+    Route::get('verify-register', [RegisteredUserController::class, 'showVerifyForm'])
+        ->name('register.verify-view');
+
+    Route::post('verify-register', [RegisteredUserController::class, 'verifyOTP'])
+        ->name('register.verify-otp');
+
+    Route::post('verify-register/resend', [RegisteredUserController::class, 'resendOTP'])
+        ->name('register.resend-otp');
+
+    Route::get('verify-register/cancel', [RegisteredUserController::class, 'cancelVerification'])
+        ->name('register.verify-cancel');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
@@ -40,6 +58,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
+
+    Route::post('verify-email', [VerifyEmailController::class, 'verifyOTP'])
+        ->name('verification.verify-otp');
 
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])

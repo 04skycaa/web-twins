@@ -12,7 +12,7 @@
 
 <div class="kontainer-utama">
     <div class="panel-visual">
-        <div class="nama-brand">TWINS</div>
+        <img src="{{ asset('images/logo.png') }}" alt="Logo TWINS" class="logo-brand">
         <div class="teks-hero">
             <h1>Amankan Akunmu </h1>
             <p>Yuk buat kata sandi baru biar akunmu tetap aman dan kamu bisa lanjut belanja bahan kue favorit di Twins </p>
@@ -71,6 +71,7 @@
 
 <div id="session-data" 
      data-errors="{{ json_encode($errors->all()) }}" 
+     data-error="{{ session('error') }}" 
      data-status="{{ session('status') }}"
      data-confirmed="{{ session('auth.password_confirmed_at') }}">
 </div>
