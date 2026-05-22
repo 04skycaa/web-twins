@@ -120,7 +120,7 @@
 
     <div class="fitur-container" id="absensi-app">
         {{-- PILL TABS --}}
-        <div class="tab-navigation">
+        <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-start pb-2">
             <a href="#" class="tab-pill {{ ($active_tab ?? 'shift') === 'shift' ? 'active' : '' }}" onclick="switchTab('shift')" id="pill-shift">
                 <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
                 <span>Master Shift</span>
@@ -140,10 +140,10 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <div class="action-bar">
+        <div class="action-bar flex-wrap mobile-action-bar">
             <div style="display: contents;">
-                <div class="left-actions-group" id="headerLeftActions">
-                    <div class="search-wrapper">
+                <div class="left-actions-group mobile-action-bar" id="headerLeftActions" style="width: 100%;">
+                    <div class="search-wrapper mobile-search-shrink">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                         <input type="text" id="globalSearch" class="search-input" placeholder="masukan nama/hari"
                             onkeyup="filterTable()">
@@ -186,8 +186,6 @@
                             </div>
                         </div>
                     @endif
-                </div>
-                <div class="right-actions">
                     <button type="button" class="btn-action" id="btnAddMain" onclick="openCurrentModal()">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
                         <span id="txtAddMain">Tambah</span>
@@ -199,7 +197,7 @@
         <form id="formGlobalDelete" method="POST" style="display: none;">@csrf @method('DELETE')</form>
 
         {{-- MAIN BOX --}}
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
 
                 @include('absensi._tab_shift')

@@ -12,6 +12,10 @@
     <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" crossorigin="anonymous"></script>
     @stack('styles')
+    <style>
+        /* Mencegah konten tertutup oleh navigasi bawah di mobile */
+        .fitur-container { padding-bottom: 100px !important; }
+    </style>
 </head>
 
 <body>

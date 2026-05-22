@@ -41,15 +41,13 @@
             <!-- SECTION CASHBOX (Daftar Metode Pembayaran) -->
             <div id="view-cashbox" class="view-section active">
                 <!-- ACTION BAR -->
-                <div class="action-bar" style="margin-bottom: 20px;">
-                    <div class="left-actions-group">
-                        <div class="search-wrapper">
+                <div class="action-bar mobile-action-bar" style="margin-bottom: 20px;">
+                    <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+                        <div class="search-wrapper mobile-search-shrink">
                             <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                             <input type="text" id="cashboxSearch" class="search-input" placeholder="Cari nama cashbox..."
                                 onkeyup="filterCashbox()">
                         </div>
-                    </div>
-                    <div class="right-actions">
                         <button onclick="openModal('modalAddCashbox')" class="btn-action">
                             <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
                             <span>Tambah Cashbox</span>
@@ -70,16 +68,14 @@
                                 <tr>
                                     <td style="font-weight: 600;">{{ $cb->nama_metode }}</td>
                                     <td>
-                                        <div style="display: flex; justify-content: center; gap: 10px;">
-                                            <button class="btn-action" style="background: #eef2ff; color: #4f46e5;"
-                                                onclick="openEditCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')">
+                                        <div style="display: flex; gap: 8px; justify-content: center;">
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);"
+                                                onclick="openEditCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Edit">
                                                 <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                                <span>Edit</span>
                                             </button>
-                                            <button class="btn-action" style="background: #fef2f2; color: #ef4444;"
-                                                onclick="deleteCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')">
+                                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;"
+                                                onclick="deleteCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Hapus">
                                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                                <span>Hapus</span>
                                             </button>
                                         </div>
                                     </td>

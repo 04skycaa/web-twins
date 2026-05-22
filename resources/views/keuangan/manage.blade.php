@@ -64,9 +64,9 @@
 
     {{-- SECTION CASHBOX --}}
     <div id="view-cashbox" class="view-section {{ $active_tab === 'cashbox' ? 'active' : '' }}">
-        <div class="action-bar" style="margin-bottom: 20px;">
-            <div class="left-actions-group">
-                <div class="search-wrapper">
+        <div class="action-bar flex-wrap mobile-action-bar" style="margin-bottom: 20px;">
+            <div class="left-actions-group flex-wrap">
+                <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="cashboxSearch" class="search-input" placeholder="Cari nama cashbox..." onkeyup="filterCashbox()">
                 </div>
@@ -93,16 +93,12 @@
                             <tr>
                                 <td style="font-weight: 600;">{{ $cb->nama_metode }}</td>
                                 <td>
-                                    <div style="display: flex; justify-content: center; gap: 10px;">
-                                        <button class="btn-action" style="background: #eef2ff; color: #4f46e5;"
-                                            onclick="openEditCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')">
+                                    <div style="display: flex; justify-content: center; gap: 8px;">
+                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openEditCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Edit">
                                             <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                            <span>Edit</span>
                                         </button>
-                                        <button class="btn-action" style="background: #fef2f2; color: #ef4444;"
-                                            onclick="deleteCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')">
+                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Hapus">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                            <span>Hapus</span>
                                         </button>
                                     </div>
                                 </td>
@@ -118,11 +114,11 @@
 
     {{-- SECTION ARUS UANG --}}
     <div id="view-arus-uang" class="view-section {{ $active_tab === 'arus-uang' ? 'active' : '' }}">
-        <div class="action-bar" style="margin-bottom: 20px;">
-            <div class="left-actions-group">
-                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" onchange="this.submit()">
+        <div class="action-bar flex-wrap mobile-action-bar" style="margin-bottom: 20px;">
+            <div class="left-actions-group flex-wrap">
+                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" class="mobile-action-bar" onchange="this.submit()">
                     <input type="hidden" name="tab" value="arus-uang">
-                    <div class="search-wrapper">
+                    <div class="search-wrapper mobile-search-shrink">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                         <input type="text" name="search" id="searchInput" class="search-input" value="{{ request('search') }}" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()">
                     </div>
@@ -182,7 +178,7 @@
         </div>
 
         <div class="main-content-box" style="background: transparent; padding: 0; box-shadow: none;">
-            <div class="finance-card-container">
+            <div class="finance-card-container mobile-side-by-side" style="padding-bottom: 10px;">
                 <div class="finance-card">
                     <div class="icon-box bg-bersih"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
                     <div class="card-info">
@@ -207,9 +203,9 @@
             </div>
 
             <div class="table-container" style="background: white; padding: 24px; border-radius: 24px; border: 1px solid #f1f5f9;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">Histori Transaksi</h3>
-                    <div class="filter-pills">
+                <div class="mobile-action-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; flex-shrink: 0;">Histori Transaksi</h3>
+                    <div class="filter-pills mobile-inline-flex" style="flex-shrink: 0;">
                         <button type="button" class="filter-pill active" onclick="filterHistoryType('semua', this)">Semua</button>
                         <button type="button" class="filter-pill" onclick="filterHistoryType('pemasukan', this)">Masuk</button>
                         <button type="button" class="filter-pill" onclick="filterHistoryType('pengeluaran', this)">Keluar</button>
@@ -245,108 +241,8 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="pagination-container" style="margin-top: 24px;">{{ $history->links() }}</div>
+                <div class="pagination-container" style="margin-top: 24px;">{{ $history->onEachSide(1)->links() }}</div>
             </div>
-        </div>
-    </div>
-
-    {{-- SECTION PEMINDAHAN SALDO --}}
-    <div id="view-pemindahan-saldo" class="view-section {{ $active_tab === 'pemindahan-saldo' ? 'active' : '' }}">
-        <div class="action-bar" style="margin-bottom: 20px;">
-            <div class="left-actions-group">
-                <div class="search-wrapper">
-                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="transferSearch" class="search-input" placeholder="Cari riwayat transfer..." onkeyup="filterTransfer()">
-                </div>
-
-                <div class="dropdown">
-                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                    </button>
-                    <div class="dropdown-content" style="padding: 15px; width: 300px;">
-                        <form action="{{ route('keuangan.index') }}" method="GET">
-                            <input type="hidden" name="tab" value="pemindahan-saldo">
-                            <div style="display: flex; flex-direction: column; gap: 12px;">
-                                <div>
-                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Dari</label>
-                                    <input type="date" name="start_date" class="form-control" value="{{ $start_date }}">
-                                </div>
-                                <div>
-                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
-                                    <input type="date" name="end_date" class="form-control" value="{{ $end_date }}">
-                                </div>
-                                <button type="submit" class="btn-action" style="width: 100%; justify-content: center;">Terapkan</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                @if(auth()->user()->role === 'owner')
-                <div class="dropdown">
-                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                    </button>
-                    <div class="dropdown-content">
-                        <a href="{{ route('keuangan.index', ['tab' => 'pemindahan-saldo', 'store_id' => 'all']) }}">Semua Outlet</a>
-                        @foreach($outlets as $outlet)
-                            <a href="{{ route('keuangan.index', ['tab' => 'pemindahan-saldo', 'store_id' => $outlet->uuid]) }}">{{ $outlet->nama }}</a>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-            </div>
-            
-            <div class="right-actions">
-                <div class="dropdown">
-                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                        <span>Extract</span>
-                    </button>
-                    <div class="dropdown-content" style="right: 0; left: auto;">
-                        <a href="javascript:void(0)" onclick="exportToExcel()"><iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px; font-size: 16px;"></iconify-icon> Excel</a>
-                        <a href="javascript:void(0)" onclick="exportToPDF()"><iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px; font-size: 16px;"></iconify-icon> PDF</a>
-                    </div>
-                </div>
-                <button type="button" class="btn-action" onclick="openModal('modalTransferSaldo')">
-                    <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                    <span>Tambah Pemindahan Saldo</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="main-content-box">
-            <div class="table-container">
-                <table class="fitur-table" id="transferTable">
-                    <thead>
-                        <tr>
-                            <th>TANGGAL</th>
-                            <th>KETERANGAN</th>
-                            <th>OUTLET</th>
-                            <th>AKUN</th>
-                            <th style="text-align: right;">NOMINAL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($transfers as $t)
-                            <tr class="transfer-row">
-                                <td style="white-space: nowrap;">{{ \Carbon\Carbon::parse($t->tanggal)->translatedFormat('d F Y') }} <br> <span style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($t->tanggal)->format('H:i') }}</span></td>
-                                <td>
-                                    <div style="font-weight: 600;">{{ $t->keterangan }}</div>
-                                    <div style="font-size: 11px; color: #64748b;">Oleh: {{ $t->user->name ?? $t->user->username ?? '-' }}</div>
-                                </td>
-                                <td>{{ $t->outlet->nama ?? '-' }}</td>
-                                <td>{{ $t->paymentMethod->nama_metode ?? '-' }}</td>
-                                <td style="text-align: right; font-weight: 700; color: {{ $t->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
-                                    {{ $t->jenis == 'pemasukan' ? '+' : '-' }} Rp {{ number_format($t->nominal, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">Belum ada riwayat transfer saldo.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div class="pagination-container" style="margin-top: 24px;">{{ $transfers->links() }}</div>
         </div>
     </div>
 </div>

@@ -1,5 +1,5 @@
 <!-- TAB: JADWAL KARYAWAN -->
-<div id="view-jadwal" style="display: none;">
+<div id="view-jadwal" class="mobile-pb" style="display: none;">
     <table class="fitur-table">
         <thead>
             <tr>
@@ -31,7 +31,7 @@
                     <td style="text-align: center;">
                         <div style="display: flex; gap: 8px; justify-content: center;">
                             <button class="btn-filter"
-                                style="width:32px;height:32px;border-radius:8px;color:#FBC02D;border-color:#FFF9C4;"
+                                style="width:32px;height:32px;border-radius:8px;color:var(--primary-blue);"
                                 onclick="openEditJadwal('{{ $j->uuid }}', '{{ $j->shift_id }}', {{ $j->hari_dalam_minggu }})"
                                 title="Edit">
                                 <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>

@@ -29,7 +29,7 @@
     </div>
 
     {{-- TABS --}}
-    <div class="tab-navigation">
+    <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-start pb-2">
         <button onclick="switchTab('customer')" id="tab-customer-btn" class="tab-pill {{ $active_tab === 'customer' ? 'active' : '' }}">
             <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
             <span>Pelanggan</span>
@@ -75,9 +75,9 @@
     </div>
 
     {{-- ACTION BAR --}}
-    <div class="action-bar">
-        <div class="left-actions-group">
-            <div class="search-wrapper">
+    <div class="action-bar mobile-action-bar">
+        <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+            <div class="search-wrapper mobile-search-shrink">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                 <input type="text" id="searchInput" class="search-input" placeholder="Cari nama atau nomor HP..." aria-label="Cari nama atau nomor HP">
             </div>
@@ -91,34 +91,34 @@
                     <a href="{{ request()->fullUrlWithQuery(['sort' => 'terlama']) }}" class="{{ $sort == 'terlama' ? 'active-dropdown-item' : '' }}">Terlama</a>
                 </div>
             </div>
+            <button onclick="openAddModal()" class="btn-action" style="background: var(--primary-blue); color: white;">
+                <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                <span id="addBtnText">Tambah Pelanggan</span>
+            </button>
         </div>
-        <button onclick="openAddModal()" class="btn-filter" style="width: auto; padding: 0 20px; border-radius: 50px; background: var(--primary-blue); color: white; gap: 8px;">
-            <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 24px;"></iconify-icon>
-            <span id="addBtnText" style="font-weight: 600; font-size: 14px;">Tambah Pelanggan</span>
-        </button>
     </div>
 
     {{-- BULK ACTION BAR --}}
-    <div id="bulk-action-bar" style="display: none; background: #fee2e2; border: 1px solid #fecaca; border-radius: 15px; padding: 12px 20px; margin-bottom: 15px; align-items: center; justify-content: space-between; animation: slideIn 0.3s ease;">
+    <div id="bulk-action-bar" style="display: none; background: #fee2e2; border: 1px solid #fecaca; border-radius: 15px; padding: 12px 20px; margin-bottom: 15px; align-items: center; justify-content: space-between; animation: slideIn 0.3s ease; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 12px;">
             <iconify-icon icon="solar:info-circle-bold-duotone" style="color: #ef4444; font-size: 24px;"></iconify-icon>
             <span style="font-weight: 600; color: #b91c1c;"><span id="selected-count">0</span> Kontak Terpilih</span>
         </div>
-        <div style="display: flex; gap: 8px;">
-            <button onclick="openBroadcastModal()" class="btn-action" style="padding: 8px 16px; font-size: 13px; background: #22c55e; color: white; border: none;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%; @media (min-width: 768px) { width: auto; }">
+            <button onclick="openBroadcastModal()" class="btn-action" style="padding: 8px 16px; font-size: 13px; background: #22c55e; color: white; border: none; flex: 1; justify-content: center; min-width: max-content;">
                 <iconify-icon icon="solar:whatsapp-bold-duotone"></iconify-icon>
                 Siaran WA
             </button>
-            <button onclick="bulkDelete()" class="btn-action btn-danger" style="padding: 8px 16px; font-size: 13px;">
+            <button onclick="bulkDelete()" class="btn-action btn-danger" style="padding: 8px 16px; font-size: 13px; flex: 1; justify-content: center; min-width: max-content;">
                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                Hapus Terpilih
+                Hapus
             </button>
         </div>
     </div>
 
     {{-- TABLE PELANGGAN --}}
     <div id="tab-customer" class="tab-content" style="{{ $active_tab === 'customer' ? '' : 'display: none;' }}">
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
                 <table class="fitur-table">
                     <thead>
@@ -776,33 +776,54 @@
         closeModal('modalBroadcast');
 
         Swal.fire({
-            title: 'Memulai Siaran...',
-            html: `Mengirim ke <b>${contacts.length}</b> kontak.<br><small>Harap jangan tutup halaman ini.</small>`,
+            title: 'Memulai Siaran Fonnte...',
+            html: `Mempersiapkan pengiriman ke <b>${contacts.length}</b> kontak.<br><small>Menyambungkan ke server Fonnte WA Gateway...</small>`,
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
             }
         });
 
-        for (let i = 0; i < contacts.length; i++) {
-            const phone = contacts[i];
-            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-            
-            // Open window
-            window.open(url, '_blank');
+        try {
+            const response = await fetch("{{ route('kontak.broadcast') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    contacts: contacts
+                })
+            });
 
-            // Delay to avoid blocking and spam filters
-            if (i < contacts.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Siaran Berhasil!',
+                    text: data.message + ` (${contacts.length} nomor diproses Fonnte)`,
+                    confirmButtonColor: '#22c55e'
+                });
+                
+                // Clear checkboxes
+                document.querySelectorAll('.customer-checkbox:checked').forEach(cb => cb.checked = false);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Mengirim Siaran',
+                    text: data.message || 'Terjadi kesalahan saat terhubung ke server.',
+                });
             }
+        } catch (error) {
+            console.error('Error broadcasting:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Terjadi kesalahan sistem saat mencoba mengirim siaran.',
+            });
         }
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Siaran Selesai!',
-            text: `Berhasil memproses ${contacts.length} pengiriman.`,
-            confirmButtonColor: '#22c55e'
-        });
     }
 
     // Form Processing Notification

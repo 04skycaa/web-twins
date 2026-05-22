@@ -224,6 +224,8 @@ class OutletController extends Controller
                 'outlets' => $outlets,
                 'stockHistory' => $stockHistory,
                 'active_tab' => 'riwayat',
+                'performanceData' => $performanceData,
+                'topProductsAll' => $top3All,
                 'hasDataOutlet' => $hasDataOutlet,
                 'hasKinerjaOutlet' => $hasKinerjaOutlet,
                 'hasRiwayatStok' => $hasRiwayatStok,

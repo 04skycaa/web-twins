@@ -25,6 +25,15 @@
         top: 20px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.02);
     }
+    @media (max-width: 768px) {
+        .fitur-layout-wrapper {
+            flex-direction: column-reverse;
+        }
+        .detail-side-panel {
+            width: 100%;
+            position: static;
+        }
+    }
     .detail-header {
         margin-bottom: 12px;
     }
@@ -255,6 +264,14 @@
     .btn-search-trigger:active {
         transform: translateY(-50%) scale(0.95);
     }
+    
+    @media (max-width: 768px) {
+        .kinerja-main-grid { grid-template-columns: 1fr; }
+        .kinerja-stats-grid { grid-template-columns: 1fr; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; }
+        .kpi-card { min-width: 85vw; flex-shrink: 0; scroll-snap-align: center; }
+        #top-products-container { grid-template-columns: 1fr !important; display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; }
+        #top-products-container > div { min-width: 200px; flex-shrink: 0; scroll-snap-align: center; }
+    }
 </style>
 
 
@@ -277,16 +294,14 @@
         </a>
     </div>
 
-    <div id="view-data" class="tab-view" style="{{ $active_tab == 'data' ? '' : 'display: none;' }}">
+    <div id="view-data" class="tab-view mobile-pb" style="{{ $active_tab == 'data' ? '' : 'display: none;' }}">
         {{-- ACTION BAR --}}
-        <div class="action-bar">
-            <div class="left-actions-group">
-                <div class="search-wrapper">
+        <div class="action-bar mobile-action-bar">
+            <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+                <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." onkeyup="filterOutlets()">
                 </div>
-            </div>
-            <div class="right-actions">
                 <button class="btn-action" onclick="openModal('addModal')">
                     <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
                     <span>Tambah Outlet</span>
@@ -298,7 +313,7 @@
             {{-- MAIN BOX --}}
             <div class="main-content-box">
                 <div class="table-container">
-                    <table class="fitur-table">
+                    <table class="fitur-table" style="white-space: nowrap;">
                         <thead>
                             <tr>
                                 <th>NAMA OUTLET</th>
@@ -446,7 +461,7 @@
     </div>
 
     {{-- VIEW KINERJA --}}
-    <div id="view-kinerja" class="tab-view" style="{{ $active_tab == 'kinerja' ? '' : 'display: none;' }}">
+    <div id="view-kinerja" class="tab-view mobile-pb" style="{{ $active_tab == 'kinerja' ? '' : 'display: none;' }}">
         <div class="kinerja-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div>
                 <h2 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;">Analisis Kinerja Cabang</h2>
@@ -621,17 +636,14 @@
 
 
     {{-- VIEW RIWAYAT --}}
-    <div id="view-riwayat" class="tab-view" style="{{ $active_tab == 'riwayat' ? '' : 'display: none;' }}">
+    <div id="view-riwayat" class="tab-view mobile-pb" style="{{ $active_tab == 'riwayat' ? '' : 'display: none;' }}">
         <!-- Header Section (Standard Layout) -->
-        <div class="action-bar">
-            <div class="left-actions-group">
+        <div class="action-bar mobile-action-bar">
+            <div class="left-actions-group mobile-action-bar" style="width: 100%;">
                 <!-- Search Box (Standard) -->
-                <div class="search-wrapper">
+                <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="stock-search" class="search-input" oninput="debounceSearch()" placeholder="Cari produk atau barcode...">
-                    <button type="button" class="btn-search-trigger" onclick="applyStockFilters()">
-                        Cari
-                    </button>
                 </div>
 
                 <!-- Outlet Filter -->
@@ -674,9 +686,8 @@
                 <button onclick="resetStockFilters()" class="btn-filter" title="Reset Filter">
                     <iconify-icon icon="solar:restart-bold-duotone" style="font-size: 24px;"></iconify-icon>
                 </button>
-            </div>
-
-            <div class="right-actions">
+                
+                <!-- Extract moved here -->
                 <div class="dropdown">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
@@ -699,7 +710,7 @@
         <!-- Main Content (Standard Layout) -->
         <div class="main-content-box">
             <div class="table-container">
-                <table class="fitur-table">
+                <table class="fitur-table" style="white-space: nowrap;">
                     <thead>
                         <tr>
                             <th style="width: 150px;">WAKTU</th>
@@ -754,7 +765,7 @@
                         <tr>
                             <td colspan="5">
                                 <div class="pagination-container">
-                                    {{ $stockHistory->links() }}
+                                    {{ $stockHistory->onEachSide(1)->links() }}
                                 </div>
                             </td>
                         </tr>
@@ -890,6 +901,7 @@
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     let currentTab = '{{ $active_tab }}';
+    window.stockHistoryLoaded = (currentTab === 'riwayat');
 
     function switchTab(tabId) {
         currentTab = tabId;
@@ -910,6 +922,16 @@
         if (tabId === 'kinerja' && typeof updateKinerjaData === 'function') {
             const selector = document.getElementById('kinerjaOutletSelector');
             setTimeout(() => updateKinerjaData(selector ? selector.value : 'all'), 100);
+        }
+
+        // Trigger stock load when switching to riwayat tab
+        if (tabId === 'riwayat') {
+            const tableBody = document.getElementById('stock-history-table-body');
+            if (tableBody && tableBody.querySelectorAll('.stock-row').length === 0) {
+                setTimeout(() => {
+                    if (typeof applyStockFilters === 'function') applyStockFilters();
+                }, 100);
+            }
         }
 
         // Update URL without reload

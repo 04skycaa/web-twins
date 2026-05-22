@@ -44,10 +44,9 @@
     @include('buku_kas.partials.tabs')
 
     {{-- ACTION BAR --}}
-    <div class="action-bar">
-        <div style="display: contents;">
-            <div class="left-actions-group">
-                <div class="search-wrapper">
+    <div class="action-bar mobile-action-bar">
+        <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+            <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="globalSearch" class="search-input" placeholder="Cari data..." onkeyup="filterTable()">
                 </div>
@@ -104,9 +103,7 @@
                         <a href="javascript:void(0)" onclick="applyStatusFilter('lunas')" class="{{ $status == 'lunas' ? 'active-dropdown-item' : '' }}">Lunas</a>
                     </div>
                 </div>
-            </div>
 
-            <div class="right-actions">
                 <div class="dropdown">
                     <button type="button" class="btn-action" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
@@ -129,7 +126,7 @@
 
     {{-- SECTION PENGELUARAN --}}
     <div id="view-pengeluaran" class="view-section {{ $active_tab === 'pengeluaran' ? 'active' : '' }}">
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
                 <table class="fitur-table">
                     <thead>
@@ -144,6 +141,20 @@
                     </thead>
                     <tbody>
                         @forelse($pengeluaran as $p)
+                        @php
+                            $cfData = [
+                                'uuid' => $p->uuid,
+                                'jenis' => $p->jenis,
+                                'nominal' => $p->nominal,
+                                'keterangan' => $p->keterangan,
+                                'tanggal' => $p->tanggal,
+                                'metode_pembayaran' => $p->metode_pembayaran,
+                                'outlet' => ['nama' => $p->outlet->nama ?? null],
+                                'user' => ['username' => $p->user->username ?? null, 'name' => $p->user->name ?? null],
+                                'payment_method' => ['nama_metode' => $p->paymentMethod->nama_metode ?? null]
+                            ];
+                            $cfJson = json_encode($cfData);
+                        @endphp
                         <tr class="row-pengeluaran">
                             <td>{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}</td>
                             <td>{{ $p->outlet->nama ?? '-' }}</td>
@@ -152,9 +163,9 @@
                             <td class="price-text" style="color: #C62828;">- Rp {{ number_format($p->nominal, 0, ',', '.') }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ json_encode($p) }}" onclick="viewCashFlowDetail(JSON.parse(this.dataset.item))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" data-item="{{ json_encode($p) }}" onclick="openEditCashFlow(JSON.parse(this.dataset.item))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCf('{{ $p->uuid }}', '{{ $p->jenis }}')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ $cfJson }}" onclick="viewCashFlowDetail(JSON.parse(this.dataset.item))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ $cfJson }}" onclick="openEditCashFlow(JSON.parse(this.dataset.item))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCf('{{ $p->uuid }}', '{{ $p->jenis }}')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
                                 </div>
                             </td>
                         </tr>
@@ -169,7 +180,7 @@
 
     {{-- SECTION PEMASUKAN --}}
     <div id="view-pemasukan" class="view-section {{ $active_tab === 'pemasukan' ? 'active' : '' }}">
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
                 <table class="fitur-table">
                     <thead>
@@ -184,6 +195,20 @@
                     </thead>
                     <tbody>
                         @forelse($pemasukan as $p)
+                        @php
+                            $cfData = [
+                                'uuid' => $p->uuid,
+                                'jenis' => $p->jenis,
+                                'nominal' => $p->nominal,
+                                'keterangan' => $p->keterangan,
+                                'tanggal' => $p->tanggal,
+                                'metode_pembayaran' => $p->metode_pembayaran,
+                                'outlet' => ['nama' => $p->outlet->nama ?? null],
+                                'user' => ['username' => $p->user->username ?? null, 'name' => $p->user->name ?? null],
+                                'payment_method' => ['nama_metode' => $p->paymentMethod->nama_metode ?? null]
+                            ];
+                            $cfJson = json_encode($cfData);
+                        @endphp
                         <tr class="row-pemasukan">
                             <td>{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}</td>
                             <td>{{ $p->outlet->nama ?? '-' }}</td>
@@ -192,9 +217,9 @@
                             <td class="price-text" style="color: #2E7D32;">+ Rp {{ number_format($p->nominal, 0, ',', '.') }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ json_encode($p) }}" onclick="viewCashFlowDetail(JSON.parse(this.dataset.item))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" data-item="{{ json_encode($p) }}" onclick="openEditCashFlow(JSON.parse(this.dataset.item))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCf('{{ $p->uuid }}', '{{ $p->jenis }}')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ $cfJson }}" onclick="viewCashFlowDetail(JSON.parse(this.dataset.item))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-item="{{ $cfJson }}" onclick="openEditCashFlow(JSON.parse(this.dataset.item))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCf('{{ $p->uuid }}', '{{ $p->jenis }}')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
                                 </div>
                             </td>
                         </tr>
@@ -209,12 +234,36 @@
 
     {{-- SECTION HUTANG --}}
     <div id="view-hutang" class="view-section {{ $active_tab === 'hutang' ? 'active' : '' }}">
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
                 <table class="fitur-table">
                     <thead><tr><th>SUPPLIER</th><th>TOTAL HUTANG</th><th>SISA TAGIHAN</th><th>STATUS</th><th>JATUH TEMPO</th><th>AKSI</th></tr></thead>
                     <tbody>
                         @forelse($hutang as $h)
+                        @php
+                            $debtData = [
+                                'uuid' => $h->uuid,
+                                'tipe' => $h->tipe,
+                                'nominal' => $h->nominal,
+                                'sisa' => $h->sisa,
+                                'jatuh_tempo' => $h->jatuh_tempo,
+                                'transaction_id' => $h->transaction_id ?? null,
+                                'payment_order_id' => $h->payment_order_id ?? null
+                            ];
+                            $contactData = ['nama' => $h->contact->nama ?? null];
+                            $detailsData = $h->detailDebts ? $h->detailDebts->map(function($d) {
+                                return [
+                                    'bayar' => $d->bayar,
+                                    'tanggal' => $d->tanggal,
+                                    'sisa' => $d->sisa,
+                                    'payment_method' => ['nama_metode' => $d->paymentMethod->nama_metode ?? null]
+                                ];
+                            })->toArray() : [];
+                            
+                            $debtJson = json_encode($debtData);
+                            $contactJson = json_encode($contactData);
+                            $detailsJson = json_encode($detailsData);
+                        @endphp
                         <tr class="row-hutang">
                             <td><strong>{{ $h->contact->nama ?? '-' }}</strong></td>
                             <td class="price-text">Rp {{ number_format($h->nominal, 0, ',', '.') }}</td>
@@ -223,9 +272,9 @@
                             <td>{{ \Carbon\Carbon::parse($h->jatuh_tempo)->format('d/m/Y') }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewDebtDetail({{ json_encode($h) }}, {{ json_encode($h->contact) }}, {{ json_encode($h->detailDebts) }})" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" onclick="openEditDebt({{ json_encode($h) }}, {{ json_encode($h->contact) }})" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $h->uuid }}', 'Hutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" data-details="{{ $detailsJson }}" onclick="viewDebtDetail(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact), JSON.parse(this.dataset.details))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" onclick="openEditDebt(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $h->uuid }}', 'Hutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
                                 </div>
                             </td>
                         </tr>
@@ -240,12 +289,36 @@
 
     {{-- SECTION PIUTANG --}}
     <div id="view-piutang" class="view-section {{ $active_tab === 'piutang' ? 'active' : '' }}">
-        <div class="main-content-box">
+        <div class="main-content-box mobile-pb">
             <div class="table-container">
                 <table class="fitur-table">
                     <thead><tr><th>CUSTOMER</th><th>TOTAL PIUTANG</th><th>SISA TAGIHAN</th><th>STATUS</th><th>JATUH TEMPO</th><th>AKSI</th></tr></thead>
                     <tbody>
                         @forelse($piutang as $p)
+                        @php
+                            $debtData = [
+                                'uuid' => $p->uuid,
+                                'tipe' => $p->tipe,
+                                'nominal' => $p->nominal,
+                                'sisa' => $p->sisa,
+                                'jatuh_tempo' => $p->jatuh_tempo,
+                                'transaction_id' => $p->transaction_id ?? null,
+                                'payment_order_id' => $p->payment_order_id ?? null
+                            ];
+                            $contactData = ['nama' => $p->contact->nama ?? null];
+                            $detailsData = $p->detailDebts ? $p->detailDebts->map(function($d) {
+                                return [
+                                    'bayar' => $d->bayar,
+                                    'tanggal' => $d->tanggal,
+                                    'sisa' => $d->sisa,
+                                    'payment_method' => ['nama_metode' => $d->paymentMethod->nama_metode ?? null]
+                                ];
+                            })->toArray() : [];
+                            
+                            $debtJson = json_encode($debtData);
+                            $contactJson = json_encode($contactData);
+                            $detailsJson = json_encode($detailsData);
+                        @endphp
                         <tr class="row-piutang">
                             <td><strong>{{ $p->contact->nama ?? '-' }}</strong></td>
                             <td class="price-text">Rp {{ number_format($p->nominal, 0, ',', '.') }}</td>
@@ -254,9 +327,9 @@
                             <td>{{ \Carbon\Carbon::parse($p->jatuh_tempo)->format('d/m/Y') }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px;">
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewDebtDetail({{ json_encode($p) }}, {{ json_encode($p->contact) }}, {{ json_encode($p->detailDebts) }})" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" onclick="openEditDebt({{ json_encode($p) }}, {{ json_encode($p->contact) }})" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-                                    <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $p->uuid }}', 'Piutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" data-details="{{ $detailsJson }}" onclick="viewDebtDetail(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact), JSON.parse(this.dataset.details))" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" onclick="openEditDebt(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact))" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                    <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $p->uuid }}', 'Piutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
                                 </div>
                             </td>
                         </tr>

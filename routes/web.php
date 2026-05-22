@@ -122,6 +122,7 @@ Route::prefix('kontak')->middleware(['auth', 'verified', 'role:owner,kepala_toko
     Route::get('/', [KontakController::class, 'index'])->name('kontak.index');
     Route::get('/{id}/transactions', [KontakController::class, 'getTransactions'])->name('kontak.transactions');
     Route::post('/sync', [KontakController::class, 'syncFromOrders'])->name('kontak.sync');
+    Route::post('/broadcast', [KontakController::class, 'broadcast'])->name('kontak.broadcast');
     Route::post('/', [KontakController::class, 'store'])->name('kontak.store');
     Route::put('/{id}', [KontakController::class, 'update'])->name('kontak.update');
     Route::delete('/{id}', [KontakController::class, 'destroy'])->name('kontak.destroy');

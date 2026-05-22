@@ -82,7 +82,7 @@
 
     @if($rekap->hasPages())
         <div class="pagination-container">
-            {{ $rekap->appends(request()->except('page'))->links() }}
+            {{ $rekap->onEachSide(1)->appends(request()->except('page'))->links() }}
         </div>
     @endif
 </div>

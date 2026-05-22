@@ -87,9 +87,9 @@
                         <td>{{ \Carbon\Carbon::parse($h->jatuh_tempo)->format('d/m/Y') }}</td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewDebtDetail({{ json_encode($h) }}, {{ json_encode($h->contact) }}, {{ json_encode($h->detailDebts) }})" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
-                                <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #FBC02D; border-color: #FFF9C4;" onclick="openEditDebt({{ json_encode($h) }}, {{ json_encode($h->contact) }})" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
-                                <button class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $h->uuid }}', 'Hutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewDebtDetail({{ json_encode($h) }}, {{ json_encode($h->contact) }}, {{ json_encode($h->detailDebts) }})" title="Detail"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openEditDebt({{ json_encode($h) }}, {{ json_encode($h->contact) }})" title="Edit"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                                <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $h->uuid }}', 'Hutang')" title="Hapus"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
                             </div>
                         </td>
                     </tr>

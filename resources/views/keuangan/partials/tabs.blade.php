@@ -8,8 +8,4 @@
         <iconify-icon icon="solar:round-transfer-horizontal-bold-duotone"></iconify-icon>
         <span>Arus Uang</span>
     </a>
-    <a href="javascript:void(0)" class="tab-pill {{ $__keuangan_tab === 'pemindahan-saldo' ? 'active' : '' }}" id="pill-pemindahan-saldo" onclick="switchTab('pemindahan-saldo')">
-        <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
-        <span>Pemindahan Saldo</span>
-    </a>
 </div>

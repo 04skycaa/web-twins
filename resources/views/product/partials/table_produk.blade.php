@@ -94,6 +94,6 @@
 
 @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
     <div class="pagination-container">
-        {{ $products->appends(request()->query())->links() }}
+        {{ $products->onEachSide(1)->appends(request()->query())->links() }}
     </div>
 @endif

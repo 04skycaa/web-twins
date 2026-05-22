@@ -65,8 +65,8 @@
 
     <div class="main-content-box" style="background: transparent; padding: 0; box-shadow: none;">
         {{-- Summary Cards --}}
-        <div class="finance-card-container">
-            <div class="finance-card animate-up delay-1">
+        <div class="finance-card-container" style="display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 16px; padding-bottom: 10px; scroll-snap-type: x mandatory;">
+            <div class="finance-card animate-up delay-1" style="min-width: 250px; flex-shrink: 0; scroll-snap-align: center;">
                 <div class="icon-box bg-bersih">
                     <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
                 </div>
@@ -75,7 +75,7 @@
                     <div class="card-value">Rp {{ number_format($saldo_bersih, 0, ',', '.') }}</div>
                 </div>
             </div>
-            <div class="finance-card animate-up delay-2">
+            <div class="finance-card animate-up delay-2" style="min-width: 250px; flex-shrink: 0; scroll-snap-align: center;">
                 <div class="icon-box bg-masuk">
                     <iconify-icon icon="solar:round-arrow-left-down-bold-duotone"></iconify-icon>
                 </div>
@@ -84,7 +84,7 @@
                     <div class="card-value text-masuk">Rp {{ number_format($pemasukan, 0, ',', '.') }}</div>
                 </div>
             </div>
-            <div class="finance-card animate-up delay-3">
+            <div class="finance-card animate-up delay-3" style="min-width: 250px; flex-shrink: 0; scroll-snap-align: center;">
                 <div class="icon-box bg-keluar">
                     <iconify-icon icon="solar:round-arrow-right-up-bold-duotone"></iconify-icon>
                 </div>
@@ -147,7 +147,7 @@
             </table>
 
             <div class="pagination-container" style="margin-top: 24px;">
-                {{ $history->links() }}
+                {{ $history->onEachSide(1)->links() }}
             </div>
         </div>
     </div>

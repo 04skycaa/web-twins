@@ -222,4 +222,52 @@ class KontakController extends Controller
 
         return redirect()->route('kontak.index')->with('success', "$syncedCount kontak baru ditambahkan dan $updatedCount kontak diperbarui dari data pesanan.");
     }
+
+    public function broadcast(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string',
+            'contacts' => 'required|array',
+            'contacts.*' => 'required|string'
+        ]);
+
+        $token = '5zVfQUgWooaSnJjjcTNk'; // Fonnte Token
+        $targets = implode(',', $request->contacts);
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => 'https://api.fonnte.com/send',
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS => array(
+            'target' => $targets,
+            'message' => $request->message,
+            'delay' => '2' // Delay antar pesan (detik)
+          ),
+          CURLOPT_HTTPHEADER => array(
+            'Authorization: ' . $token
+          ),
+        ));
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+
+        if ($err) {
+            return response()->json(['success' => false, 'message' => 'Gagal terhubung ke Fonnte: ' . $err], 500);
+        } else {
+            $respObj = json_decode($response, true);
+            if(isset($respObj['status']) && $respObj['status'] == true){
+                return response()->json(['success' => true, 'message' => 'Pesan berhasil masuk antrean server WA!']);
+            } else {
+                $errorMsg = $respObj['reason'] ?? 'Gagal mengirim pesan.';
+                return response()->json(['success' => false, 'message' => $errorMsg], 400);
+            }
+        }
+    }
 }

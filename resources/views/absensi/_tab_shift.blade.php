@@ -17,7 +17,7 @@
                     <td>{{ \Carbon\Carbon::parse($s->waktu_selesai)->format('H:i') }}</td>
                     <td style="text-align: center;">
                         <div style="display: flex; gap: 8px; justify-content: center;">
-                            <button class="btn-filter" style="width:32px;height:32px;border-radius:8px;color:#FBC02D;border-color:#FFF9C4;"
+                            <button class="btn-filter" style="width:32px;height:32px;border-radius:8px;color:var(--primary-blue);"
                                 onclick="openEditShift({{ json_encode($s) }})" title="Edit">
                                 <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                             </button>

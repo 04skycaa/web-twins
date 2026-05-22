@@ -8,9 +8,9 @@
 
 
     {{-- ACTION BAR --}}
-    <div class="action-bar">
-        <div class="left-actions-group">
-            <div class="search-wrapper">
+    <div class="action-bar mobile-action-bar">
+        <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+            <div class="search-wrapper mobile-search-shrink">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                 <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." onkeyup="filterUsers()">
             </div>
@@ -41,8 +41,7 @@
                     @endforeach
                 </div>
             </div>
-        </div>
-        <div class="right-actions">
+
             <button class="btn-action" onclick="openModal('addModal')">
                 <iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon>
                 <span>Tambah User</span>
@@ -51,9 +50,9 @@
     </div>
 
     {{-- MAIN BOX --}}
-    <div class="main-content-box">
+    <div class="main-content-box mobile-pb">
         <div class="table-container">
-            <table class="fitur-table">
+            <table class="fitur-table" style="white-space: nowrap;">
                 <thead>
                     <tr>
                         <th>NAMA</th>

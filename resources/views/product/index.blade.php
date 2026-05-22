@@ -878,9 +878,9 @@
     @foreach($tabs as $tab)
     <div id="section-{{ $tab }}" class="view-section {{ $active_tab == $tab ? 'active' : '' }}">
         {{-- TAB-SPECIFIC ACTION BAR --}}
-        <div class="action-bar">
-            <div class="left-actions-group">
-                <div class="search-wrapper">
+        <div class="action-bar mobile-action-bar">
+            <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+                <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="searchInput-{{ $tab }}" class="search-input" 
                         placeholder="Cari di {{ $tab }}..." 
@@ -943,9 +943,6 @@
                         </div>
                     </div>
                 @endif
-            </div>
-
-            <div class="right-actions">
                 <div class="dropdown">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
@@ -958,7 +955,7 @@
                 </div>
 
                 @if($tab == 'produk')
-                    <div id="normalActionGroup" style="display: flex; gap: 12px;">
+                    <div id="normalActionGroup-{{ $tab }}" style="display: flex; gap: 12px;">
                         <button type="button" class="btn-action btn-danger" onclick="toggleMassDeleteMode(true)">
                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                             <span>Hapus</span>
@@ -968,7 +965,7 @@
                             <span>Tambah</span>
                         </button>
                     </div>
-                    <div id="massDeleteActionGroup" style="display: none; gap: 12px;">
+                    <div id="massDeleteActionGroup-{{ $tab }}" style="display: none; gap: 12px;">
                         <button type="button" class="btn-action" style="background: #999;" onclick="toggleMassDeleteMode(false)">
                             <span>Batal</span>
                         </button>
@@ -980,7 +977,7 @@
                 @elseif($tab == 'restok')
                     <button type="button" class="btn-action" onclick="openRestokModal()">
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                        <span>Tambah Restok</span>
+                        <span>Tambah</span>
                     </button>
                 @elseif($tab == 'transfer')
                     <button type="button" class="btn-action" onclick="openTransferModal()">
@@ -996,7 +993,7 @@
             </div>
         </div>
 
-        <div class="main-content-box" style="position: relative;">
+        <div class="main-content-box mobile-pb" style="position: relative;">
             <div class="table-loading-overlay">
                 <div class="loading-spinner" style="width: 30px; height: 30px; border-width: 3px;"></div>
             </div>

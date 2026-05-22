@@ -5,7 +5,7 @@
 @endpush
 
 @section('content')
-<div class="dashboard-wrapper">
+<div class="dashboard-wrapper mobile-pb">
     @if(Auth::user()->role === 'owner')
         <div class="welcome-section">
             <div>

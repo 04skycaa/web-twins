@@ -8,7 +8,7 @@
 @section('content')
     <div class="fitur-container" id="perilaku-app">
         {{-- PILL TABS --}}
-        <div class="tab-navigation">
+        <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-start pb-2">
             <a href="#" class="tab-pill {{ ($active_tab ?? 'customer') === 'customer' ? 'active' : '' }}" onclick="switchTab('customer')" id="pill-customer">
                 <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
                 <span>Perilaku Customer</span>
@@ -20,9 +20,9 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <div class="action-bar">
+        <div class="action-bar flex-wrap">
             <div style="display: contents;">
-                <div class="left-actions-group">
+                <div class="left-actions-group flex-wrap">
                     {{-- Search --}}
                     <div class="search-wrapper" id="searchWrapper">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
