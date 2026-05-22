@@ -2,39 +2,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
-<style>
-    .modal-content { max-width: 500px !important; padding: 20px !important; border-radius: 20px !important; }
-    .modal-body-vertical { display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding: 5px; scrollbar-width: thin; }
-    
-    .banner-center-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 5px; }
-    .banner-preview-4x2 { width: 100%; aspect-ratio: 4 / 2 !important; height: auto !important; border-radius: 15px; border: 2px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8fafc; cursor: pointer; transition: 0.3s; }
-    .banner-preview-4x2 img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .form-row-flex { display: flex; gap: 12px; width: 100%; }
-    .form-row-flex .form-group { flex: 1; }
-    .btn-group-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-
-    /* Compact Table Styles */
-    .promo-info-cell { display: flex; align-items: center; gap: 15px; }
-    .promo-thumb { 
-        width: 80px; 
-        height: 40px; 
-        border-radius: 10px; 
-        overflow: hidden; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        background: #f1f5f9;
-        flex-shrink: 0;
-        border: 1px solid #e2e8f0;
-    }
-    .promo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-    .promo-thumb iconify-icon { font-size: 22px; color: #0081C9; }
-    .promo-details { display: flex; flex-direction: column; justify-content: center; }
-    .promo-details .name { font-weight: 700; font-size: 14px; color: #1e293b; line-height: 1.2; }
-    .promo-details .sub { font-size: 11px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-    .promo-details .sub iconify-icon { font-size: 14px; }
-</style>
 @endpush
 
 @section('content')

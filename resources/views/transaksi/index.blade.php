@@ -328,5 +328,18 @@
         background: #e2e8f0;
         color: #475569;
     }
+
+    /* Mobile Responsive */
+    @media (max-width: 720px) {
+        .pos-layout {
+            grid-template-columns: 1fr;
+        }
+        .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 @endsection
