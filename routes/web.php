@@ -92,6 +92,7 @@ Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(f
     Route::get('/', [OutletController::class, 'index'])->name('outlet.index');
     Route::get('/kinerja', [OutletController::class, 'kinerja'])->name('outlet.kinerja');
     Route::get('/riwayat', [OutletController::class, 'riwayat'])->name('outlet.riwayat');
+    Route::get('/{uuid}/stats', [OutletController::class, 'getOutletStats'])->name('outlet.stats');
     Route::post('/', [OutletController::class, 'store'])->name('outlet.store');
     Route::put('/{id}', [OutletController::class, 'update'])->name('outlet.update');
     Route::delete('/{id}', [OutletController::class, 'destroy'])->name('outlet.destroy');

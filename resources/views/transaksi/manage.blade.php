@@ -42,7 +42,7 @@
             <div class="left-actions-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" class="search-input" id="riwayatSearch" placeholder="Cari kode atau pelanggan..." onkeyup="filterRiwayat()">
+                    <input type="text" class="search-input" id="riwayatSearch" placeholder="Cari kode atau pelanggan..." oninput="filterRiwayat()">
                 </div>
                 <div class="filter-wrapper" style="display: flex; gap: 8px; align-items: center;">
                     <div class="date-filter-container">
@@ -180,7 +180,7 @@
             <div class="left-actions-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" class="search-input" id="promoSearch" placeholder="Cari nama atau kode..." onkeyup="filterPromo()">
+                    <input type="text" class="search-input" id="promoSearch" placeholder="Cari nama atau kode..." oninput="filterPromo()">
                 </div>
                 <div class="filter-wrapper" style="display: flex; gap: 8px; align-items: center;">
                     <div class="date-filter-container">
@@ -372,7 +372,7 @@
                         </div>
                         <div class="dropdown-checkbox-content" id="add_product_dropdown">
                             <div class="dropdown-search">
-                                <input type="text" placeholder="Cari produk..." onkeyup="filterDropdown(this, 'add_product_list')">
+                                <input type="text" placeholder="Cari produk..." oninput="filterDropdown(this, 'add_product_list')">
                             </div>
                             <div class="dropdown-list" id="add_product_list">
                                 @foreach($products as $product)
@@ -496,7 +496,7 @@
                         </div>
                         <div class="dropdown-checkbox-content" id="edit_product_dropdown">
                             <div class="dropdown-search">
-                                <input type="text" placeholder="Cari produk..." onkeyup="filterDropdown(this, 'edit_product_list')">
+                                <input type="text" placeholder="Cari produk..." oninput="filterDropdown(this, 'edit_product_list')">
                             </div>
                             <div class="dropdown-list" id="edit_product_list">
                                 @foreach($products as $product)

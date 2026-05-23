@@ -12,7 +12,7 @@
         <div class="left-actions-group mobile-action-bar" style="width: 100%;">
             <div class="search-wrapper mobile-search-shrink">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." onkeyup="filterUsers()">
+                <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." oninput="filterUsers()">
             </div>
 
             <!-- Role Filter Dropdown -->
@@ -51,7 +51,8 @@
 
     {{-- MAIN BOX --}}
     <div class="main-content-box mobile-pb">
-        <div class="table-container">
+        {{-- DESKTOP TABLE --}}
+        <div class="table-container user-table-desktop">
             <table class="fitur-table" style="white-space: nowrap;">
                 <thead>
                     <tr>
@@ -113,6 +114,94 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- MOBILE CARD GRID --}}
+        <div class="user-card-grid">
+            @forelse($users as $user)
+            <div class="user-card user-row"
+                data-name="{{ strtolower($user->username) }}"
+                data-email="{{ strtolower($user->email) }}"
+                data-role="{{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}"
+                data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}">
+
+                <div class="user-card-header">
+                    <div class="user-card-avatar">
+                        {{ strtoupper(substr($user->username, 0, 1)) }}
+                    </div>
+                    <div class="user-card-info">
+                        <div class="user-card-name">{{ $user->username }}</div>
+                        <div class="user-card-email">{{ $user->email }}</div>
+                    </div>
+                    <div class="user-card-status">
+                        @if($user->status_aktif)
+                            <span class="status-badge status-active" style="font-size: 10px; padding: 2px 8px;">Aktif</span>
+                        @else
+                            <span class="status-badge status-inactive" style="font-size: 10px; padding: 2px 8px;">Nonaktif</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="user-card-body">
+                    <div class="user-card-row">
+                        <div class="user-card-label">
+                            <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 14px; color: #0081C9;"></iconify-icon>
+                            Role
+                        </div>
+                        <span class="status-badge" style="background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB; font-size: 10px; padding: 2px 8px;">
+                            {{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}
+                        </span>
+                    </div>
+                    <div class="user-card-row">
+                        <div class="user-card-label">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 14px; color: #0081C9;"></iconify-icon>
+                            Outlet
+                        </div>
+                        <span class="user-card-value">{{ $user->outlet ? $user->outlet->nama : '-' }}</span>
+                    </div>
+                    <div class="user-card-row">
+                        <div class="user-card-label">
+                            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 14px; color: #0081C9;"></iconify-icon>
+                            Last Login
+                        </div>
+                        <span class="user-card-value" style="color: #64748b; font-size: 11px;">
+                            {{ $user->last_login_at ? $user->last_login_at->translatedFormat('d M Y, H:i') : 'Belum pernah' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="user-card-footer">
+                    <button type="button" class="user-card-btn btn-view"
+                        data-item='@json($user)'
+                        data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}"
+                        onclick="openViewModal(JSON.parse(this.dataset.item), this.dataset.outlet)">
+                        <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                        Detail
+                    </button>
+                    <button type="button" class="user-card-btn btn-edit"
+                        data-item='@json($user)'
+                        onclick="openEditModal(JSON.parse(this.dataset.item))">
+                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                        Edit
+                    </button>
+                    <button type="button" class="user-card-btn {{ $user->status_aktif ? 'btn-suspend' : 'btn-activate' }}"
+                        onclick="toggleStatus('{{ $user->uuid }}', {{ $user->status_aktif ? 'true' : 'false' }})">
+                        <iconify-icon icon="{{ $user->status_aktif ? 'solar:user-block-bold-duotone' : 'solar:user-check-bold-duotone' }}"></iconify-icon>
+                        {{ $user->status_aktif ? 'Suspend' : 'Aktifkan' }}
+                    </button>
+                    <button type="button" class="user-card-btn btn-delete"
+                        onclick="openDeleteModal('{{ $user->uuid }}')">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                        Hapus
+                    </button>
+                </div>
+            </div>
+            @empty
+            <div class="user-card-empty">
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone" style="font-size: 48px; color: #cbd5e1;"></iconify-icon>
+                <p>Belum ada data user</p>
+            </div>
+            @endforelse
         </div>
     </div>
 </div>

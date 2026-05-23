@@ -246,6 +246,108 @@ class OutletController extends Controller
         ]);
     }
 
+    /**
+     * API endpoint: mengambil statistik real-time untuk side panel Data Outlet.
+     * Menggabungkan data POS (transactions) + Online (payment_orders).
+     */
+    public function getOutletStats($uuid)
+    {
+        $outlet = Outlet::with(['users.operator'])->where('uuid', $uuid)->firstOrFail();
+
+        // --- OMZET & TRANSAKSI ---
+        // POS (kasir)
+        $posOmzet       = \App\Models\Transaction::where('store_id', $uuid)
+            ->where('jenis', 'penjualan')
+            ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui'])
+            ->sum('total');
+
+        $posTrxCount    = \App\Models\Transaction::where('store_id', $uuid)
+            ->where('jenis', 'penjualan')
+            ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui'])
+            ->count();
+
+        // Online (payment_orders)
+        $onlineOmzet    = \App\Models\PaymentOrder::where('outlet_id', $uuid)
+            ->whereIn('payment_status', ['paid', 'settlement', 'success'])
+            ->sum('total_amount');
+
+        $onlineTrxCount = \App\Models\PaymentOrder::where('outlet_id', $uuid)
+            ->whereIn('payment_status', ['paid', 'settlement', 'success'])
+            ->count();
+
+        $totalOmzet     = (float)$posOmzet + (float)$onlineOmzet;
+        $totalTrx       = $posTrxCount + $onlineTrxCount;
+
+        // --- PRODUK TERLARIS (gabung POS + Online) ---
+        $posSales = \App\Models\TransactionDetail::whereHas('transaction', function($q) use ($uuid) {
+                $q->where('store_id', $uuid)
+                  ->where('jenis', 'penjualan')
+                  ->whereIn('status', ['Selesai', 'selesai', 'Disetujui', 'disetujui']);
+            })
+            ->select('product_id', \DB::raw('SUM(jmlh) as qty'))
+            ->groupBy('product_id')
+            ->orderByDesc('qty')
+            ->take(5)
+            ->pluck('qty', 'product_id');
+
+        $onlineSales = \App\Models\PaymentOrderItem::whereHas('paymentOrder', function($q) use ($uuid) {
+                $q->where('outlet_id', $uuid)
+                  ->whereIn('payment_status', ['paid', 'settlement', 'success']);
+            })
+            ->select('product_id', \DB::raw('SUM(quantity) as qty'))
+            ->groupBy('product_id')
+            ->orderByDesc('qty')
+            ->take(5)
+            ->pluck('qty', 'product_id');
+
+        $allIds = $posSales->keys()->concat($onlineSales->keys())->unique();
+        $merged = $allIds->mapWithKeys(fn($id) => [
+            $id => (float)($posSales->get($id, 0) + $onlineSales->get($id, 0))
+        ])->sortDesc();
+
+        $topProductId  = $merged->keys()->first();
+        $topProductQty = $merged->first() ?? 0;
+        $topProductName = '-';
+
+        if ($topProductId) {
+            $prod = \App\Models\Product::where('uuid', $topProductId)->first();
+            $topProductName = $prod ? $prod->nama_produk : '-';
+        }
+
+        // --- STOK MENIPIS ---
+        // Produk dengan stok ≤ stok_minimum (atau ≤ 5 jika minimum tidak diset)
+        $lowStockCount = \App\Models\ProductStore::where('store_id', $uuid)
+            ->where('status_aktif', true)
+            ->where(function($q) {
+                $q->whereRaw('stok <= COALESCE(stok_minimum, 5)')
+                  ->orWhere('stok', '<=', 0);
+            })
+            ->count();
+
+        // --- INFO OUTLET ---
+        $kepalaUser = $outlet->users->first(fn($u) => optional($u->operator)->nama === 'Kepala Toko'
+            || optional($u->operator)->nama === 'kepala_toko');
+
+        return response()->json([
+            'nama'           => $outlet->nama,
+            'status_aktif'   => $outlet->status_aktif,
+            'alamat'         => $outlet->alamat ?? '-',
+            'notelp'         => $outlet->notelp ?? '-',
+            'jam_buka'       => $outlet->jam_buka ?? '-',
+            'kepala'         => $kepalaUser ? $kepalaUser->username : '-',
+            'email'          => $kepalaUser ? $kepalaUser->email : '-',
+            'omzet'          => $totalOmzet,
+            'omzet_pos'      => (float)$posOmzet,
+            'omzet_online'   => (float)$onlineOmzet,
+            'total_transaksi'=> $totalTrx,
+            'trx_pos'        => $posTrxCount,
+            'trx_online'     => $onlineTrxCount,
+            'produk_terlaris'=> $topProductName,
+            'terlaris_qty'   => (int)$topProductQty,
+            'stok_menipis'   => $lowStockCount,
+        ]);
+    }
+
     public function kinerja()
     {
         return redirect()->route('outlet.index', ['active_tab' => 'kinerja']);

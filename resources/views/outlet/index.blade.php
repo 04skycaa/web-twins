@@ -300,7 +300,7 @@
             <div class="left-actions-group mobile-action-bar" style="width: 100%;">
                 <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." onkeyup="filterOutlets()">
+                    <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." oninput="filterOutlets()">
                 </div>
                 <button class="btn-action" onclick="openModal('addModal')">
                     <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
@@ -312,7 +312,8 @@
         <div class="fitur-layout-wrapper">
             {{-- MAIN BOX --}}
             <div class="main-content-box">
-                <div class="table-container">
+                {{-- DESKTOP TABLE --}}
+                <div class="table-container outlet-table-desktop">
                     <table class="fitur-table" style="white-space: nowrap;">
                         <thead>
                             <tr>
@@ -366,6 +367,75 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- MOBILE CARD GRID --}}
+                <div class="outlet-card-grid">
+                    @forelse($outlets as $index => $outlet)
+                    <div class="outlet-card outlet-row {{ $index === 0 ? 'active-row' : '' }}"
+                        data-name="{{ strtolower($outlet->nama) }}"
+                        data-address="{{ strtolower($outlet->alamat) }}"
+                        data-outlet='@json($outlet)'>
+
+                        <div class="outlet-card-header">
+                            <div class="outlet-card-icon">
+                                <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
+                            </div>
+                            <div class="outlet-card-info">
+                                <div class="outlet-card-name">{{ $outlet->nama }}</div>
+                                <div class="outlet-card-address">{{ $outlet->alamat ?? '-' }}</div>
+                            </div>
+                            <div class="outlet-card-status">
+                                @if($outlet->status_aktif)
+                                    <span class="status-badge status-active" style="font-size: 10px; padding: 2px 8px;">Aktif</span>
+                                @else
+                                    <span class="status-badge status-inactive" style="font-size: 10px; padding: 2px 8px;">Nonaktif</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="outlet-card-body">
+                            <div class="outlet-card-row">
+                                <div class="outlet-card-label">
+                                    <iconify-icon icon="solar:phone-bold-duotone" style="font-size: 14px; color: #0081C9;"></iconify-icon>
+                                    No. Telp
+                                </div>
+                                <span class="outlet-card-value">{{ $outlet->notelp ?? '-' }}</span>
+                            </div>
+                            <div class="outlet-card-row">
+                                <div class="outlet-card-label">
+                                    <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 14px; color: #0081C9;"></iconify-icon>
+                                    Jam Buka
+                                </div>
+                                <span class="status-badge" style="background: rgba(14,165,233,0.1); color: #0ea5e9; border: 1px solid rgba(14,165,233,0.2); font-size: 10px; padding: 2px 8px;">{{ $outlet->jam_buka ?? '08.00 - 23.59' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="outlet-card-footer">
+                            <button type="button" class="outlet-card-btn btn-outlet-edit"
+                                data-item='@json($outlet)'
+                                onclick="event.stopPropagation(); openEditModal(JSON.parse(this.dataset.item))">
+                                <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                Edit
+                            </button>
+                            <button type="button" class="outlet-card-btn {{ $outlet->status_aktif ? 'btn-outlet-deactivate' : 'btn-outlet-activate' }}"
+                                onclick="event.stopPropagation(); toggleStatus('{{ $outlet->uuid }}', {{ $outlet->status_aktif ? 'true' : 'false' }})">
+                                <iconify-icon icon="{{ $outlet->status_aktif ? 'solar:shop-2-bold-duotone' : 'solar:shop-bold-duotone' }}"></iconify-icon>
+                                {{ $outlet->status_aktif ? 'Nonaktifkan' : 'Aktifkan' }}
+                            </button>
+                            <button type="button" class="outlet-card-btn btn-outlet-delete"
+                                onclick="event.stopPropagation(); openDeleteModal('{{ $outlet->uuid }}')">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                Hapus
+                            </button>
+                        </div>
+                    </div>
+                    @empty
+                    <div class="outlet-card-empty">
+                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 48px; color: #cbd5e1;"></iconify-icon>
+                        <p>Belum ada data outlet</p>
+                    </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -430,22 +500,22 @@
                         <div class="perf-grid">
                             <div class="perf-card">
                                 <label>Omzet</label>
-                                <span class="value" id="side_omzet">Rp {{ number_format(rand(10000000, 30000000), 0, ',', '.') }}</span>
-                                <span class="sub-value">▲ 12.5% dari bulan lalu</span>
+                                <span class="value" id="side_omzet"><iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon></span>
+                                <span class="sub-value">Gabungan POS & Online</span>
                             </div>
                             <div class="perf-card">
                                 <label>Transaksi</label>
-                                <span class="value" id="side_transaksi">{{ number_format(rand(500, 1500), 0, ',', '.') }}</span>
-                                <span class="sub-value">▲ 8.3% dari bulan lalu</span>
+                                <span class="value" id="side_transaksi"><iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon></span>
+                                <span class="sub-value">Gabungan POS & Online</span>
                             </div>
                             <div class="perf-card">
                                 <label>Produk Terlaris</label>
-                                <span class="value" id="side_terlaris">Roti Tawar</span>
-                                <span style="font-size: 10px; color: #64748b;" id="side_terlaris_qty">320 pcs terjual</span>
+                                <span class="value" id="side_terlaris"><iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon></span>
+                                <span style="font-size: 10px; color: #64748b;" id="side_terlaris_qty">Memuat...</span>
                             </div>
                             <div class="perf-card">
                                 <label>Stok Menipis</label>
-                                <span class="value" id="side_stok">12 Produk</span>
+                                <span class="value" id="side_stok"><iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon></span>
                                 <a href="{{ route('products.request') }}" style="font-size: 10px; color: var(--primary-blue); text-decoration: none; font-weight: 600;">Lihat Detail ></a>
                             </div>
                         </div>
@@ -940,17 +1010,22 @@
         window.history.pushState({}, '', url);
     }
 
-    function selectOutlet(row, data) {
+    async function selectOutlet(row, data) {
         // Remove active class from all rows
         document.querySelectorAll('.outlet-row').forEach(r => r.classList.remove('active-row'));
         // Add active class to clicked row
         row.classList.add('active-row');
 
-        // Update side panel info
+        // Loading states
         document.getElementById('side_nama').innerText = data.nama;
         document.getElementById('side_alamat').innerText = data.alamat || '-';
         document.getElementById('side_notelp').innerText = data.notelp || '-';
         document.getElementById('side_jam').innerText = data.jam_buka || '-';
+        document.getElementById('side_omzet').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
+        document.getElementById('side_transaksi').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
+        document.getElementById('side_terlaris').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
+        document.getElementById('side_terlaris_qty').innerText = '';
+        document.getElementById('side_stok').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
         
         // Update status badge in side panel
         const statusEl = document.getElementById('side_status');
@@ -960,28 +1035,29 @@
             statusEl.innerHTML = '<span class="status-badge status-inactive">Nonaktif</span>';
         }
 
-        // Get kepala toko from data
-        const sideKepala = document.getElementById('side_kepala');
-        const sideEmail = document.getElementById('side_email');
-        
-        if (data.users && data.users.length > 0) {
-            const head = data.users.find(u => u.operator && (u.operator.nama === 'Kepala Toko' || u.operator.nama === 'kepala_toko')) || data.users[0];
-            sideKepala.innerText = head.username || head.name || '-';
-            sideEmail.innerText = head.email || '-';
-        } else {
-            sideKepala.innerText = '-';
-            sideEmail.innerText = '-';
-        }
+        try {
+            const response = await fetch(`/outlet/${data.uuid}/stats`);
+            if (!response.ok) throw new Error('Network response was not ok');
+            const stats = await response.json();
 
-        // Mock updates for performance (Since this is layout focus)
-        // In real app, you might fetch this via AJAX
-        const mockOmzet = Math.floor(Math.random() * (30000000 - 10000000 + 1) + 10000000);
-        const mockTransaksi = Math.floor(Math.random() * (1500 - 500 + 1) + 500);
-        const mockStok = Math.floor(Math.random() * 20);
-        
-        document.getElementById('side_omzet').innerText = 'Rp ' + mockOmzet.toLocaleString('id-ID');
-        document.getElementById('side_transaksi').innerText = mockTransaksi.toLocaleString('id-ID');
-        document.getElementById('side_stok').innerText = mockStok + ' Produk';
+            document.getElementById('side_kepala').innerText = stats.kepala;
+            document.getElementById('side_email').innerText = stats.email;
+            
+            document.getElementById('side_omzet').innerText = 'Rp ' + parseInt(stats.omzet).toLocaleString('id-ID');
+            document.getElementById('side_transaksi').innerText = stats.total_transaksi.toLocaleString('id-ID');
+            
+            document.getElementById('side_terlaris').innerText = stats.produk_terlaris;
+            document.getElementById('side_terlaris_qty').innerText = stats.terlaris_qty > 0 ? `${stats.terlaris_qty} pcs terjual` : 'Belum ada penjualan';
+            
+            document.getElementById('side_stok').innerText = `${stats.stok_menipis} Produk`;
+            
+        } catch (error) {
+            console.error('Error fetching outlet stats:', error);
+            document.getElementById('side_omzet').innerText = 'Gagal memuat';
+            document.getElementById('side_transaksi').innerText = 'Gagal memuat';
+            document.getElementById('side_terlaris').innerText = '-';
+            document.getElementById('side_stok').innerText = '-';
+        }
     }
 
     function openViewModal(data) {
@@ -1409,6 +1485,17 @@
     if ('{{ $active_tab }}' === 'kinerja') {
         updateKinerjaData('all');
     }
+
+    // Initial data outlet load
+    document.addEventListener('DOMContentLoaded', () => {
+        if ('{{ $active_tab }}' === 'data' || '{{ $active_tab }}' === '') {
+            const firstRow = document.querySelector('.outlet-row.active-row') || document.querySelector('.outlet-row');
+            if (firstRow) {
+                const data = JSON.parse(firstRow.dataset.outlet);
+                selectOutlet(firstRow, data);
+            }
+        }
+    });
 </script>
 @endpush
 @endsection
