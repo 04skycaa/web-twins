@@ -114,5 +114,7 @@
 </div>
 
 <div class="pagination-container">
-    {{ $alerts->links() }}
+    @if(isset($alerts) && $alerts instanceof \Illuminate\Pagination\LengthAwarePaginator)
+        {{ $alerts->links() }}
+    @endif
 </div>

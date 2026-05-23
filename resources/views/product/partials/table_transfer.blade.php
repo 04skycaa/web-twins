@@ -58,7 +58,9 @@
     </table>
     </div>
     <div class="pagination-container">
-        {{ $transfers->links() }}
+        @if(isset($transfers) && $transfers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            {{ $transfers->links() }}
+        @endif
     </div>
 @else
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">

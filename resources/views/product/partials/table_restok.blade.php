@@ -55,7 +55,11 @@
         </tbody>
     </table>
     </div>
-    {{ $purchases->links('vendor.pagination.twins') }}
+    <div class="pagination-container">
+        @if(isset($purchases) && $purchases instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            {{ $purchases->links('vendor.pagination.twins') }}
+        @endif
+    </div>
 @else
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
         <div style="width: 80px; height: 80px; background: var(--light-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--primary-blue); font-size: 40px;">

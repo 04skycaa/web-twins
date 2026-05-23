@@ -884,7 +884,7 @@
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="searchInput-{{ $tab }}" class="search-input" 
                         placeholder="Cari di {{ $tab }}..." 
-                        onkeyup="realtimeSearch('{{ $tab }}'); debounceSearch();">
+                        oninput="realtimeSearch('{{ $tab }}')">
                 </div>
 
                 @if($tab == 'produk' || $tab == 'stok' || $tab == 'opname')
@@ -1974,9 +1974,56 @@
     // Global Form Submit Listener removed to prevent 'ghost' loading triggers.
     // We now use specific 'onsubmit' handlers on each form for better control.
 
-    let searchTimer;
     let abortController = null;
     window.currentTab = '{{ $active_tab }}';
+    window.fullDataCache = {};
+    window.isFetchingFullData = {};
+    window.initialTbodyHtml = {};
+
+    function loadFullDataInBackground(tab) {
+        if (window.fullDataCache[tab] || window.isFetchingFullData[tab]) return;
+        
+        window.isFetchingFullData[tab] = true;
+        const params = new URLSearchParams(window.location.search);
+        params.set('tab', tab);
+        params.set('limit', 'all');
+        const url = window.location.pathname + '?' + params.toString();
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const tableMap = {
+                    'produk': 'produkTable',
+                    'stok': 'stokTable',
+                    'restok': 'restokTable',
+                    'transfer': 'transferTable',
+                    'opname': document.getElementById('rugiTable') ? 'rugiTable' : 'opnameTable'
+                };
+                
+                const tableId = tableMap[tab];
+                const fetchedTable = doc.getElementById(tableId);
+                
+                if (fetchedTable) {
+                    const tbody = fetchedTable.querySelector('tbody');
+                    if (tbody) {
+                        window.fullDataCache[tab] = Array.from(tbody.querySelectorAll('tr'));
+                    }
+                }
+                window.isFetchingFullData[tab] = false;
+                
+                // Re-trigger search if user already typed
+                const searchInput = document.getElementById(`searchInput-${tab}`);
+                if (searchInput && searchInput.value) {
+                    realtimeSearch(tab);
+                }
+            })
+            .catch(() => {
+                window.isFetchingFullData[tab] = false;
+            });
+    }
 
     function realtimeSearch(tab = 'produk') {
         const inputId = `searchInput-${tab}`;
@@ -1990,26 +2037,78 @@
             'stok': 'stokTable',
             'restok': 'restokTable',
             'transfer': 'transferTable',
-            'opname': 'opnameTable'
+            'opname': document.getElementById('rugiTable') ? 'rugiTable' : 'opnameTable'
         };
         const tableId = tableMap[tab];
         const table = document.getElementById(tableId);
         if (!table) return;
         
-        const tr = table.getElementsByTagName("tr");
-        for (let i = 1; i < tr.length; i++) {
-            let found = false;
-            const td = tr[i].getElementsByTagName("td");
-            for (let j = 0; j < td.length; j++) {
-                if (td[j]) {
-                    const txtValue = td[j].textContent || td[j].innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        found = true;
-                        break;
+        const tbody = table.querySelector('tbody');
+        const pagination = document.querySelector(`#section-${tab} .pagination-container`);
+
+        if (!window.initialTbodyHtml[tab]) {
+            window.initialTbodyHtml[tab] = tbody.innerHTML;
+        }
+
+        if (filter === '') {
+            tbody.innerHTML = window.initialTbodyHtml[tab];
+            if (pagination) pagination.style.display = 'block';
+            return;
+        }
+
+        if (window.fullDataCache[tab]) {
+            const allTrs = window.fullDataCache[tab];
+            const fragment = document.createDocumentFragment();
+            let matchCount = 0;
+
+            for (let i = 0; i < allTrs.length; i++) {
+                let found = false;
+                const td = allTrs[i].getElementsByTagName("td");
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        const txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
+                if (found) {
+                    fragment.appendChild(allTrs[i].cloneNode(true));
+                    matchCount++;
+                    if (matchCount > 100) break;
+                }
             }
-            tr[i].style.display = found ? "" : "none";
+
+            if (matchCount === 0) {
+                const emptyTr = document.createElement('tr');
+                const colCount = table.querySelector('thead tr').children.length;
+                emptyTr.innerHTML = `<td colspan="${colCount}" style="text-align: center; padding: 40px; color: #999;">Tidak ada data ditemukan untuk "${input.value}"</td>`;
+                fragment.appendChild(emptyTr);
+            }
+
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
+
+            if (pagination) {
+                pagination.style.display = 'none';
+            }
+        } else {
+            const tr = table.getElementsByTagName("tr");
+            for (let i = 1; i < tr.length; i++) {
+                let found = false;
+                const td = tr[i].getElementsByTagName("td");
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        const txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                tr[i].style.display = found ? "" : "none";
+            }
         }
     }
 
@@ -2076,12 +2175,7 @@
         });
     }
 
-    function debounceSearch() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-            updateTableContent();
-        }, 500);
-    }
+
 
 
 
@@ -2090,6 +2184,7 @@
     function switchTab(tabName, event) {
         if (event) event.preventDefault();
         window.currentTab = tabName;
+        loadFullDataInBackground(tabName);
         
         // Hide all sections
         document.querySelectorAll('.view-section').forEach(s => {
@@ -2130,11 +2225,14 @@
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab');
         if (tab) {
-            // Find pill using exact data-tab matching to avoid partial name match issues (like 'stok' matching 'Stok Opname')
             const pill = document.querySelector(`.tab-pill[data-tab="${tab}"]`);
             if (pill) {
-                pill.click(); // This will trigger switchTab correctly
+                pill.click(); 
+            } else {
+                loadFullDataInBackground(tab);
             }
+        } else {
+            loadFullDataInBackground(window.currentTab || 'produk');
         }
     });
 

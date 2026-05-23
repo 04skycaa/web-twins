@@ -104,7 +104,9 @@
     </table>
 </div>
     <div class="pagination-container">
-        {{ $opnames->links() }}
+        @if(isset($opnames) && $opnames instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            {{ $opnames->links() }}
+        @endif
     </div>
 @else
 <div class="table-container">
@@ -140,6 +142,8 @@
     </table>
 </div>
     <div class="pagination-container">
-        {{ $opname_details->links() }}
+        @if(isset($opname_details) && $opname_details instanceof \Illuminate\Pagination\LengthAwarePaginator)
+            {{ $opname_details->links() }}
+        @endif
     </div>
 @endif

@@ -135,7 +135,7 @@ class ProductController extends Controller
             $query->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
         }
 
-        $products = $query->paginate(10);
+        $products = $request->limit == 'all' ? $query->get() : $query->paginate(10);
 
         $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
             $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
@@ -210,7 +210,7 @@ class ProductController extends Controller
                     $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
                 });
             }
-            $opname_details = $query->orderBy('uuid', 'desc')->paginate(10)->withQueryString();
+            $opname_details = $request->limit == 'all' ? $query->orderBy('uuid', 'desc')->get() : $query->orderBy('uuid', 'desc')->paginate(10)->withQueryString();
             $opnames = collect();
         } else {
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
@@ -235,7 +235,7 @@ class ProductController extends Controller
                     });
                 });
             }
-            $opnames = $query->paginate(10)->withQueryString();
+            $opnames = $request->limit == 'all' ? $query->get() : $query->paginate(10)->withQueryString();
             $opname_details = collect();
         }
 
@@ -304,7 +304,7 @@ class ProductController extends Controller
                 $q->where('kategori_id', $request->category_id);
             });
         }
-        $alerts = $query->paginate(10)->withQueryString();
+        $alerts = $request->limit == 'all' ? $query->get() : $query->paginate(10)->withQueryString();
         $alerts->getCollection()->each(function($alert) {
             if ($alert->product) {
                 $alert->product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($alert->product->image_url);
@@ -373,7 +373,7 @@ class ProductController extends Controller
 
         return [
             'active_tab' => 'restok',
-            'purchases' => $query->paginate(10),
+            'purchases' => $request->limit == 'all' ? $query->get() : $query->paginate(10),
             'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
@@ -506,7 +506,7 @@ class ProductController extends Controller
         if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
         if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
 
-        $transfers = $query->paginate(10);
+        $transfers = $request->limit == 'all' ? $query->get() : $query->paginate(10);
         $stores = Outlet::where('status_aktif', true)->get();
         $sourceStoreId = $user->isOwner() ? ($request->source_store_id ?? $user->store_id) : $user->store_id;
         if ($user->isOwner() && !$sourceStoreId && $stores->count() > 0) { $sourceStoreId = $stores->first()->uuid; }
