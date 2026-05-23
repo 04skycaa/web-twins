@@ -2,59 +2,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
-<style>
-    .view-section { display: none; }
-    .view-section.active { display: block; animation: fadeIn 0.2s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Tighter, more compact premium table styles */
-    .fitur-table th { padding: 8px 12px !important; font-size: 12px !important; }
-    .fitur-table td { padding: 8px 12px !important; font-size: 12px !important; }
-    .history-row td, .transfer-row td { padding: 8px 12px !important; }
-
-    /* Arus Uang Custom Styles */
-    .finance-card-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
-    .finance-card { background: white; padding: 24px; border-radius: 24px; display: flex; align-items: center; gap: 20px; border: 1px solid #f1f5f9; transition: all 0.3s ease; }
-    .finance-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.05); }
-    .icon-box { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-    .bg-bersih { background: #eff6ff; color: #0081C9; }
-    .bg-masuk { background: #f0fdf4; color: #16a34a; }
-    .bg-keluar { background: #fff1f2; color: #dc2626; }
-    .card-label { font-size: 13px; color: #64748b; font-weight: 500; }
-    .card-value { font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 4px; }
-    .text-masuk { color: #16a34a; }
-    .text-keluar { color: #dc2626; }
-    .filter-pills { display: flex; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 12px; }
-    .filter-pill { padding: 6px 16px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: 0.3s; }
-    .filter-pill.active { background: white; color: #0081C9; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .badge-masuk { background: #dcfce7; color: #166534; }
-    .badge-keluar { background: #fee2e2; color: #991b1b; }
-
-    /* Modal & Validation */
-    .is-invalid { border-color: #dc2626 !important; }
-    .invalid-feedback { display: none; color: #dc2626; font-size: 12px; margin-top: 5px; font-weight: 600; }
-    .is-invalid+.invalid-feedback { display: block !important; }
-
-    /* Premium Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-    .modal-content { max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0 !important; }
-    .modal-content form { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    .modal-body-scroll { flex: 1; overflow-y: auto; padding: 24px; }
-    .modal-footer { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: #fff; }
-    .table-container { overflow-x: auto; }
-
-    /* Currency Input */
-    .nominal-wrapper { position: relative; display: flex; align-items: center; }
-    .nominal-wrapper::before { content: "Rp"; position: absolute; left: 15px; font-weight: 700; color: #64748b; font-size: 14px; pointer-events: none; }
-    .nominal-wrapper input { padding-left: 45px !important; }
-
-
-</style>
 @endpush
 
 @section('content')
@@ -116,11 +63,11 @@
     <div id="view-arus-uang" class="view-section {{ $active_tab === 'arus-uang' ? 'active' : '' }}">
         <div class="action-bar flex-wrap mobile-action-bar" style="margin-bottom: 20px;">
             <div class="left-actions-group flex-wrap">
-                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" class="mobile-action-bar" onchange="this.submit()">
+                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" class="mobile-action-bar">
                     <input type="hidden" name="tab" value="arus-uang">
                     <div class="search-wrapper mobile-search-shrink">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                        <input type="text" name="search" id="searchInput" class="search-input" value="{{ request('search') }}" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()">
+                        <input type="text" id="searchInput" class="search-input" value="{{ request('search') }}" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()" onkeydown="if(event.key==='Enter') event.preventDefault();">
                     </div>
 
                     <div class="dropdown">
@@ -177,8 +124,8 @@
             </div>
         </div>
 
-        <div class="main-content-box" style="background: transparent; padding: 0; box-shadow: none;">
-            <div class="finance-card-container mobile-side-by-side" style="padding-bottom: 10px;">
+        <div class="main-content-box" style="background: transparent; padding: 20px; box-shadow: none;">
+            <div class="grid-dashboard" style="padding-bottom: 10px;">
                 <div class="finance-card">
                     <div class="icon-box bg-bersih"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
                     <div class="card-info">
@@ -241,7 +188,7 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="pagination-container" style="margin-top: 24px;">{{ $history->onEachSide(1)->links() }}</div>
+                <div class="twins-pagination-container" id="historyPagination" style="margin-top: 24px;"></div>
             </div>
         </div>
     </div>
@@ -304,7 +251,7 @@
             <h3>Pemindahan Saldo Baru</h3>
             <button type="button" class="close-modal" onclick="closeModal('modalTransferSaldo')">&times;</button>
         </div>
-        <form action="{{ route('keuangan.transfer.store') }}" method="POST">
+        <form id="formTransferSaldo" onsubmit="submitTransferSaldo(event)">
             @csrf
             <div class="modal-body-scroll">
                 @if(auth()->user()->role === 'owner')
@@ -362,7 +309,7 @@
 
             <div class="modal-footer">
                 <button type="button" onclick="closeModal('modalTransferSaldo')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button>
-                <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Proses Pemindahan</button>
+                <button type="submit" id="btnSubmitTransfer" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Proses Pemindahan</button>
             </div>
         </form>
     </div>
@@ -436,34 +383,92 @@
         document.getElementById('filterForm').submit();
     }
 
-    let currentTypeFilter = 'semua';
-    let currentSearchQuery = '';
+    let historyState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let currentTypeFilter = new URL(window.location.href).searchParams.get('type') || 'semua';
 
     function filterHistoryType(type, btn) {
-        // Toggle active class pada filter pills
         document.querySelectorAll('.filter-pills .filter-pill').forEach(pill => pill.classList.remove('active'));
-        btn.classList.add('active');
-
+        if(btn) btn.classList.add('active');
         currentTypeFilter = type;
         applyHistoryFilters();
     }
 
-    function realtimeSearch() {
-        currentSearchQuery = document.getElementById('searchInput').value.toLowerCase();
-        applyHistoryFilters();
+    function renderPagination() {
+        const totalRows = historyState.filtered.length;
+        const totalPages = Math.ceil(totalRows / historyState.rowsPerPage) || 1;
+        
+        if (historyState.currentPage > totalPages) historyState.currentPage = totalPages;
+        if (historyState.currentPage < 1) historyState.currentPage = 1;
+
+        const startIndex = (historyState.currentPage - 1) * historyState.rowsPerPage;
+        const endIndex = startIndex + historyState.rowsPerPage;
+
+        historyState.filtered.forEach((row, index) => {
+            row.style.display = (index >= startIndex && index < endIndex) ? '' : 'none';
+        });
+
+        const container = document.getElementById('historyPagination');
+        if (!container) return;
+
+        let html = '<ul class="twins-pagination">';
+        html += `<li class="twins-page-item ${historyState.currentPage === 1 ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${historyState.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon></a></li>`;
+
+        let startPage = Math.max(1, historyState.currentPage - 1);
+        let endPage = Math.min(totalPages, startPage + 2);
+        
+        if (endPage - startPage < 2) {
+            startPage = Math.max(1, endPage - 2);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="twins-page-item ${i === historyState.currentPage ? 'active' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${i})">${i}</a></li>`;
+        }
+
+        html += `<li class="twins-page-item ${historyState.currentPage === totalPages ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${historyState.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon></a></li>`;
+        html += '</ul>';
+
+        container.innerHTML = html;
+        container.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+
+    function changePage(newPage) {
+        historyState.currentPage = newPage;
+        renderPagination();
     }
 
     function applyHistoryFilters() {
-        document.querySelectorAll('.history-row').forEach(row => {
-            const jenis = row.getAttribute('data-jenis'); // 'pemasukan' atau 'pengeluaran'
-            const text = row.innerText.toLowerCase();
-
-            const matchesSearch = text.includes(currentSearchQuery);
+        const searchEl = document.getElementById('searchInput');
+        const input = searchEl ? searchEl.value.toLowerCase() : '';
+        const rows = Array.from(document.querySelectorAll('.history-row'));
+        
+        let matched = [];
+        
+        rows.forEach(row => {
+            const jenis = row.getAttribute('data-jenis');
+            const text = row.textContent.toLowerCase();
+            
+            const matchesSearch = text.includes(input);
             const matchesType = (currentTypeFilter === 'semua') || (jenis === currentTypeFilter);
-
-            row.style.display = (matchesSearch && matchesType) ? '' : 'none';
+            
+            if (matchesSearch && matchesType) {
+                matched.push(row);
+            } else {
+                row.style.display = 'none';
+            }
         });
+        
+        historyState.filtered = matched;
+        historyState.currentPage = 1;
+        renderPagination();
     }
+
+    function realtimeSearch() {
+        applyHistoryFilters();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        applyHistoryFilters();
+    });
 
     function toggleDropdown(event) {
         event.stopPropagation();
@@ -566,6 +571,64 @@
         document.querySelectorAll('.transfer-row').forEach(row => {
             row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
         });
+    }
+
+    async function submitTransferSaldo(e) {
+        e.preventDefault();
+        const form = e.target;
+        
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch("{{ route('keuangan.transfer.store') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message || 'Pemindahan saldo berhasil dicatat!',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.href = "{{ route('keuangan.index', ['tab' => 'arus-uang']) }}";
+                });
+            } else {
+                let errorMessage = data.message || 'Gagal memproses pemindahan saldo.';
+                if (data.errors) {
+                    errorMessage = Object.values(data.errors).flat().join('<br>');
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    html: errorMessage
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan!',
+                text: 'Gagal menghubungi server. Silakan coba lagi.'
+            });
+        }
     }
 </script>
 @endsection

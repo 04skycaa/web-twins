@@ -93,7 +93,5 @@
 @endif
 
 @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
-    <div class="pagination-container">
-        {{ $products->onEachSide(1)->appends(request()->query())->links() }}
-    </div>
+    {{ $products->onEachSide(1)->appends(request()->query())->links('vendor.pagination.twins') }}
 @endif

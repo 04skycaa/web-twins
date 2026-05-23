@@ -8,6 +8,7 @@ use Carbon\Carbon;
 
 use App\Models\PaymentMethod;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class KeuanganController extends Controller
 {
@@ -83,9 +84,8 @@ class KeuanganController extends Controller
             });
         }
 
-        // Clone query for history with pagination (Arus Uang) - paginated to 10 items
         $historyQuery = clone $query;
-        $history = $historyQuery->orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page')->appends($request->query());
+        $history = $historyQuery->orderBy('tanggal', 'desc')->get();
 
         // Calculate Summaries in a single high-performance grouped query
         $summaryTotals = (clone $query)
@@ -150,5 +150,71 @@ class KeuanganController extends Controller
         return redirect()->route('keuangan.index', ['tab' => 'arus-uang']);
     }
 
+    public function transferSaldo(Request $request)
+    {
+        $request->validate([
+            'store_id' => 'required',
+            'from_cashbox_id' => 'required',
+            'to_cashbox_id' => 'required|different:from_cashbox_id',
+            'nominal' => 'required|numeric|min:1',
+            'tanggal' => 'required|date',
+        ], [
+            'to_cashbox_id.different' => 'Akun tujuan harus berbeda dengan akun asal.'
+        ]);
+
+        $fromCashbox = \App\Models\PaymentMethod::findOrFail($request->from_cashbox_id);
+        $toCashbox = \App\Models\PaymentMethod::findOrFail($request->to_cashbox_id);
+
+        $tanggal = $request->tanggal;
+        if ($tanggal == date('Y-m-d')) {
+            $tanggal = date('Y-m-d H:i:s');
+        } else {
+            $tanggal = $tanggal . ' ' . date('H:i:s');
+        }
+
+        $userId = auth()->user()->uuid ?? auth()->id();
+        $keteranganSuffix = $request->keterangan ? ' - ' . $request->keterangan : '';
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Pengeluaran dari Akun Asal
+            \App\Models\CashFlow::create([
+                'store_id' => $request->store_id,
+                'user_id' => $userId,
+                'jenis' => 'pengeluaran',
+                'nominal' => $request->nominal,
+                'keterangan' => 'Pemindahan Saldo ke ' . $toCashbox->nama_metode . $keteranganSuffix,
+                'tanggal' => $tanggal,
+                'metode_pembayaran' => $fromCashbox->uuid,
+            ]);
+
+            // 2. Pemasukan ke Akun Tujuan
+            \App\Models\CashFlow::create([
+                'store_id' => $request->store_id,
+                'user_id' => $userId,
+                'jenis' => 'pemasukan',
+                'nominal' => $request->nominal,
+                'keterangan' => 'Pemindahan Saldo dari ' . $fromCashbox->nama_metode . $keteranganSuffix,
+                'tanggal' => $tanggal,
+                'metode_pembayaran' => $toCashbox->uuid,
+            ]);
+
+            DB::commit();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Pemindahan saldo berhasil dicatat!']);
+            }
+
+            return redirect()->route('keuangan.index', ['tab' => 'arus-uang'])->with('success', 'Pemindahan saldo berhasil dicatat!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Gagal mencatat pemindahan saldo. Error: ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem.');
+        }
+    }
 
 }

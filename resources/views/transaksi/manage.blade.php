@@ -151,7 +151,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="riwayatPagination" class="pagination-container" style="margin-top: 24px; display:flex; justify-content:center; align-items:center; gap:8px;"></div>
+            <div id="riwayatPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         </div>
     </div>
 
@@ -311,7 +311,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="promoPagination" class="pagination-container" style="margin-top: 24px; display:flex; justify-content:center; align-items:center; gap:8px;"></div>
+            <div id="promoPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         </div>
     </div>
 </div>
@@ -997,8 +997,8 @@
         const container = document.getElementById(view + 'Pagination');
         if (!container) return;
 
-        let html = '';
-        html += `<a href="javascript:void(0)" class="page-item" onclick="changePage('${view}', ${state.currentPage - 1})" ${state.currentPage === 1 ? 'style="opacity:0.5; pointer-events:none;"' : ''}><span class="page-link">&lt;</span></a>`;
+        let html = '<ul class="twins-pagination">';
+        html += `<li class="twins-page-item ${state.currentPage === 1 ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage('${view}', ${state.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon></a></li>`;
 
         let startPage = Math.max(1, state.currentPage - 1);
         let endPage = Math.min(totalPages, startPage + 2);
@@ -1008,10 +1008,11 @@
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            html += `<a href="javascript:void(0)" class="page-item ${i === state.currentPage ? 'active' : ''}" onclick="changePage('${view}', ${i})"><span class="page-link">${i}</span></a>`;
+            html += `<li class="twins-page-item ${i === state.currentPage ? 'active' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage('${view}', ${i})">${i}</a></li>`;
         }
 
-        html += `<a href="javascript:void(0)" class="page-item" onclick="changePage('${view}', ${state.currentPage + 1})" ${state.currentPage === totalPages ? 'style="opacity:0.5; pointer-events:none;"' : ''}><span class="page-link">&gt;</span></a>`;
+        html += `<li class="twins-page-item ${state.currentPage === totalPages ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage('${view}', ${state.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon></a></li>`;
+        html += '</ul>';
 
         container.innerHTML = html;
         container.style.display = totalPages > 1 ? 'flex' : 'none';
@@ -1032,7 +1033,7 @@
         let matched = [];
 
         rows.forEach(row => {
-            const textMatch = row.innerText.toLowerCase().includes(search);
+            const textMatch = row.textContent.toLowerCase().includes(search);
             let dateMatch = true;
             
             if (startDate || endDate) {
@@ -1086,7 +1087,7 @@
         let matched = [];
 
         rows.forEach(row => {
-            const textMatch = row.innerText.toLowerCase().includes(search);
+            const textMatch = row.textContent.toLowerCase().includes(search);
             const rowCategory = row.getAttribute('data-category');
             const catMatch = categoryFilter === 'all' || rowCategory === categoryFilter.toLowerCase();
 

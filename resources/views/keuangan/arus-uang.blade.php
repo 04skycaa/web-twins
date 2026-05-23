@@ -7,12 +7,12 @@
     @include('keuangan.partials.tabs', ['active' => 'arus-uang'])
     
     <div class="action-bar-container">
-        <form action="{{ route('keuangan.arus-uang') }}" method="GET" id="filterForm" class="action-bar" onchange="this.submit()">
+        <form action="{{ route('keuangan.arus-uang') }}" method="GET" id="filterForm" class="action-bar">
             <div class="left-actions-group">
                 {{-- Search --}}
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()">
+                    <input type="text" id="searchInput" class="search-input" value="{{ request('search') }}" placeholder="Cari keterangan, jenis, atau outlet..." onkeyup="realtimeSearch()" onkeydown="if(event.key==='Enter') event.preventDefault();">
                 </div>
 
                 {{-- Date Filter --}}
@@ -63,9 +63,9 @@
         </form>
     </div>
 
-    <div class="main-content-box" style="background: transparent; padding: 0; box-shadow: none;">
+    <div class="main-content-box" style="background: transparent; padding: 20px; box-shadow: none;">
         {{-- Summary Cards --}}
-        <div class="finance-card-container" style="display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 16px; padding-bottom: 10px; scroll-snap-type: x mandatory;">
+        <div class="grid-dashboard">
             <div class="finance-card animate-up delay-1" style="min-width: 250px; flex-shrink: 0; scroll-snap-align: center;">
                 <div class="icon-box bg-bersih">
                     <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
@@ -146,9 +146,7 @@
                 </tbody>
             </table>
 
-            <div class="pagination-container" style="margin-top: 24px;">
-                {{ $history->onEachSide(1)->links() }}
-            </div>
+            <div class="twins-pagination-container" id="historyPagination" style="margin-top: 24px;"></div>
         </div>
     </div>
 </div>
@@ -163,15 +161,85 @@
         XLSX.writeFile(wb, `Laporan_Arus_Uang_{{ date('d_M_Y') }}.xlsx`);
     }
 
-    function realtimeSearch() {
-        const input = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('.history-row');
+    let historyState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let currentTypeFilter = new URL(window.location.href).searchParams.get('type') || 'semua';
+
+    function renderPagination() {
+        const totalRows = historyState.filtered.length;
+        const totalPages = Math.ceil(totalRows / historyState.rowsPerPage) || 1;
+        
+        if (historyState.currentPage > totalPages) historyState.currentPage = totalPages;
+        if (historyState.currentPage < 1) historyState.currentPage = 1;
+
+        const startIndex = (historyState.currentPage - 1) * historyState.rowsPerPage;
+        const endIndex = startIndex + historyState.rowsPerPage;
+
+        historyState.filtered.forEach((row, index) => {
+            row.style.display = (index >= startIndex && index < endIndex) ? '' : 'none';
+        });
+
+        const container = document.getElementById('historyPagination');
+        if (!container) return;
+
+        let html = '<ul class="twins-pagination">';
+        html += `<li class="twins-page-item ${historyState.currentPage === 1 ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${historyState.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon></a></li>`;
+
+        let startPage = Math.max(1, historyState.currentPage - 1);
+        let endPage = Math.min(totalPages, startPage + 2);
+        
+        if (endPage - startPage < 2) {
+            startPage = Math.max(1, endPage - 2);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="twins-page-item ${i === historyState.currentPage ? 'active' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${i})">${i}</a></li>`;
+        }
+
+        html += `<li class="twins-page-item ${historyState.currentPage === totalPages ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePage(${historyState.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon></a></li>`;
+        html += '</ul>';
+
+        container.innerHTML = html;
+        container.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+
+    function changePage(newPage) {
+        historyState.currentPage = newPage;
+        renderPagination();
+    }
+
+    function applyHistoryFilters() {
+        const searchEl = document.getElementById('searchInput');
+        const input = searchEl ? searchEl.value.toLowerCase() : '';
+        const rows = Array.from(document.querySelectorAll('.history-row'));
+        
+        let matched = [];
         
         rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(input) ? '' : 'none';
+            const jenis = row.getAttribute('data-jenis');
+            const text = row.textContent.toLowerCase();
+            
+            const matchesSearch = text.includes(input);
+            const matchesType = (currentTypeFilter === 'semua') || (jenis === currentTypeFilter);
+            
+            if (matchesSearch && matchesType) {
+                matched.push(row);
+            } else {
+                row.style.display = 'none';
+            }
         });
+        
+        historyState.filtered = matched;
+        historyState.currentPage = 1;
+        renderPagination();
     }
+
+    function realtimeSearch() {
+        applyHistoryFilters();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        applyHistoryFilters();
+    });
 
     function toggleDropdown(event) {
         event.stopPropagation();

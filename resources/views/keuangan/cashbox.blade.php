@@ -2,33 +2,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
-<style>
-    .view-section {
-        display: none;
-    }
-
-    .view-section.active {
-        display: block;
-    }
-</style>
-@push('styles')
-    <style>
-        .is-invalid {
-            border-color: #dc2626 !important;
-        }
-
-        .invalid-feedback {
-            display: none;
-            color: #dc2626;
-            font-size: 12px;
-            margin-top: 5px;
-            font-weight: 600;
-        }
-
-        .is-invalid+.invalid-feedback {
-            display: block !important;
-        }
-    </style>
 @endpush
 
 @section('content')
