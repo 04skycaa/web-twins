@@ -2,6 +2,7 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
+<link rel="stylesheet" href="{{ asset('css/transaksi/fitur.css') }}">
 @endpush
 
 @section('content')

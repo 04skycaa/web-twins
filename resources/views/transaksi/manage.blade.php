@@ -39,10 +39,33 @@
     {{-- SECTION RIWAYAT --}}
     <div id="view-riwayat" class="view-section {{ $active_tab === 'riwayat' ? 'active' : '' }}">
         <div class="action-bar">
-            <div class="left-actions-group">
+            <div class="left-actions-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" class="search-input" id="riwayatSearch" placeholder="Cari kode atau pelanggan..." onkeyup="filterTable('riwayat')">
+                    <input type="text" class="search-input" id="riwayatSearch" placeholder="Cari kode atau pelanggan..." onkeyup="filterRiwayat()">
+                </div>
+                <div class="filter-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                    <div class="date-filter-container">
+                        <button class="icon-btn-outline" onclick="toggleDateDropdown('riwayatDateDropdown')">
+                            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+                        </button>
+                        <div class="date-dropdown-menu" id="riwayatDateDropdown">
+                            <div class="dropdown-header">RENTANG TANGGAL</div>
+                            <div class="form-group-dropdown">
+                                <label>Dari</label>
+                                <input type="date" id="riwayatDateStart" class="form-control">
+                            </div>
+                            <div class="form-group-dropdown">
+                                <label>Sampai</label>
+                                <input type="date" id="riwayatDateEnd" class="form-control">
+                            </div>
+                            <button class="btn-action w-100" onclick="applyAndCloseDateDropdown('riwayatDateDropdown', filterRiwayat)">Terapkan Filter</button>
+                        </div>
+                    </div>
+                    <select id="riwayatSort" class="form-control" style="width: 110px; font-size: 12px; padding: 8px 12px;" onchange="filterRiwayat()">
+                        <option value="desc">Terbaru</option>
+                        <option value="asc">Terlama</option>
+                    </select>
                 </div>
             </div>
             <div class="right-actions">
@@ -70,7 +93,7 @@
                     </thead>
                     <tbody>
                         @forelse($data as $trx)
-                        <tr>
+                        <tr class="riwayat-row" data-date="{{ $trx['tanggal_raw'] }}">
                             <td style="padding-right: 20px; vertical-align: middle;">
                                 @php
                                     $parts = explode('-', $trx['id']);
@@ -128,28 +151,7 @@
                     </tbody>
                 </table>
             </div>
-            @if($paymentOrders->hasPages())
-<div class="pagination-container" style="margin-top: 24px; display:flex; justify-content:center; align-items:center; gap:8px;">
-    @php
-        $total = $paymentOrders->lastPage();
-        $current = $paymentOrders->currentPage();
-        $group = intdiv($current - 1, 3);
-        $start = $group * 3 + 1;
-        $end = min($start + 2, $total);
-        $prevGroup = $start - 3;
-        $nextGroup = $start + 3;
-    @endphp
-    @if($prevGroup >= 1)
-        <a class="page-item" href="{{ $paymentOrders->url($prevGroup) }}" rel="prev"><span class="page-link">&lt;</span></a>
-    @endif
-    @for($i = $start; $i <= $end; $i++)
-        <a class="page-item {{ $i == $current ? 'active' : '' }}" href="{{ $paymentOrders->url($i) }}"><span class="page-link">{{ $i }}</span></a>
-    @endfor
-    @if($nextGroup <= $total)
-        <a class="page-item" href="{{ $paymentOrders->url($nextGroup) }}" rel="next"><span class="page-link">&gt;</span></a>
-    @endif
-</div>
-@endif
+            <div id="riwayatPagination" class="pagination-container" style="margin-top: 24px; display:flex; justify-content:center; align-items:center; gap:8px;"></div>
         </div>
     </div>
 
@@ -175,10 +177,33 @@
         </div>
 
         <div class="action-bar">
-            <div class="left-actions-group">
+            <div class="left-actions-group" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <div class="search-wrapper">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" class="search-input" id="promoSearch" placeholder="Cari nama atau kode..." onkeyup="searchPromo()">
+                    <input type="text" class="search-input" id="promoSearch" placeholder="Cari nama atau kode..." onkeyup="filterPromo()">
+                </div>
+                <div class="filter-wrapper" style="display: flex; gap: 8px; align-items: center;">
+                    <div class="date-filter-container">
+                        <button class="icon-btn-outline" onclick="toggleDateDropdown('promoDateDropdown')">
+                            <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+                        </button>
+                        <div class="date-dropdown-menu" id="promoDateDropdown">
+                            <div class="dropdown-header">RENTANG TANGGAL</div>
+                            <div class="form-group-dropdown">
+                                <label>Dari</label>
+                                <input type="date" id="promoDateStart" class="form-control">
+                            </div>
+                            <div class="form-group-dropdown">
+                                <label>Sampai</label>
+                                <input type="date" id="promoDateEnd" class="form-control">
+                            </div>
+                            <button class="btn-action w-100" onclick="applyAndCloseDateDropdown('promoDateDropdown', filterPromo)">Terapkan Filter</button>
+                        </div>
+                    </div>
+                    <select id="promoSort" class="form-control" style="width: 110px; font-size: 12px; padding: 8px 12px;" onchange="filterPromo()">
+                        <option value="desc">Terbaru</option>
+                        <option value="asc">Terlama</option>
+                    </select>
                 </div>
             </div>
             <div class="right-actions">
@@ -206,7 +231,7 @@
                     </thead>
                     <tbody>
                         @forelse($diskons as $diskon)
-                        <tr class="promo-row" data-category="{{ strtolower($diskon->tipe) }}">
+                        <tr class="promo-row" data-category="{{ strtolower($diskon->tipe) }}" data-date="{{ $diskon->created_at }}">
                             <td style="padding: 10px 16px;">
                                 <div class="promo-info-cell">
                                     <div class="promo-thumb">
@@ -286,11 +311,7 @@
                     </tbody>
                 </table>
             </div>
-            @if($diskons->hasPages())
-                <div class="pagination-container" style="margin-top: 24px;">
-                    {{ $diskons->links() }}
-                </div>
-            @endif
+            <div id="promoPagination" class="pagination-container" style="margin-top: 24px; display:flex; justify-content:center; align-items:center; gap:8px;"></div>
         </div>
     </div>
 </div>
@@ -901,11 +922,9 @@
     function filterCategory(category, el) {
         document.querySelectorAll('.sub-tab-pill').forEach(pill => pill.classList.remove('active'));
         el.classList.add('active');
-        const rows = document.querySelectorAll('.promo-row');
-        rows.forEach(row => {
-            const rowCat = row.getAttribute('data-category').toLowerCase();
-            row.style.display = (category === 'all' || rowCat === category.toLowerCase()) ? '' : 'none';
-        });
+        // Simpan kategori yang dipilih dalam state, lalu panggil filter utama
+        el.setAttribute('data-selected-cat', category);
+        filterPromo();
     }
 
     function openViewModalDiskon(el) {
@@ -957,21 +976,186 @@
         openModal('viewModalDiskon');
     }
 
-    function searchPromo() {
-        const input = document.getElementById('promoSearch').value.toLowerCase();
-        document.querySelectorAll('.promo-row').forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+    let riwayatState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let promoState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+
+    function renderPagination(view) {
+        const state = view === 'riwayat' ? riwayatState : promoState;
+        const totalRows = state.filtered.length;
+        const totalPages = Math.ceil(totalRows / state.rowsPerPage) || 1;
+        
+        if (state.currentPage > totalPages) state.currentPage = totalPages;
+        if (state.currentPage < 1) state.currentPage = 1;
+
+        const startIndex = (state.currentPage - 1) * state.rowsPerPage;
+        const endIndex = startIndex + state.rowsPerPage;
+
+        state.filtered.forEach((row, index) => {
+            row.style.display = (index >= startIndex && index < endIndex) ? '' : 'none';
         });
+
+        const container = document.getElementById(view + 'Pagination');
+        if (!container) return;
+
+        let html = '';
+        html += `<a href="javascript:void(0)" class="page-item" onclick="changePage('${view}', ${state.currentPage - 1})" ${state.currentPage === 1 ? 'style="opacity:0.5; pointer-events:none;"' : ''}><span class="page-link">&lt;</span></a>`;
+
+        let startPage = Math.max(1, state.currentPage - 1);
+        let endPage = Math.min(totalPages, startPage + 2);
+        
+        if (endPage - startPage < 2) {
+            startPage = Math.max(1, endPage - 2);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<a href="javascript:void(0)" class="page-item ${i === state.currentPage ? 'active' : ''}" onclick="changePage('${view}', ${i})"><span class="page-link">${i}</span></a>`;
+        }
+
+        html += `<a href="javascript:void(0)" class="page-item" onclick="changePage('${view}', ${state.currentPage + 1})" ${state.currentPage === totalPages ? 'style="opacity:0.5; pointer-events:none;"' : ''}><span class="page-link">&gt;</span></a>`;
+
+        container.innerHTML = html;
+        container.style.display = totalPages > 1 ? 'flex' : 'none';
     }
 
-    function filterTable(view) {
-        const input = document.getElementById(view + 'Search').value.toLowerCase();
-        const rows = document.querySelectorAll('#' + view + 'Table tbody tr');
-        rows.forEach(row => {
-            if(row.querySelector('td[colspan]')) return;
-            row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
-        });
+    function changePage(view, newPage) {
+        const state = view === 'riwayat' ? riwayatState : promoState;
+        state.currentPage = newPage;
+        renderPagination(view);
     }
+
+    function filterRiwayat() {
+        const search = document.getElementById('riwayatSearch').value.toLowerCase();
+        const startDate = document.getElementById('riwayatDateStart').value;
+        const endDate = document.getElementById('riwayatDateEnd').value;
+        const rows = Array.from(document.querySelectorAll('#riwayatTable tbody tr.riwayat-row'));
+
+        let matched = [];
+
+        rows.forEach(row => {
+            const textMatch = row.innerText.toLowerCase().includes(search);
+            let dateMatch = true;
+            
+            if (startDate || endDate) {
+                const rowDate = new Date(row.getAttribute('data-date'));
+                rowDate.setHours(0,0,0,0);
+                
+                if (startDate) {
+                    const sDate = new Date(startDate);
+                    sDate.setHours(0,0,0,0);
+                    if (rowDate < sDate) dateMatch = false;
+                }
+                if (endDate) {
+                    const eDate = new Date(endDate);
+                    eDate.setHours(0,0,0,0);
+                    if (rowDate > eDate) dateMatch = false;
+                }
+            }
+            
+            if (textMatch && dateMatch) {
+                matched.push(row);
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const order = document.getElementById('riwayatSort').value;
+        matched.sort((a, b) => {
+            const dateA = new Date(a.getAttribute('data-date')).getTime();
+            const dateB = new Date(b.getAttribute('data-date')).getTime();
+            return order === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+
+        const tbody = document.querySelector('#riwayatTable tbody');
+        matched.forEach(row => tbody.appendChild(row));
+
+        riwayatState.filtered = matched;
+        riwayatState.currentPage = 1;
+        renderPagination('riwayat');
+    }
+
+    function filterPromo() {
+        const search = document.getElementById('promoSearch').value.toLowerCase();
+        const startDate = document.getElementById('promoDateStart').value;
+        const endDate = document.getElementById('promoDateEnd').value;
+        
+        const activeCategoryBtn = document.querySelector('.sub-tab-pill.active');
+        const categoryFilter = activeCategoryBtn ? activeCategoryBtn.getAttribute('data-selected-cat') || 'all' : 'all';
+
+        const rows = Array.from(document.querySelectorAll('#promoTable tbody tr.promo-row'));
+
+        let matched = [];
+
+        rows.forEach(row => {
+            const textMatch = row.innerText.toLowerCase().includes(search);
+            const rowCategory = row.getAttribute('data-category');
+            const catMatch = categoryFilter === 'all' || rowCategory === categoryFilter.toLowerCase();
+
+            let dateMatch = true;
+            if (startDate || endDate) {
+                const rowDate = new Date(row.getAttribute('data-date'));
+                rowDate.setHours(0,0,0,0);
+                
+                if (startDate) {
+                    const sDate = new Date(startDate);
+                    sDate.setHours(0,0,0,0);
+                    if (rowDate < sDate) dateMatch = false;
+                }
+                if (endDate) {
+                    const eDate = new Date(endDate);
+                    eDate.setHours(0,0,0,0);
+                    if (rowDate > eDate) dateMatch = false;
+                }
+            }
+            
+            if (textMatch && catMatch && dateMatch) {
+                matched.push(row);
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const order = document.getElementById('promoSort').value;
+        matched.sort((a, b) => {
+            const dateA = new Date(a.getAttribute('data-date')).getTime();
+            const dateB = new Date(b.getAttribute('data-date')).getTime();
+            return order === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+
+        const tbody = document.querySelector('#promoTable tbody');
+        matched.forEach(row => tbody.appendChild(row));
+
+        promoState.filtered = matched;
+        promoState.currentPage = 1;
+        renderPagination('promo');
+    }
+
+    // Inisialisasi awal agar paginasi langsung diterapkan saat halaman dimuat
+    document.addEventListener("DOMContentLoaded", function() {
+        filterRiwayat();
+        filterPromo();
+    });
+
+    function toggleDateDropdown(id) {
+        document.querySelectorAll('.date-dropdown-menu').forEach(menu => {
+            if (menu.id !== id) menu.classList.remove('show');
+        });
+        document.getElementById(id).classList.toggle('show');
+    }
+
+    function applyAndCloseDateDropdown(id, filterFunction) {
+        document.getElementById(id).classList.remove('show');
+        if (typeof filterFunction === 'function') {
+            filterFunction();
+        }
+    }
+    
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.date-filter-container')) {
+            document.querySelectorAll('.date-dropdown-menu').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    });
 
     function openEditModalDiskon(el) {
         const data = JSON.parse(el.getAttribute('data-diskon'));

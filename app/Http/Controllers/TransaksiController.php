@@ -21,13 +21,12 @@ class TransaksiController extends Controller
     {
         $request = request();
 
-        // Data Riwayat (paginate 10) with eager loaded items & products
+        // Load semua data riwayat tanpa paginasi server agar pencarian JS bisa seketika (instan)
         $paymentOrders = \App\Models\PaymentOrder::with(['items.product'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10, ['*'], 'page_trx')
-            ->appends(array_merge($request->query(), ['tab' => 'riwayat']));
+            ->get();
 
-        $data = collect($paymentOrders->items())->map(function($trx) {
+        $data = collect($paymentOrders)->map(function($trx) {
             $meta = $trx->meta ?: [];
             $itemDiscount = (int)($meta['item_discount_total'] ?? 0);
             $globalDiscount = (int)($meta['global_discount_amount'] ?? 0);
@@ -46,6 +45,7 @@ class TransaksiController extends Controller
             return [
                 'id' => $trx->order_code,
                 'tanggal' => $trx->created_at->format('d M Y H:i'),
+                'tanggal_raw' => $trx->created_at->toIso8601String(),
                 'kasir' => 'Online Checkout',
                 'pelanggan' => $trx->recipient_name,
                 'phone' => $trx->recipient_phone ?: '-',
@@ -61,11 +61,10 @@ class TransaksiController extends Controller
             ];
         });
 
-        // Data Diskon (paginate 10) with eager loaded relationships
+        // Load semua data diskon agar bisa dicari instan menggunakan JS
         $diskons = Promo::with(['products', 'stores'])
             ->orderBy('tanggal_mulai', 'desc')
-            ->paginate(10, ['*'], 'page_promo')
-            ->appends(array_merge($request->query(), ['tab' => 'diskon']));
+            ->get();
 
         $products = \App\Models\Product::orderBy('nama_produk', 'asc')->get();
         $outlets = \App\Models\Outlet::orderBy('nama', 'asc')->get();
