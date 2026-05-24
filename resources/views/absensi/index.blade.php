@@ -140,72 +140,70 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <div class="action-bar flex-wrap mobile-action-bar">
-            <div style="display: contents;">
-                <div class="left-actions-group mobile-action-bar" id="headerLeftActions" style="width: 100%;">
-                    <div class="search-wrapper mobile-search-shrink">
+        <header class="action-bar flex flex-col md:flex-row gap-4 mb-4 md:mb-6 bg-transparent p-0">
+            <div id="headerLeftActions" class="w-full">
+                <div class="flex flex-col md:flex-row items-center gap-3 w-full">
+                    <div class="search-wrapper w-full md:w-64">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                        <input type="text" id="globalSearch" class="search-input" placeholder="masukan nama/hari"
+                        <input type="text" id="globalSearch" class="search-input w-full" placeholder="masukan nama/hari"
                             onkeyup="filterTable()">
                     </div>
-                    @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
-                        {{-- Form Filter Global --}}
-                        <form id="globalFilterForm" method="GET" action="{{ route('absensi.index') }}" style="display:none;">
-                            <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $active_tab }}">
-                            <input type="hidden" name="store_id" id="filterStoreId" value="{{ $store_id }}">
-                            <input type="hidden" name="shift_id" id="filterShiftId" value="{{ $shift_id }}">
-                        </form>
+                    
+                    <div class="flex items-center gap-3 w-full md:w-auto md:ml-auto">
+                        @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                            {{-- Form Filter Global --}}
+                            <form id="globalFilterForm" method="GET" action="{{ route('absensi.index') }}" style="display:none;">
+                                <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $active_tab }}">
+                                <input type="hidden" name="store_id" id="filterStoreId" value="{{ $store_id }}">
+                                <input type="hidden" name="shift_id" id="filterShiftId" value="{{ $shift_id }}">
+                            </form>
 
-                        <div style="display: flex; gap: 8px;">
-                            {{-- Dropdown Toko --}}
-                            <div class="dropdown">
-                                <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
-                                    <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"
-                                        class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                                </button>
-                                <div class="dropdown-content">
-                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
-                                    @foreach($outlets as $o)
-                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
-                                    @endforeach
+                            <div class="flex items-center gap-3">
+                                {{-- Dropdown Toko --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" title="Filter Toko" onclick="toggleDropdown(event)">
+                                        <iconify-icon icon="solar:shop-bold-duotone" class="text-xl {{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                                    </button>
+                                    <div class="dropdown-content">
+                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                                        @foreach($outlets as $o)
+                                            <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                {{-- Dropdown Shift --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" title="Filter Shift" onclick="toggleDropdown(event)">
+                                        <iconify-icon icon="solar:clock-circle-bold-duotone" class="text-xl {{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                                    </button>
+                                    <div class="dropdown-content">
+                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
+                                        @foreach($shifts as $s)
+                                            <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
-
-                            {{-- Dropdown Shift --}}
-                            <div class="dropdown">
-                                <button type="button" class="btn-filter" title="Filter Shift" onclick="toggleDropdown(event)">
-                                    <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 24px;"
-                                        class="{{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                                </button>
-                                <div class="dropdown-content">
-                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
-                                    @foreach($shifts as $s)
-                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                    <button type="button" class="btn-action" id="btnAddMain" onclick="openCurrentModal()">
-                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                        <span id="txtAddMain">Tambah</span>
-                    </button>
+                        @endif
+                        
+                        <button type="button" class="btn-action flex items-center justify-center h-10 px-4 rounded-xl ml-auto md:ml-0" id="btnAddMain" onclick="openCurrentModal()">
+                            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                            <span id="txtAddMain" class="ml-2">Tambah</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </header>
 
         <form id="formGlobalDelete" method="POST" style="display: none;">@csrf @method('DELETE')</form>
 
         {{-- MAIN BOX --}}
         <div class="main-content-box mobile-pb">
-            <div class="table-container">
-
-                @include('absensi._tab_shift')
-                @include('absensi._tab_jadwal')
-                @include('absensi._tab_riwayat')
-                @include('absensi._tab_rekap')
-
-            </div>
+            @include('absensi._tab_shift')
+            @include('absensi._tab_jadwal')
+            @include('absensi._tab_riwayat')
+            @include('absensi._tab_rekap')
         </div>
     </div>
 

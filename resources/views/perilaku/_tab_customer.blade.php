@@ -8,24 +8,24 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="perilaku-summary">
-        <div class="summary-card gradient-blue">
-            <div class="summary-icon">
-                <iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon>
+    <div class="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4 mb-6">
+        <div class="stat-card" style="background: #f0f7ff;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #eff6ff; color: #3b82f6;">
+                    <iconify-icon icon="solar:money-bag-bold-duotone"></iconify-icon>
+                </div>
+                <div class="stat-label">Total Omset Tahunan</div>
             </div>
-            <div class="summary-content">
-                <span class="summary-label">Total Omset Tahunan</span>
-                <span class="summary-value" id="cust-total-omset">Rp 0</span>
-            </div>
+            <div class="stat-value" id="cust-total-omset">Rp 0</div>
         </div>
-        <div class="summary-card gradient-teal">
-            <div class="summary-icon">
-                <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+        <div class="stat-card" style="background: #f0fdf4;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #f0fdf4; color: #10b981;">
+                    <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+                </div>
+                <div class="stat-label">Jumlah Customer</div>
             </div>
-            <div class="summary-content">
-                <span class="summary-label">Jumlah Customer</span>
-                <span class="summary-value" id="cust-total-count">0 Customer</span>
-            </div>
+            <div class="stat-value" id="cust-total-count">0 Customer</div>
         </div>
     </div>
 

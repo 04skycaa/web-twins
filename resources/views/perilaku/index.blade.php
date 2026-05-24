@@ -20,81 +20,83 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <div class="action-bar flex-wrap">
-            <div style="display: contents;">
-                <div class="left-actions-group flex-wrap">
+        <header class="action-bar flex flex-col md:flex-row gap-4 mb-4 md:mb-6 bg-transparent p-0">
+            <div class="w-full">
+                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
                     {{-- Search --}}
-                    <div class="search-wrapper" id="searchWrapper">
+                    <div class="search-wrapper flex-1 w-full" id="searchWrapper">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                        <input type="text" id="globalSearch" class="search-input"
+                        <input type="text" id="globalSearch" class="search-input w-full"
                             placeholder="Cari..." onkeyup="handleSearch()">
                     </div>
 
-                    {{-- Filter Outlet --}}
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"
-                                class="{{ $store_id ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            @foreach ($outlets as $o)
-                                <a href="javascript:void(0)" onclick="selectStore('{{ $o->uuid }}')"
-                                    class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Filter Year --}}
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Tahun" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content" style="padding: 15px; width: 200px;">
-                            <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Tahun</label>
-                            <input id="year-selector" type="number" class="form-control" min="2020" max="2100"
-                                value="{{ $year }}">
-                            <div id="month-filter-group" style="margin-top: 10px; display: none;">
-                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Bulan
-                                    (Opsional)</label>
-                                <select id="month-selector" class="form-control">
-                                    <option value="">-- Semua Bulan --</option>
-                                    <option value="1">Januari</option>
-                                    <option value="2">Februari</option>
-                                    <option value="3">Maret</option>
-                                    <option value="4">April</option>
-                                    <option value="5">Mei</option>
-                                    <option value="6">Juni</option>
-                                    <option value="7">Juli</option>
-                                    <option value="8">Agustus</option>
-                                    <option value="9">September</option>
-                                    <option value="10">Oktober</option>
-                                    <option value="11">November</option>
-                                    <option value="12">Desember</option>
-                                </select>
+                    <div class="flex flex-row items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0" style="scrollbar-width: none;">
+                        {{-- Filter Outlet --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Filter Toko" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"
+                                    class="{{ $store_id ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px);">
+                                @foreach ($outlets as $o)
+                                    <a href="javascript:void(0)" onclick="selectStore('{{ $o->uuid }}')"
+                                        class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                                @endforeach
                             </div>
-                            <button type="button" class="btn-action"
-                                style="width: 100%; justify-content: center; margin-top: 12px;"
-                                onclick="applyFilter()">Terapkan</button>
                         </div>
-                    </div>
 
-                    {{-- Sort (visible for produk tab) --}}
-                    <div class="dropdown" id="sortDropdown" style="display: none;">
-                        <button type="button" class="btn-filter" title="Urutkan" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone"
-                                style="font-size: 24px;"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="setSort('omset')" id="sort-omset"
-                                class="active-dropdown-item">Omset Tertinggi</a>
-                            <a href="javascript:void(0)" onclick="setSort('frekuensi')" id="sort-frekuensi">Frekuensi
-                                Tertinggi</a>
-                            <a href="javascript:void(0)" onclick="setSort('laba')" id="sort-laba">Laba Tertinggi</a>
+                        {{-- Filter Year --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Filter Tahun" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px); padding: 15px; width: 200px;">
+                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Tahun</label>
+                                <input id="year-selector" type="number" class="form-control w-full" min="2020" max="2100"
+                                    value="{{ $year }}">
+                                <div id="month-filter-group" style="margin-top: 10px; display: none;">
+                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Bulan
+                                        (Opsional)</label>
+                                    <select id="month-selector" class="form-control w-full">
+                                        <option value="">-- Semua Bulan --</option>
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn-action w-full"
+                                    style="justify-content: center; margin-top: 12px;"
+                                    onclick="applyFilter()">Terapkan</button>
+                            </div>
+                        </div>
+
+                        {{-- Sort (visible for produk tab) --}}
+                        <div class="dropdown" id="sortDropdown" style="display: none;">
+                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Urutkan" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone"
+                                    style="font-size: 20px;"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px);">
+                                <a href="javascript:void(0)" onclick="setSort('omset')" id="sort-omset"
+                                    class="active-dropdown-item">Omset Tertinggi</a>
+                                <a href="javascript:void(0)" onclick="setSort('frekuensi')" id="sort-frekuensi">Frekuensi
+                                    Tertinggi</a>
+                                <a href="javascript:void(0)" onclick="setSort('laba')" id="sort-laba">Laba Tertinggi</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
 
         {{-- MAIN BOX --}}
         <div class="main-content-box">

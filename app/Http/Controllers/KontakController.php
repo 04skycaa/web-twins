@@ -165,9 +165,15 @@ class KontakController extends Controller
     public function destroy($id)
     {
         $contact = Contact::findOrFail($id);
-        $contact->delete();
-
-        return redirect()->route('kontak.index')->with('success', 'Kontak berhasil dihapus');
+        try {
+            $contact->delete();
+            return redirect()->route('kontak.index')->with('success', 'Kontak berhasil dihapus');
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23503 || $e->getCode() == 1451) {
+                return redirect()->route('kontak.index')->with('error', 'Gagal menghapus! Kontak ini tidak bisa dihapus karena masih terhubung dengan data lain (misalnya memiliki riwayat Piutang/Utang).');
+            }
+            return redirect()->route('kontak.index')->with('error', 'Terjadi kesalahan sistem saat mencoba menghapus kontak.');
+        }
     }
 
     public function syncFromOrders()

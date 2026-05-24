@@ -113,7 +113,7 @@ class AbsensiController extends Controller
 
         $riwayat = $riwayatQuery->orderBy('tanggal_absensi', 'desc')
             ->orderBy('waktu_check_in', 'desc')
-            ->paginate(25)
+            ->paginate(10)
             ->appends($request->except('page'));
 
         // ─── TAB 4: REKAP ABSENSI (DB-level aggregation) ───
@@ -202,7 +202,7 @@ class AbsensiController extends Controller
         )
             ->groupBy('u.uuid', 'u.username', 'u.store_id')
             ->orderBy('u.username', 'asc')
-            ->paginate(50);
+            ->paginate(10);
 
         if (!$isCurrentMonth) {
             Cache::put($cacheKey, $rekap, $cacheDuration);

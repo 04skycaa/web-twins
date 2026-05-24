@@ -47,42 +47,44 @@
         </div>
     </div>
 
-    <table class="fitur-table">
-        <thead>
-            <tr>
-                <th>NO</th>
-                <th>KARYAWAN</th>
-                <th class="text-center" style="color:#2E7D32;">HADIR</th>
-                <th class="text-center" style="color:#E65100;">IZIN</th>
-                <th class="text-center" style="color:#C62828;">ALPHA</th>
-                <th class="text-center">TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($rekap as $idx => $r)
-                <tr class="searchable-row">
-                    <td>{{ $rekap->firstItem() + $idx }}</td>
-                    <td style="font-weight: 600;">{{ $r->username }}</td>
-                    <td class="text-center">
-                        <span class="status-badge status-hadir">{{ $r->total_hadir }}</span>
-                    </td>
-                    <td class="text-center">
-                        <span class="status-badge status-izin">{{ $r->total_izin }}</span>
-                    </td>
-                    <td class="text-center">
-                        <span class="status-badge status-alpha">{{ $r->total_alpha }}</span>
-                    </td>
-                    <td class="text-center" style="font-weight:700;">{{ $r->total_record }}</td>
+    <div class="table-container">
+        <table class="fitur-table">
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th>KARYAWAN</th>
+                    <th class="text-center" style="color:#2E7D32;">HADIR</th>
+                    <th class="text-center" style="color:#E65100;">IZIN</th>
+                    <th class="text-center" style="color:#C62828;">ALPHA</th>
+                    <th class="text-center">TOTAL</th>
                 </tr>
-            @empty
-                <tr><td colspan="6" class="empty-state">Belum ada data rekap untuk periode ini.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($rekap as $idx => $r)
+                    <tr class="searchable-row">
+                        <td>{{ $rekap->firstItem() + $idx }}</td>
+                        <td style="font-weight: 600;">{{ $r->username }}</td>
+                        <td class="text-center">
+                            <span class="status-badge status-hadir">{{ $r->total_hadir }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="status-badge status-izin">{{ $r->total_izin }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="status-badge status-alpha">{{ $r->total_alpha }}</span>
+                        </td>
+                        <td class="text-center" style="font-weight:700;">{{ $r->total_record }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="empty-state">Belum ada data rekap untuk periode ini.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
     @if($rekap->hasPages())
         <div class="pagination-container">
-            {{ $rekap->onEachSide(1)->appends(request()->except('page'))->links() }}
+            {{ $rekap->onEachSide(1)->appends(request()->except('page'))->appends(['active_tab' => 'rekap'])->links('vendor.pagination.twins') }}
         </div>
     @endif
 </div>

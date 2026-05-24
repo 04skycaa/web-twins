@@ -34,6 +34,88 @@
     .nominal-wrapper { position: relative; display: flex; align-items: center; }
     .nominal-wrapper::before { content: "Rp"; position: absolute; left: 12px; font-weight: 700; color: #475569; font-size: 13px; pointer-events: none; }
     .nominal-wrapper input { padding-left: 35px !important; }
+
+    @media (max-width: 720px) {
+        .bk-table-desktop { display: none !important; }
+        .buku-kas-card-grid { display: flex !important; }
+        
+        .main-content-box {
+            padding: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .action-bar {
+            padding: 10px 16px !important;
+            margin-bottom: 0px !important;
+            border-radius: 16px !important;
+        }
+        .tab-navigation {
+            margin-bottom: 12px !important;
+        }
+        .buku-kas-card-grid {
+            margin-top: 0 !important;
+        }
+        
+        /* New Mobile Action Bar */
+        .bk-action-bar-mobile {
+            flex-wrap: wrap !important;
+            width: 100% !important;
+            gap: 8px !important;
+        }
+        .bk-search-mobile {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+        .bk-action-bar-mobile .dropdown {
+            width: auto !important;
+        }
+        .bk-action-bar-mobile .btn-filter, .mobile-top-btn {
+            border-radius: 50% !important;
+            width: 44px !important;
+            height: 44px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0, 0.05) !important;
+        }
+        .bk-action-bar-mobile .btn-filter {
+            border: 2px solid #60a5fa !important;
+            color: #60a5fa !important;
+            background: white !important;
+        }
+        .bk-action-bar-mobile .btn-filter iconify-icon {
+            font-size: 22px !important;
+        }
+        .bk-action-bar-mobile .btn-filter:hover, .bk-action-bar-mobile .btn-filter.active, .bk-action-bar-mobile .btn-filter iconify-icon.text-primary-blue {
+            background: #eff6ff !important;
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        .bk-action-bar-mobile .btn-action {
+            display: none !important;
+        }
+        
+        /* Mobile-only Top Bar Buttons */
+        .mobile-top-btn {
+            border: none !important;
+            color: white !important;
+            cursor: pointer;
+        }
+        .mobile-top-btn.btn-excel {
+            background: #10b981 !important;
+            font-size: 20px !important;
+        }
+        .mobile-top-btn.btn-add {
+            background: #3b82f6 !important;
+            font-size: 24px !important;
+        }
+    }
+    
+    .mobile-top-btn { display: none; }
 </style>
 @endpush
 
@@ -44,9 +126,9 @@
     @include('buku_kas.partials.tabs')
 
     {{-- ACTION BAR --}}
-    <div class="action-bar mobile-action-bar">
-        <div class="left-actions-group mobile-action-bar" style="width: 100%;">
-            <div class="search-wrapper mobile-search-shrink">
+    <div class="action-bar" style="flex-wrap: wrap;">
+        <div class="left-actions-group bk-action-bar-mobile" style="width: 100%;">
+            <div class="search-wrapper bk-search-mobile">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="globalSearch" class="search-input" placeholder="Cari data..." onkeyup="filterTable()">
                 </div>
@@ -120,9 +202,16 @@
                     <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
                     <span id="btnAddText">Tambah Data</span>
                 </button>
+
+                {{-- Mobile-only Action Buttons --}}
+                <button type="button" class="mobile-top-btn btn-excel" onclick="openExportModal('excel')" title="Extract Excel">
+                    <iconify-icon icon="vscode-icons:file-type-excel"></iconify-icon>
+                </button>
+                <button type="button" class="mobile-top-btn btn-add" onclick="handleMainAdd()" title="Tambah Data">
+                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                </button>
             </div>
         </div>
-    </div>
 
     {{-- SECTION PENGELUARAN --}}
     <div id="view-pengeluaran" class="view-section {{ $active_tab === 'pengeluaran' ? 'active' : '' }}">
@@ -175,6 +264,7 @@
                     </tbody>
                 </table>
             </div>
+            
         </div>
     </div>
 
@@ -229,13 +319,14 @@
                     </tbody>
                 </table>
             </div>
+            
         </div>
     </div>
 
     {{-- SECTION HUTANG --}}
     <div id="view-hutang" class="view-section {{ $active_tab === 'hutang' ? 'active' : '' }}">
         <div class="main-content-box mobile-pb">
-            <div class="table-container">
+            <div class="table-container bk-table-desktop">
                 <table class="fitur-table">
                     <thead><tr><th>SUPPLIER</th><th>TOTAL HUTANG</th><th>SISA TAGIHAN</th><th>STATUS</th><th>JATUH TEMPO</th><th>AKSI</th></tr></thead>
                     <tbody>
@@ -284,13 +375,47 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- MOBILE CARDS HUTANG --}}
+            <div class="buku-kas-card-grid" style="display: none; flex-direction: column; gap: 12px; margin-top: 8px;">
+                @forelse($hutang as $h)
+                @php
+                    $debtData = ['uuid' => $h->uuid, 'tipe' => $h->tipe, 'nominal' => $h->nominal, 'sisa' => $h->sisa, 'jatuh_tempo' => $h->jatuh_tempo, 'transaction_id' => $h->transaction_id ?? null, 'payment_order_id' => $h->payment_order_id ?? null];
+                    $contactData = ['nama' => $h->contact->nama ?? null];
+                    $detailsData = $h->detailDebts ? $h->detailDebts->map(function($d) { return ['bayar' => $d->bayar, 'tanggal' => $d->tanggal, 'sisa' => $d->sisa, 'payment_method' => ['nama_metode' => $d->paymentMethod->nama_metode ?? null]]; })->toArray() : [];
+                    $debtJson = json_encode($debtData); $contactJson = json_encode($contactData); $detailsJson = json_encode($detailsData);
+                @endphp
+                <div class="buku-kas-card" style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px; color: #1e293b; margin-bottom: 4px;">{{ $h->contact->nama ?? '-' }}</div>
+                            <div style="font-size: 12px; color: #64748b;">Jatuh Tempo: {{ \Carbon\Carbon::parse($h->jatuh_tempo)->format('d/m/Y') }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #64748b;">Sisa Tagihan</div>
+                            <div style="font-weight: 700; color: var(--primary-blue);">Rp {{ number_format($h->sisa, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 8px;">
+                        <span class="status-badge {{ $h->sisa <= 0 ? 'status-lunas' : 'status-belum' }}">{{ $h->sisa <= 0 ? 'Lunas' : 'Belum Lunas' }}</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" data-details="{{ $detailsJson }}" onclick="viewDebtDetail(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact), JSON.parse(this.dataset.details))"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" onclick="openEditDebt(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact))"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $h->uuid }}', 'Hutang')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="empty-state" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 13px;">Belum ada data hutang supplier.</div>
+                @endforelse
+            </div>
         </div>
     </div>
 
     {{-- SECTION PIUTANG --}}
     <div id="view-piutang" class="view-section {{ $active_tab === 'piutang' ? 'active' : '' }}">
         <div class="main-content-box mobile-pb">
-            <div class="table-container">
+            <div class="table-container bk-table-desktop">
                 <table class="fitur-table">
                     <thead><tr><th>CUSTOMER</th><th>TOTAL PIUTANG</th><th>SISA TAGIHAN</th><th>STATUS</th><th>JATUH TEMPO</th><th>AKSI</th></tr></thead>
                     <tbody>
@@ -338,6 +463,40 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            {{-- MOBILE CARDS PIUTANG --}}
+            <div class="buku-kas-card-grid" style="display: none; flex-direction: column; gap: 12px; margin-top: 8px;">
+                @forelse($piutang as $p)
+                @php
+                    $debtData = ['uuid' => $p->uuid, 'tipe' => $p->tipe, 'nominal' => $p->nominal, 'sisa' => $p->sisa, 'jatuh_tempo' => $p->jatuh_tempo, 'transaction_id' => $p->transaction_id ?? null, 'payment_order_id' => $p->payment_order_id ?? null];
+                    $contactData = ['nama' => $p->contact->nama ?? null];
+                    $detailsData = $p->detailDebts ? $p->detailDebts->map(function($d) { return ['bayar' => $d->bayar, 'tanggal' => $d->tanggal, 'sisa' => $d->sisa, 'payment_method' => ['nama_metode' => $d->paymentMethod->nama_metode ?? null]]; })->toArray() : [];
+                    $debtJson = json_encode($debtData); $contactJson = json_encode($contactData); $detailsJson = json_encode($detailsData);
+                @endphp
+                <div class="buku-kas-card" style="background: white; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px; color: #1e293b; margin-bottom: 4px;">{{ $p->contact->nama ?? '-' }}</div>
+                            <div style="font-size: 12px; color: #64748b;">Jatuh Tempo: {{ \Carbon\Carbon::parse($p->jatuh_tempo)->format('d/m/Y') }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #64748b;">Sisa Tagihan</div>
+                            <div style="font-weight: 700; color: var(--primary-blue);">Rp {{ number_format($p->sisa, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px; margin-top: 8px;">
+                        <span class="status-badge {{ $p->sisa <= 0 ? 'status-lunas' : 'status-belum' }}">{{ $p->sisa <= 0 ? 'Lunas' : 'Belum Lunas' }}</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" data-details="{{ $detailsJson }}" onclick="viewDebtDetail(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact), JSON.parse(this.dataset.details))"><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" data-debt="{{ $debtJson }}" data-contact="{{ $contactJson }}" onclick="openEditDebt(JSON.parse(this.dataset.debt), JSON.parse(this.dataset.contact))"><iconify-icon icon="solar:pen-bold-duotone"></iconify-icon></button>
+                            <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteDebt('{{ $p->uuid }}', 'Piutang')"><iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon></button>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="empty-state" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 13px;">Belum ada data piutang customer.</div>
+                @endforelse
             </div>
         </div>
     </div>

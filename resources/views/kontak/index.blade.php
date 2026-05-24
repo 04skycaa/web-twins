@@ -12,14 +12,119 @@
     animation: spin 1s linear infinite;
     display: inline-block;
 }
+@media (max-width: 768px) {
+    .quick-stats-wrapper {
+        display: flex !important;
+        gap: 10px !important;
+    }
+    .quick-stats-wrapper > div {
+        min-width: 0 !important;
+        flex: 1;
+        padding: 12px 8px !important;
+        gap: 8px !important;
+        flex-direction: column;
+        align-items: center !important;
+        text-align: center;
+        border-radius: 12px !important;
+    }
+    .quick-stats-wrapper > div > div:first-child {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 8px !important;
+    }
+    .quick-stats-wrapper > div > div:first-child iconify-icon {
+        font-size: 20px !important;
+    }
+    .quick-stats-wrapper > div > div:last-child > div:nth-child(1) {
+        font-size: 9px !important;
+        letter-spacing: 0 !important;
+        white-space: normal !important;
+        line-height: 1.2;
+        margin-bottom: 4px;
+    }
+    .quick-stats-wrapper > div > div:last-child > div:nth-child(2) {
+        font-size: 14px !important;
+    }
+    .quick-stats-wrapper > div > div:last-child > div:nth-child(2) span {
+        display: none !important; /* Hide "Orang" / "Pelanggan" on mobile to save space */
+    }
+    .quick-stats-wrapper > div:nth-child(3) > div:last-child > div:nth-child(3) {
+        font-size: 9px !important;
+    }
+    .left-actions-group.mobile-action-bar {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+    .action-bar .search-wrapper.mobile-search-shrink {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        width: auto !important;
+    }
+    .action-bar .search-wrapper .search-input {
+        width: 100% !important;
+    }
+    .action-bar .left-actions-group .dropdown {
+        width: 42px !important;
+        height: 42px !important;
+        flex: 0 0 42px !important;
+        min-width: 42px !important;
+    }
+    .action-bar .btn-filter span, .action-bar button[onclick="openAddModal()"] span {
+        display: none !important;
+    }
+    .action-bar .left-actions-group .btn-filter, .action-bar .left-actions-group button[onclick="openAddModal()"] {
+        padding: 0 !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-width: 42px !important;
+        width: 42px !important;
+        flex: 0 0 42px !important;
+        height: 42px !important;
+        border-radius: 50% !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        display: flex !important;
+    }
+    .action-bar .btn-filter iconify-icon, .action-bar button[onclick="openAddModal()"] iconify-icon {
+        font-size: 20px !important;
+        margin: 0 !important;
+    }
+    .action-bar .search-input {
+        height: 42px !important;
+    }
+}
 </style>
 
 <div class="fitur-container">
     @if(session('success'))
-    <div class="alert alert-success" style="margin-bottom: 20px; padding: 12px 15px; border-radius: 12px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 13px;">
-        <iconify-icon icon="solar:check-circle-bold-duotone" style="vertical-align: middle; margin-right: 5px;"></iconify-icon>
-        {{ session('success') }}
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                confirmButtonColor: '#22c55e',
+                timer: 3000,
+                timerProgressBar: true
+            });
+        });
+    </script>
+    @endif
+
+    @if(session('error'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops... Gagal!',
+                text: "{{ session('error') }}",
+                confirmButtonColor: '#ef4444'
+            });
+        });
+    </script>
     @endif
 
 
@@ -37,7 +142,7 @@
     </div>
 
     {{-- QUICK STATS --}}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="quick-stats-wrapper" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
         <div style="background: white; padding: 20px; border-radius: 20px; border: 2px solid var(--border-blue); display: flex; align-items: center; gap: 15px; transition: transform 0.3s; cursor: default;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
             <div style="width: 50px; height: 50px; border-radius: 12px; background: var(--light-blue); display: flex; align-items: center; justify-content: center; color: var(--primary-blue);">
                 <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 30px;"></iconify-icon>
@@ -173,10 +278,10 @@
                                     <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($p)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit">
                                         <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
-                                    <form action="{{ route('kontak.destroy', $p->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
+                                    <form action="{{ route('kontak.destroy', $p->uuid) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
+                                        <button type="button" onclick="confirmDelete(this.closest('form'))" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                         </button>
                                     </form>
@@ -231,13 +336,13 @@
                                     <button type="button" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: var(--primary-blue); border-color: var(--border-blue);" data-item='@json($s)' onclick="openEditModal(JSON.parse(this.dataset.item))" title="Edit">
                                         <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
                                     </button>
-                                    <form action="{{ route('kontak.destroy', $s->uuid) }}" method="POST" style="display: inline;" onsubmit="return confirm('Hapus kontak ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
-                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                        </button>
-                                    </form>
+                                     <form action="{{ route('kontak.destroy', $s->uuid) }}" method="POST" style="display: inline;">
+                                         @csrf
+                                         @method('DELETE')
+                                         <button type="button" onclick="confirmDelete(this.closest('form'))" class="btn-filter" style="width: 36px; height: 36px; border-radius: 10px; color: #ef4444; border-color: #ffcccc;" title="Hapus">
+                                             <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                         </button>
+                                     </form>
                                 </div>
                             </td>
                         </tr>
@@ -320,10 +425,10 @@
                     </select>
                     <small style="color: var(--text-muted); font-size: 11px;">Pilih akun jika kontak ini memiliki akun di aplikasi untuk menghitung total transaksi.</small>
                 </div>
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('addModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Simpan Kontak</button>
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('addModal')">Batal</button>
+                    <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Simpan Kontak</button>
+                </div>
             </div>
         </form>
     </div>
@@ -357,10 +462,10 @@
                         @endforeach
                     </select>
                 </div>
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 10px;">
-                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('editModal')">Batal</button>
-                <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Update Kontak</button>
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('editModal')">Batal</button>
+                    <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Update Kontak</button>
+                </div>
             </div>
         </form>
     </div>
@@ -823,6 +928,31 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire('Coming Soon!', 'Fitur bulk delete sedang disiapkan.', 'info');
+            }
+        });
+    }
+
+    function confirmDelete(form) {
+        Swal.fire({
+            title: 'Hapus Kontak?',
+            text: "Data yang dihapus tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses Hapus...',
+                    text: 'Harap tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                form.submit();
             }
         });
     }

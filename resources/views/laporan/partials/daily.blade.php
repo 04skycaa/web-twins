@@ -14,41 +14,50 @@
             </div>
         </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <article
-            class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-xl shadow-blue-200">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="p-3 bg-white/20 rounded-2xl">
-                    <iconify-icon icon="solar:money-bag-bold" class="text-2xl"></iconify-icon>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <!-- Card Total Omset -->
+        <div class="stat-card col-span-2 md:col-span-1" style="background: #f0f7ff;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #eff6ff; color: #3b82f6;">
+                    <iconify-icon icon="solar:money-bag-bold"></iconify-icon>
                 </div>
-                <h2 class="text-blue-100 font-medium">Total Omset Hari Ini</h2>
+                <div class="stat-label">Total Omset</div>
             </div>
-            <p class="text-4xl font-bold tracking-tight" id="omset-value" aria-label="Nominal Omset">
-                Rp
-                0</p>
-            <div class="mt-6 pt-6 border-t border-white/10 flex justify-between items-center text-sm text-blue-100">
-                <span>Laba Kotor</span>
-                <span class="font-bold" id="laba-kotor-value">Rp 0</span>
+            <div class="stat-value" id="omset-value" style="color: #0f172a;">Rp 0</div>
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(59, 130, 246, 0.2); padding-top: 10px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span style="color: #64748b; font-size: 0.75rem; font-weight: 600;">Laba Kotor</span>
+                <span id="laba-kotor-value" style="font-weight: 800; color: #10b981; font-size: 0.85rem;">Rp 0</span>
             </div>
-        </article>
+        </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <article
-                class="bg-emerald-500 rounded-[1.75rem] p-6 text-white shadow-lg shadow-emerald-100/60 border border-white/10">
-                <p class="text-xs text-emerald-100/90 font-medium mb-1 uppercase tracking-[0.18em]">Pemasukan</p>
-                <p class="text-2xl font-bold" id="pemasukan-value">Rp 0</p>
-                <div class="mt-4 flex justify-end">
-                    <iconify-icon icon="solar:wad-of-money-bold" class="text-4xl opacity-25"></iconify-icon>
+        <!-- Card Pemasukan -->
+        <div class="stat-card col-span-1" style="background: #f0fdf4;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #dcfce7; color: #10b981;">
+                    <iconify-icon icon="solar:wad-of-money-bold"></iconify-icon>
                 </div>
-            </article>
-            <article
-                class="bg-amber-500 rounded-[1.75rem] p-6 text-white shadow-lg shadow-amber-100/60 border border-white/10">
-                <p class="text-xs text-amber-100/90 font-medium mb-1 uppercase tracking-[0.18em]">Pengeluaran</p>
-                <p class="text-2xl font-bold" id="pengeluaran-value">Rp 0</p>
-                <div class="mt-4 flex justify-end">
-                    <iconify-icon icon="solar:card-transfer-bold" class="text-4xl opacity-25"></iconify-icon>
+                <div class="stat-label">Pemasukan</div>
+            </div>
+            <div class="stat-value" id="pemasukan-value" style="color: #0f172a;">Rp 0</div>
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(16, 185, 129, 0.2); padding-top: 10px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span style="color: #64748b; font-size: 0.75rem; font-weight: 600;">Status</span>
+                <span style="font-weight: 800; color: #10b981; font-size: 0.85rem;">Masuk</span>
+            </div>
+        </div>
+
+        <!-- Card Pengeluaran -->
+        <div class="stat-card col-span-1" style="background: #fffaf0;">
+            <div class="stat-header">
+                <div class="icon-box" style="background: #ffedd5; color: #f97316;">
+                    <iconify-icon icon="solar:card-transfer-bold"></iconify-icon>
                 </div>
-            </article>
+                <div class="stat-label">Pengeluaran</div>
+            </div>
+            <div class="stat-value" id="pengeluaran-value" style="color: #0f172a;">Rp 0</div>
+            <div style="margin-top: 15px; border-top: 1px dashed rgba(249, 115, 22, 0.2); padding-top: 10px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span style="color: #64748b; font-size: 0.75rem; font-weight: 600;">Status</span>
+                <span style="font-weight: 800; color: #f97316; font-size: 0.85rem;">Keluar</span>
+            </div>
         </div>
     </div>
 
