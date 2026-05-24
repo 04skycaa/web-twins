@@ -85,12 +85,12 @@ class KontakController extends Controller
             $query->with(['user']);
         }
         
-        $pelanggan = $query->orderBy($sortBy, $order)->get();
+        $pelanggan = $query->orderBy($sortBy, $order)->paginate(10, ['*'], 'pelanggan_page');
         $supplier = Contact::where('tipe', 'supplier');
         if (Schema::hasColumn('contacts', 'user_id')) {
             $supplier->with(['user']);
         }
-        $supplier = $supplier->orderBy($sortBy, $order)->get();
+        $supplier = $supplier->orderBy($sortBy, $order)->paginate(10, ['*'], 'supplier_page');
         $users = \App\Models\User::orderBy('username')->get();
         
         // Removed heavy all orders query (unused in view index)
@@ -108,7 +108,7 @@ class KontakController extends Controller
         return view('kontak.index', compact('pelanggan', 'supplier', 'orders', 'sort', 'users', 'totalPelanggan', 'aktifBulanIni', 'topSpender', 'hasPelanggan', 'hasSupplier', 'sub_menus', 'active_tab'));
     }
 
-    public function getTransactions($id)
+    public function getTransactions(Request $request, $id)
     {
         $contact = Contact::findOrFail($id);
         $hasUserId = Schema::hasColumn('contacts', 'user_id');
@@ -124,7 +124,7 @@ class KontakController extends Controller
                 ->orWhereRaw('LOWER(TRIM(recipient_name)) = LOWER(TRIM(?))', [$contact->nama]);
         });
 
-        $orders = $query->orderBy('created_at', 'desc')->get();
+        $orders = $query->orderBy('created_at', 'desc')->paginate(5);
 
         return response()->json($orders);
     }

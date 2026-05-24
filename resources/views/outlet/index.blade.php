@@ -705,7 +705,9 @@
                 return res.json();
             }
 
+            let isKinerjaLoaded = false;
             async function loadKinerjaDashboard() {
+                isKinerjaLoaded = true;
                 // Skeleton UI toggle
                 document.querySelectorAll('.k-val').forEach(el => el.innerHTML = '<div class="skeleton-text"></div>');
                 document.getElementById('k_sum_trx').innerHTML = '<div class="skeleton-text"></div>';
@@ -842,11 +844,13 @@
 
             // Run when tab activated
             function initKinerjaTab() {
-                loadKinerjaDashboard();
+                if (!isKinerjaLoaded) {
+                    loadKinerjaDashboard();
+                }
             }
             
             document.addEventListener('DOMContentLoaded', () => {
-                if ('{{ $active_tab }}' === 'kinerja') initKinerjaTab();
+                initKinerjaTab();
             });
         </script>
     </div>
@@ -1160,19 +1164,11 @@
         if(viewObj) viewObj.style.display = 'block';
 
         // Trigger kinerja data load when switching to kinerja tab
-        if (tabId === 'kinerja' && typeof loadKinerjaDashboard === 'function') {
-            setTimeout(() => loadKinerjaDashboard(), 100);
+        if (tabId === 'kinerja' && typeof initKinerjaTab === 'function') {
+            initKinerjaTab();
         }
 
-        // Trigger stock load when switching to riwayat tab
-        if (tabId === 'riwayat') {
-            const tableBody = document.getElementById('stock-history-table-body');
-            if (tableBody && tableBody.querySelectorAll('.stock-row').length === 0) {
-                setTimeout(() => {
-                    if (typeof applyStockFilters === 'function') applyStockFilters();
-                }, 100);
-            }
-        }
+        // Trigger stock load when switching to riwayat tab (removed because now it is preloaded)
 
         // Update URL without reload
         const url = new URL(window.location);
@@ -1485,9 +1481,7 @@
     });
 
     // Initial kinerja data load if starting on kinerja tab
-    if ('{{ $active_tab }}' === 'kinerja') {
-        if (typeof loadKinerjaDashboard === 'function') loadKinerjaDashboard();
-    }
+    // Removed because we already call it on DOMContentLoaded above
 
     // Initial data outlet load
     document.addEventListener('DOMContentLoaded', () => {

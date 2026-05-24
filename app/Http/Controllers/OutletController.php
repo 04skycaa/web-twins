@@ -187,37 +187,33 @@ class OutletController extends Controller
             $top3All = $cachedData['top3All'] ?? [];
         }
 
-        // Tab Isolation: Only query stock history if 'riwayat' tab or AJAX filtering is active
-        $stockHistory = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+        // Tab Isolation: Removed so it loads instantly for all tabs
+        $stockHistoryQuery = \App\Models\StockCard::with(['product', 'store'])
+            ->orderBy('created_at', 'desc');
 
-        if ($activeTab === 'riwayat' || $request->ajax()) {
-            $stockHistoryQuery = \App\Models\StockCard::with(['product', 'store'])
-                ->orderBy('created_at', 'desc');
-
-            if ($request->has('search') && $request->search != '') {
-                $search = strtolower($request->search);
-                $stockHistoryQuery->where(function($q) use ($search) {
-                    $q->whereHas('product', function($sq) use ($search) {
-                        $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"])
-                           ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
-                    })->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"]);
-                });
-            }
-
-            if ($request->has('store_id') && $request->store_id != 'all' && $request->store_id != '') {
-                $stockHistoryQuery->where('store_id', $request->store_id);
-            }
-
-            if ($request->has('start_date') && $request->start_date != '') {
-                $stockHistoryQuery->whereDate('created_at', '>=', $request->start_date);
-            }
-
-            if ($request->has('end_date') && $request->end_date != '') {
-                $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
-            }
-
-            $stockHistory = $stockHistoryQuery->paginate(10)->withQueryString();
+        if ($request->has('search') && $request->search != '') {
+            $search = strtolower($request->search);
+            $stockHistoryQuery->where(function($q) use ($search) {
+                $q->whereHas('product', function($sq) use ($search) {
+                    $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"])
+                       ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
+                })->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"]);
+            });
         }
+
+        if ($request->has('store_id') && $request->store_id != 'all' && $request->store_id != '') {
+            $stockHistoryQuery->where('store_id', $request->store_id);
+        }
+
+        if ($request->has('start_date') && $request->start_date != '') {
+            $stockHistoryQuery->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date') && $request->end_date != '') {
+            $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $stockHistory = $stockHistoryQuery->paginate(10)->withQueryString();
 
         if ($request->ajax()) {
             return view('outlet.index', [

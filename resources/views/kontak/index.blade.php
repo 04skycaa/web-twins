@@ -22,11 +22,7 @@
     </div>
     @endif
 
-    {{-- HEADER --}}
-    <div class="header-section" style="margin-bottom: 20px;">
-    </div>
 
-    </div>
 
     {{-- TABS --}}
     <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-start pb-2">
@@ -104,7 +100,7 @@
             <iconify-icon icon="solar:info-circle-bold-duotone" style="color: #ef4444; font-size: 24px;"></iconify-icon>
             <span style="font-weight: 600; color: #b91c1c;"><span id="selected-count">0</span> Kontak Terpilih</span>
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%; @media (min-width: 768px) { width: auto; }">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; width: 100%;">
             <button onclick="openBroadcastModal()" class="btn-action" style="padding: 8px 16px; font-size: 13px; background: #22c55e; color: white; border: none; flex: 1; justify-content: center; min-width: max-content;">
                 <iconify-icon icon="solar:whatsapp-bold-duotone"></iconify-icon>
                 Siaran WA
@@ -195,6 +191,12 @@
                     </tbody>
                 </table>
             </div>
+            
+            @if($pelanggan instanceof \Illuminate\Pagination\LengthAwarePaginator && $pelanggan->hasPages())
+                <div style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                    {{ $pelanggan->appends(request()->except('pelanggan_page'))->links('vendor.pagination.twins') }}
+                </div>
+            @endif
         </div>
     </div>
 
@@ -247,10 +249,16 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($supplier instanceof \Illuminate\Pagination\LengthAwarePaginator && $supplier->hasPages())
+                <div style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                    {{ $supplier->appends(request()->except('supplier_page'))->links('vendor.pagination.twins') }}
+                </div>
+            @endif
         </div>
 
     </div>
-</div>
+
 
     {{-- MODAL BROADCAST --}}
     <div id="modalBroadcast" class="modal-overlay">
@@ -400,6 +408,7 @@
                 <div id="transaction_list" style="display: flex; flex-direction: column; gap: 12px;">
                     <!-- Transaksi akan muncul di sini -->
                 </div>
+                <div id="transaction_pagination" class="k-pagination" style="margin-top: 15px;"></div>
             </div>
 
             <div style="margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -521,140 +530,210 @@
 
         if (data.tipe === 'customer') {
             transactionSection.style.display = 'block';
-            countBadge.innerText = 'Loading...';
-            transactionList.innerHTML = `
-                <div style="text-align: center; padding: 30px;">
-                    <iconify-icon icon="solar:spinner-bold-duotone" class="spin" style="font-size: 32px; color: var(--primary-blue);"></iconify-icon>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px; font-weight: 600;">Memuat riwayat transaksi...</div>
-                </div>
-            `;
-
-            fetch(`/kontak/${data.uuid}/transactions`)
-                .then(res => res.json())
-                .then(orders => {
-                    countBadge.innerText = orders.length + ' Pesanan';
-                    transactionList.innerHTML = '';
-                    if (orders && orders.length > 0) {
-                        orders.forEach(order => {
-                            const accordionItem = document.createElement('div');
-                            accordionItem.style.cssText = 'background: white; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);';
-                            
-                            const statusColor = {
-                                'pending': '#f59e0b',
-                                'success': '#10b981',
-                                'paid': '#10b981',
-                                'settlement': '#10b981',
-                                'failed': '#ef4444',
-                                'expired': '#6b7280'
-                            }[order.payment_status] || '#6b7280';
-
-                            const orderDate = new Date(order.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
-
-                            accordionItem.innerHTML = `
-                                <div class="order-header" onclick="toggleOrderDetails(this)" style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="arrow-icon" style="color: #94a3b8; transition: transform 0.3s;"></iconify-icon>
-                                        <div>
-                                            <div style="font-weight: 800; color: var(--primary-blue); font-size: 13px;">#${order.order_code}</div>
-                                            <div style="font-size: 10px; color: var(--text-muted);">${orderDate}</div>
-                                        </div>
-                                    </div>
-                                    <span style="font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 50px; background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30; text-transform: uppercase;">
-                                        ${order.payment_status}
-                                    </span>
-                                </div>
-                                <div class="order-details" style="display: none; padding: 0 15px 15px; border-top: 1px dashed #f1f5f9; animation: slideDown 0.3s ease;">
-                                    <div style="padding-top: 15px;">
-                                        <div style="background: #f8fafc; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
-                                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                                                <div style="display: flex; align-items: center; gap: 6px;">
-                                                    <iconify-icon icon="solar:user-bold-duotone" style="color: var(--primary-blue); font-size: 14px;"></iconify-icon>
-                                                    <span style="font-size: 12px; font-weight: 700; color: var(--text-dark);">${order.recipient_name}</span>
-                                                </div>
-                                                <div style="font-size: 11px; font-weight: 700; color: var(--primary-blue); display: flex; align-items: center; gap: 4px;">
-                                                    <iconify-icon icon="solar:phone-bold-duotone" style="font-size: 12px;"></iconify-icon>
-                                                    ${order.recipient_phone}
-                                                </div>
-                                            </div>
-                                            <div style="display: flex; align-items: start; gap: 6px;">
-                                                <iconify-icon icon="solar:map-point-bold-duotone" style="color: var(--primary-blue); font-size: 14px; flex-shrink: 0;"></iconify-icon>
-                                                <div style="font-size: 10px; color: var(--text-muted); line-height: 1.4;">
-                                                    ${order.delivery_address}
-                                                    <div style="color: var(--primary-blue); font-weight: 700; margin-top: 2px;">Jarak: ${order.delivery_distance_km} KM</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-                                            <div onclick="toggleProductList('${order.order_code}')" style="background: #fdf2f2; padding: 6px 10px; border-radius: 8px; border: 1px solid #fee2e2; cursor: pointer; transition: all 0.2s; position: relative;" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='#fee2e2'">
-                                                <div style="font-size: 8px; color: #991b1b; text-transform: uppercase; font-weight: 800;">Items (Klik Detail)</div>
-                                                <div style="font-size: 12px; font-weight: 800; color: #991b1b; display: flex; justify-content: space-between; align-items: center;">
-                                                    <span>${order.items ? order.items.length : 0} Produk</span>
-                                                    <iconify-icon icon="solar:alt-arrow-down-bold-duotone" style="font-size: 14px;"></iconify-icon>
-                                                </div>
-                                            </div>
-                                            <div style="background: #f0fdf4; padding: 6px 10px; border-radius: 8px; border: 1px solid #dcfce7;">
-                                                <div style="font-size: 8px; color: #166534; text-transform: uppercase; font-weight: 800;">Total</div>
-                                                <div style="font-size: 12px; font-weight: 800; color: #166534;">Rp ${new Number(order.total_amount).toLocaleString('id-ID')}</div>
-                                            </div>
-                                        </div>
-
-                                        <div id="product_list_${order.order_code}" style="display: none; margin-bottom: 12px; animation: slideDown 0.3s ease;">
-                                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                                ${(order.items || []).map(item => {
-                                                    const imageUrl = item.product && item.product.resolved_image_url ? item.product.resolved_image_url : '/images/placeholder-product.png';
-                                                    return `
-                                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; border: 1px solid #f1f5f9; border-radius: 10px;">
-                                                        <div style="display: flex; gap: 10px; align-items: center;">
-                                                            <div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
-                                                                <img src="${imageUrl}" onerror="this.src='/images/placeholder-product.png'" style="width: 100%; height: 100%; object-fit: cover;">
-                                                            </div>
-                                                            <div>
-                                                                <div style="font-size: 11px; font-weight: 700; color: var(--text-dark);">${item.product_name}</div>
-                                                                <div style="font-size: 10px; color: var(--text-muted);">Rp ${new Number(item.unit_price).toLocaleString('id-ID')} x ${item.quantity}</div>
-                                                            </div>
-                                                        </div>
-                                                        <div style="font-size: 11px; font-weight: 800; color: var(--primary-blue);">
-                                                            Rp ${new Number(item.subtotal).toLocaleString('id-ID')}
-                                                        </div>
-                                                    </div>
-                                                `}).join('')}
-                                            </div>
-                                        </div>
-
-                                        <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
-                                            <span>Ongkir: Rp ${new Number(order.shipping_fee).toLocaleString('id-ID')}</span>
-                                            <span style="color: #ef4444; font-weight: 700;">Diskon: ${order.discount_percent * 100}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            transactionList.appendChild(accordionItem);
-                        });
-                    } else {
-                        transactionList.innerHTML = `
-                            <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border-radius: 20px; border: 2px dashed #e2e8f0;">
-                                <iconify-icon icon="solar:box-minimalistic-broken" style="font-size: 48px; color: #cbd5e1; margin-bottom: 10px;"></iconify-icon>
-                                <div style="color: #94a3b8; font-size: 13px; font-weight: 600;">Belum ada riwayat transaksi</div>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    countBadge.innerText = 'Gagal';
-                    transactionList.innerHTML = `
-                        <div style="text-align: center; padding: 20px; color: #ef4444;">
-                            <iconify-icon icon="solar:danger-bold-duotone" style="font-size: 32px;"></iconify-icon>
-                            <div style="font-size: 12px; margin-top: 5px; font-weight: 600;">Gagal memuat transaksi</div>
-                        </div>
-                    `;
-                });
+            loadTransactions(data.uuid, 1);
         } else {
             transactionSection.style.display = 'none';
         }
 
         openModal('viewModal');
+    }
+
+    function loadTransactions(uuid, page) {
+        const transactionList = document.getElementById('transaction_list');
+        const countBadge = document.getElementById('transaction_count_badge');
+        const paginationContainer = document.getElementById('transaction_pagination');
+        
+        countBadge.innerText = 'Loading...';
+        transactionList.innerHTML = `
+            <div style="text-align: center; padding: 30px;">
+                <iconify-icon icon="solar:spinner-bold-duotone" class="spin" style="font-size: 32px; color: var(--primary-blue);"></iconify-icon>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px; font-weight: 600;">Memuat riwayat transaksi...</div>
+            </div>
+        `;
+        paginationContainer.innerHTML = '';
+
+        fetch(`/kontak/${uuid}/transactions?page=${page}`)
+            .then(res => res.json())
+            .then(data => {
+                const orders = data.data; // laravel paginator
+                countBadge.innerText = data.total + ' Pesanan';
+                transactionList.innerHTML = '';
+                
+                if (orders && orders.length > 0) {
+                    orders.forEach(order => {
+                        const accordionItem = document.createElement('div');
+                        accordionItem.style.cssText = 'background: white; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);';
+                        
+                        const statusColor = {
+                            'pending': '#f59e0b',
+                            'success': '#10b981',
+                            'paid': '#10b981',
+                            'settlement': '#10b981',
+                            'failed': '#ef4444',
+                            'expired': '#6b7280'
+                        }[order.payment_status] || '#6b7280';
+
+                        const orderDate = new Date(order.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
+
+                        accordionItem.innerHTML = `
+                            <div class="order-header" onclick="toggleOrderDetails(this)" style="padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="arrow-icon" style="color: #94a3b8; transition: transform 0.3s;"></iconify-icon>
+                                    <div>
+                                        <div style="font-weight: 800; color: var(--primary-blue); font-size: 13px;">#${order.order_code}</div>
+                                        <div style="font-size: 10px; color: var(--text-muted);">${orderDate}</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 50px; background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}30; text-transform: uppercase;">
+                                    ${order.payment_status}
+                                </span>
+                            </div>
+                            <div class="order-details" style="display: none; padding: 0 15px 15px; border-top: 1px dashed #f1f5f9; animation: slideDown 0.3s ease;">
+                                <div style="padding-top: 15px;">
+                                    <div style="background: #f8fafc; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                            <div style="display: flex; align-items: center; gap: 6px;">
+                                                <iconify-icon icon="solar:user-bold-duotone" style="color: var(--primary-blue); font-size: 14px;"></iconify-icon>
+                                                <span style="font-size: 12px; font-weight: 700; color: var(--text-dark);">${order.recipient_name}</span>
+                                            </div>
+                                            <div style="font-size: 11px; font-weight: 700; color: var(--primary-blue); display: flex; align-items: center; gap: 4px;">
+                                                <iconify-icon icon="solar:phone-bold-duotone" style="font-size: 12px;"></iconify-icon>
+                                                ${order.recipient_phone}
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; align-items: start; gap: 6px;">
+                                            <iconify-icon icon="solar:map-point-bold-duotone" style="color: var(--primary-blue); font-size: 14px; flex-shrink: 0;"></iconify-icon>
+                                            <div style="font-size: 10px; color: var(--text-muted); line-height: 1.4;">
+                                                ${order.delivery_address}
+                                                <div style="color: var(--primary-blue); font-weight: 700; margin-top: 2px;">Jarak: ${order.delivery_distance_km} KM</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                                        <div onclick="toggleProductList('${order.order_code}')" style="background: #fdf2f2; padding: 6px 10px; border-radius: 8px; border: 1px solid #fee2e2; cursor: pointer; transition: all 0.2s; position: relative;" onmouseover="this.style.borderColor='#ef4444'" onmouseout="this.style.borderColor='#fee2e2'">
+                                            <div style="font-size: 8px; color: #991b1b; text-transform: uppercase; font-weight: 800;">Items (Klik Detail)</div>
+                                            <div style="font-size: 12px; font-weight: 800; color: #991b1b; display: flex; justify-content: space-between; align-items: center;">
+                                                <span>${order.items ? order.items.length : 0} Produk</span>
+                                                <iconify-icon icon="solar:alt-arrow-down-bold-duotone" style="font-size: 14px;"></iconify-icon>
+                                            </div>
+                                        </div>
+                                        <div style="background: #f0fdf4; padding: 6px 10px; border-radius: 8px; border: 1px solid #dcfce7;">
+                                            <div style="font-size: 8px; color: #166534; text-transform: uppercase; font-weight: 800;">Total</div>
+                                            <div style="font-size: 12px; font-weight: 800; color: #166534;">Rp ${new Number(order.total_amount).toLocaleString('id-ID')}</div>
+                                        </div>
+                                    </div>
+
+                                    <div id="product_list_${order.order_code}" style="display: none; margin-bottom: 12px; animation: slideDown 0.3s ease;">
+                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                            ${(order.items || []).map(item => {
+                                                const imageUrl = item.product && item.product.resolved_image_url ? item.product.resolved_image_url : '/images/placeholder-product.png';
+                                                return `
+                                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: white; border: 1px solid #f1f5f9; border-radius: 10px;">
+                                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                                        <div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;">
+                                                            <img src="${imageUrl}" onerror="this.src='/images/placeholder-product.png'" style="width: 100%; height: 100%; object-fit: cover;">
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-size: 11px; font-weight: 700; color: var(--text-dark);">${item.product_name}</div>
+                                                            <div style="font-size: 10px; color: var(--text-muted);">Rp ${new Number(item.unit_price).toLocaleString('id-ID')} x ${item.quantity}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div style="font-size: 11px; font-weight: 800; color: var(--primary-blue);">
+                                                        Rp ${new Number(item.subtotal).toLocaleString('id-ID')}
+                                                    </div>
+                                                </div>
+                                            `}).join('')}
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted);">
+                                        <span>Ongkir: Rp ${new Number(order.shipping_fee).toLocaleString('id-ID')}</span>
+                                        <span style="color: #ef4444; font-weight: 700;">Diskon: ${order.discount_percent * 100}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        transactionList.appendChild(accordionItem);
+                    });
+
+                    // Render pagination using twins pagination style and max 3 pages
+                    let paginationHtml = '<div class="twins-pagination-container"><ul class="twins-pagination">';
+                    
+                    // Prev btn
+                    if (data.current_page > 1) {
+                        paginationHtml += `
+                            <li class="twins-page-item">
+                                <a class="twins-page-link" href="#" onclick="event.preventDefault(); loadTransactions('${uuid}', ${data.current_page - 1})" rel="prev" aria-label="Previous">
+                                    <iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon>
+                                </a>
+                            </li>`;
+                    } else {
+                        paginationHtml += `
+                            <li class="twins-page-item disabled" aria-disabled="true" aria-label="Previous">
+                                <span class="twins-page-link" aria-hidden="true"><iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon></span>
+                            </li>`;
+                    }
+                    
+                    // Max 3 pages logic
+                    let startPage = Math.max(1, data.current_page - 1);
+                    let endPage = Math.min(data.last_page, startPage + 2);
+                    if (endPage - startPage < 2 && startPage > 1) {
+                        startPage = Math.max(1, endPage - 2);
+                    }
+
+                    // Pages
+                    for (let i = startPage; i <= endPage; i++) {
+                        if (i === data.current_page) {
+                            paginationHtml += `
+                                <li class="twins-page-item active" aria-current="page">
+                                    <span class="twins-page-link">${i}</span>
+                                </li>`;
+                        } else {
+                            paginationHtml += `
+                                <li class="twins-page-item">
+                                    <a class="twins-page-link" href="#" onclick="event.preventDefault(); loadTransactions('${uuid}', ${i})">${i}</a>
+                                </li>`;
+                        }
+                    }
+
+                    // Next btn
+                    if (data.current_page < data.last_page) {
+                        paginationHtml += `
+                            <li class="twins-page-item">
+                                <a class="twins-page-link" href="#" onclick="event.preventDefault(); loadTransactions('${uuid}', ${data.current_page + 1})" rel="next" aria-label="Next">
+                                    <iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon>
+                                </a>
+                            </li>`;
+                    } else {
+                        paginationHtml += `
+                            <li class="twins-page-item disabled" aria-disabled="true" aria-label="Next">
+                                <span class="twins-page-link" aria-hidden="true"><iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon></span>
+                            </li>`;
+                    }
+                    
+                    paginationHtml += '</ul></div>';
+                    paginationContainer.innerHTML = paginationHtml;
+
+                } else {
+                    transactionList.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px; background: #f8fafc; border-radius: 20px; border: 2px dashed #e2e8f0;">
+                            <iconify-icon icon="solar:box-minimalistic-broken" style="font-size: 48px; color: #cbd5e1; margin-bottom: 10px;"></iconify-icon>
+                            <div style="color: #94a3b8; font-size: 13px; font-weight: 600;">Belum ada riwayat transaksi</div>
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                countBadge.innerText = 'Gagal';
+                transactionList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #ef4444;">
+                        <iconify-icon icon="solar:danger-bold-duotone" style="font-size: 32px;"></iconify-icon>
+                        <div style="font-size: 12px; margin-top: 5px; font-weight: 600;">Gagal memuat transaksi</div>
+                    </div>
+                `;
+            });
     }
 
     function toggleOrderDetails(header) {
@@ -771,7 +850,12 @@
             const row = cb.closest('tr');
             const phone = row.querySelector('td:nth-child(3)').innerText;
             return phone.replace(/[^0-9]/g, '').replace(/^0/, '62');
-        });
+        }).filter(phone => phone.length >= 9); // Filter nomor valid (minimal 9 digit)
+
+        if (contacts.length === 0) {
+            Swal.fire('Peringatan', 'Tidak ada nomor WhatsApp yang valid dari kontak yang dipilih.', 'warning');
+            return;
+        }
 
         closeModal('modalBroadcast');
 
@@ -789,6 +873,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({
@@ -796,6 +881,12 @@
                     contacts: contacts
                 })
             });
+
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                throw new Error("Server tidak mengembalikan respons JSON. Mungkin sesi Anda sudah habis. Silakan muat ulang halaman.");
+            }
 
             const data = await response.json();
 
@@ -821,7 +912,7 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
-                text: 'Terjadi kesalahan sistem saat mencoba mengirim siaran.',
+                text: error.message || 'Terjadi kesalahan sistem saat mencoba mengirim siaran.',
             });
         }
     }
