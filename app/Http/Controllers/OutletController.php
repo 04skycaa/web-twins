@@ -188,7 +188,7 @@ class OutletController extends Controller
         }
 
         // Tab Isolation: Only query stock history if 'riwayat' tab or AJAX filtering is active
-        $stockHistory = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 50);
+        $stockHistory = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
 
         if ($activeTab === 'riwayat' || $request->ajax()) {
             $stockHistoryQuery = \App\Models\StockCard::with(['product', 'store'])
@@ -216,7 +216,7 @@ class OutletController extends Controller
                 $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
             }
 
-            $stockHistory = $stockHistoryQuery->paginate(50)->withQueryString();
+            $stockHistory = $stockHistoryQuery->paginate(10)->withQueryString();
         }
 
         if ($request->ajax()) {

@@ -14,18 +14,20 @@
 
             {{-- Pagination Elements --}}
             @foreach ($elements as $element)
-                {{-- "Three Dots" Separator --}}
                 @if (is_string($element))
-                    <li class="twins-page-item disabled" aria-disabled="true"><span class="twins-page-link">{{ $element }}</span></li>
+                    <li class="twins-page-item disabled mobile-hide" aria-disabled="true"><span class="twins-page-link">{{ $element }}</span></li>
                 @endif
 
                 {{-- Array Of Links --}}
                 @if (is_array($element))
                     @foreach ($element as $page => $url)
+                        @php
+                            $isNear = abs($page - $paginator->currentPage()) <= 1;
+                        @endphp
                         @if ($page == $paginator->currentPage())
                             <li class="twins-page-item active" aria-current="page"><span class="twins-page-link">{{ $page }}</span></li>
                         @else
-                            <li class="twins-page-item"><a class="twins-page-link" href="{{ $url }}">{{ $page }}</a></li>
+                            <li class="twins-page-item {{ $isNear ? '' : 'mobile-hide' }}"><a class="twins-page-link" href="{{ $url }}">{{ $page }}</a></li>
                         @endif
                     @endforeach
                 @endif

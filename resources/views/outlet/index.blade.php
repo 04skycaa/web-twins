@@ -532,150 +532,323 @@
 
     {{-- VIEW KINERJA --}}
     <div id="view-kinerja" class="tab-view mobile-pb" style="{{ $active_tab == 'kinerja' ? '' : 'display: none;' }}">
-        <div class="kinerja-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <!-- Include Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
+        <div class="kinerja-header-container">
             <div>
-                <h2 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0;">Analisis Kinerja Cabang</h2>
-                <p style="font-size: 11px; color: #64748b; margin-top: 2px;">Pantau performa finansial seluruh outlet.</p>
+                <h2 class="kinerja-title">Analytics Kinerja Outlet</h2>
+                <p class="kinerja-subtitle">Pantau performa finansial dan operasional secara real-time.</p>
             </div>
-            <div class="dropdown">
-                <select id="kinerjaOutletSelector" class="form-control" style="border-radius: 10px; min-width: 180px; height: 38px; border: 2px solid var(--border-blue); font-weight: 600; font-size: 13px;" onchange="updateKinerjaData(this.value)">
-                    <option value="all">Semua Outlet (Agregat)</option>
+            <div class="kinerja-filters">
+                <select id="k_outlet_filter" class="k-input" onchange="loadKinerjaDashboard()">
+                    <option value="all">Semua Outlet</option>
                     @foreach($outlets as $outlet)
                         <option value="{{ $outlet->uuid }}">{{ $outlet->nama }}</option>
                     @endforeach
                 </select>
-            </div>
-        </div>
-
-        <div class="kinerja-stats-grid">
-            <div class="kpi-card">
-                <div class="kpi-icon" style="background: #e0f2fe; color: #0ea5e9;">
-                    <iconify-icon icon="solar:banknote-bold-duotone"></iconify-icon>
-                </div>
-                <div class="kpi-label">Omset Penjualan</div>
-                <div class="kpi-value" id="kpi-omset">Rp 0</div>
-                <div class="kpi-trend trend-up">
-                    <iconify-icon icon="solar:round-alt-arrow-up-bold-duotone"></iconify-icon>
-                    <span>Terakumulasi</span>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon" style="background: #fef9c3; color: #ca8a04;">
-                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                </div>
-                <div class="kpi-label">Laba Kotor</div>
-                <div class="kpi-value" id="kpi-laba-kotor">Rp 0</div>
-                <div class="kpi-trend trend-up">
-                    <iconify-icon icon="solar:round-alt-arrow-up-bold-duotone"></iconify-icon>
-                    <span>Estimasi HPP</span>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon" style="background: #dcfce7; color: #16a34a;">
-                    <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
-                </div>
-                <div class="kpi-label">Laba Bersih</div>
-                <div class="kpi-value" id="kpi-laba-bersih">Rp 0</div>
-                <div class="kpi-trend trend-up">
-                    <iconify-icon icon="solar:round-alt-arrow-up-bold-duotone"></iconify-icon>
-                    <span>Setelah Biaya</span>
+                <div class="dropdown" style="position: relative;">
+                    <button type="button" class="btn-filter" style="display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px; color: var(--primary-blue);"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content" style="padding: 15px; width: 300px; right: 0; left: auto; top: 48px; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px; font-weight: 600;">Dari Tanggal</label>
+                                <input type="date" id="k_start_date" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px; font-weight: 600;">Sampai Tanggal</label>
+                                <input type="date" id="k_end_date" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; box-sizing: border-box;">
+                            </div>
+                            <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 10px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="loadKinerjaDashboard(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Terapkan Filter
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="kinerja-main-grid">
-            <div class="chart-container-box">
-                <h3 style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 15px;">Komposisi Arus Kas</h3>
-                <div style="height: 180px; position: relative;">
-                    <canvas id="kinerjaDonutChart"></canvas>
+        <!-- 3 Top Cards -->
+        <div class="k-stats-row">
+            <div class="k-stat-card">
+                <div class="k-icon-wrapper k-bg-blue"><iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon></div>
+                <div class="k-stat-info">
+                    <label>Omset Penjualan</label>
+                    <div class="k-val" id="k_val_omset"><div class="skeleton-text"></div></div>
                 </div>
-                <div style="margin-top: 15px; display: grid; gap: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f0fdf4; border-radius: 10px; border: 1px solid #dcfce7;">
-                        <span style="font-size: 11px; font-weight: 700; color: #16a34a;">Pemasukan</span>
-                        <span style="font-weight: 800; color: #16a34a; font-size: 13px;" id="stat-pemasukan">Rp 0</span>
+            </div>
+            <div class="k-stat-card">
+                <div class="k-icon-wrapper k-bg-yellow"><iconify-icon icon="solar:box-bold-duotone"></iconify-icon></div>
+                <div class="k-stat-info">
+                    <label>Laba Kotor</label>
+                    <div class="k-val" id="k_val_labakotor"><div class="skeleton-text"></div></div>
+                </div>
+            </div>
+            <div class="k-stat-card">
+                <div class="k-icon-wrapper k-bg-green"><iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon></div>
+                <div class="k-stat-info">
+                    <label>Laba Bersih</label>
+                    <div class="k-val" id="k_val_lababersih"><div class="skeleton-text"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="k-main-grid">
+            <!-- Left Column: Charts -->
+            <div class="k-col-left">
+                <!-- 5. Grafik Penjualan -->
+                <div class="k-card">
+                    <h3 class="k-card-title">Trend Penjualan</h3>
+                    <div class="k-chart-container">
+                        <canvas id="k_line_chart"></canvas>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #fef2f2; border-radius: 10px; border: 1px solid #fee2e2;">
-                        <span style="font-size: 11px; font-weight: 700; color: #ef4444;">Pengeluaran</span>
-                        <span style="font-weight: 800; color: #ef4444; font-size: 13px;" id="stat-pengeluaran">Rp 0</span>
+                </div>
+
+                <!-- 1 & 2. Arus Kas dan Ringkasan Performa -->
+                <div class="k-grid-2">
+                    <div class="k-card">
+                        <h3 class="k-card-title">Komposisi Arus Kas</h3>
+                        <div style="height: 200px; position:relative;">
+                            <canvas id="k_donut_chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="k-card">
+                        <h3 class="k-card-title">Ringkasan Performa</h3>
+                        <div class="k-summary-list">
+                            <div class="k-summary-item">
+                                <span>Total Transaksi</span>
+                                <strong id="k_sum_trx"><div class="skeleton-text" style="width:40px;"></div></strong>
+                            </div>
+                            <div class="k-summary-item">
+                                <span>Rata-Rata Transaksi</span>
+                                <strong id="k_sum_avg"><div class="skeleton-text" style="width:80px;"></div></strong>
+                            </div>
+                            <div class="k-summary-item">
+                                <span>Total Item Terjual</span>
+                                <strong id="k_sum_items"><div class="skeleton-text" style="width:100px;"></div></strong>
+                            </div>
+                            <div class="k-summary-item">
+                                <span>Total Pengeluaran</span>
+                                <strong id="k_sum_expenses"><div class="skeleton-text" style="width:100px;"></div></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- removed table -->
+            </div>
+            <div class="k-col-right">
+                <!-- 4. Produk Terlaris -->
+                <div class="k-card">
+                    <h3 class="k-card-title">Top 5 Produk Terlaris</h3>
+                    <div class="k-progress-list" id="k_top_products">
+                        <div class="skeleton-text" style="height:40px; margin-bottom:10px;"></div>
+                        <div class="skeleton-text" style="height:40px; margin-bottom:10px;"></div>
+                        <div class="skeleton-text" style="height:40px; margin-bottom:10px;"></div>
+                    </div>
+                </div>
+
+                <!-- 6. Outlet Perlu Perhatian -->
+                <div class="k-card" style="background:#f8fafc;">
+                    <h3 class="k-card-title" style="color:#dc2626;">Perlu Perhatian!</h3>
+                    <div class="k-alert-list" id="k_alerts">
+                        <div class="skeleton-text" style="height:50px;"></div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- 3. Performa Outlet Table (Full Width) -->
+        <div class="k-card" style="margin-top: 20px;">
+            <h3 class="k-card-title">Performa Outlet</h3>
+            <div class="table-container">
+                <table class="fitur-table" id="k_table_outlet" style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Nama Outlet</th>
+                            <th>Omset</th>
+                            <th>Transaksi</th>
+                            <th>Laba Bersih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4"><div class="skeleton-text"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="k-pagination" id="k_table_pagination"></div>
+        </div>
+
+
+
+        <!-- Dashboard JavaScript -->
+        <script>
+            let kLineChartInstance = null;
+            let kDonutChartInstance = null;
+
+            function formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            }
+
+            function getKinerjaFilters() {
+                return {
+                    store_id: document.getElementById('k_outlet_filter').value,
+                    start_date: document.getElementById('k_start_date').value,
+                    end_date: document.getElementById('k_end_date').value
+                };
+            }
+
+            async function fetchKinerjaAPI(endpoint, params = {}) {
+                const query = new URLSearchParams({...getKinerjaFilters(), ...params}).toString();
+                const res = await fetch(`/outlet/api/kinerja/${endpoint}?${query}`);
+                return res.json();
+            }
+
+            async function loadKinerjaDashboard() {
+                // Skeleton UI toggle
+                document.querySelectorAll('.k-val').forEach(el => el.innerHTML = '<div class="skeleton-text"></div>');
+                document.getElementById('k_sum_trx').innerHTML = '<div class="skeleton-text"></div>';
+                
+                // Fetch Async Paralel
+                Promise.all([
+                    fetchKinerjaAPI('statistik-utama'),
+                    fetchKinerjaAPI('arus-kas'),
+                    fetchKinerjaAPI('ringkasan'),
+                    fetchKinerjaAPI('grafik'),
+                    fetchKinerjaAPI('terlaris'),
+                    fetchKinerjaAPI('perhatian'),
+                    loadKinerjaTable(1)
+                ]).then(([stat, arus, ringkasan, grafik, terlaris, perhatian]) => {
+                    // Update Stat Cards
+                    document.getElementById('k_val_omset').innerText = formatRupiah(stat.omset);
+                    document.getElementById('k_val_labakotor').innerText = formatRupiah(stat.laba_kotor);
+                    document.getElementById('k_val_lababersih').innerText = formatRupiah(stat.laba_bersih);
+
+                    // Update Ringkasan
+                    document.getElementById('k_sum_trx').innerText = ringkasan.total_transaksi + ' TRX';
+                    document.getElementById('k_sum_avg').innerText = formatRupiah(ringkasan.rata_rata_transaksi);
+                    document.getElementById('k_sum_items').innerText = ringkasan.total_item_terjual + ' Pcs';
+                    document.getElementById('k_sum_expenses').innerText = formatRupiah(ringkasan.total_pengeluaran);
+
+                    // Update Charts
+                    renderKinerjaCharts(grafik, arus);
+
+                    // Update Produk Terlaris
+                    renderTopProducts(terlaris);
+
+                    // Update Alerts
+                    renderAlerts(perhatian);
+                }).catch(err => {
+                    console.error("Gagal memuat dashboard: ", err);
+                    document.querySelectorAll('.k-val').forEach(el => el.innerHTML = '<div style="color:red; font-size:14px;">Error</div>');
+                });
+            }
+
+            function renderKinerjaCharts(grafik, arus) {
+                // Line Chart
+                const ctxLine = document.getElementById('k_line_chart').getContext('2d');
+                if (kLineChartInstance) kLineChartInstance.destroy();
+                kLineChartInstance = new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: grafik.labels,
+                        datasets: [{
+                            label: 'Penjualan',
+                            data: grafik.data,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // Donut Chart
+                const ctxDonut = document.getElementById('k_donut_chart').getContext('2d');
+                if (kDonutChartInstance) kDonutChartInstance.destroy();
+                kDonutChartInstance = new Chart(ctxDonut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Penjualan', 'Pembelian Stok', 'Biaya Operasional'],
+                        datasets: [{
+                            data: [arus.pemasukan_penjualan, arus.pembelian_stok, arus.biaya_operasional],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+                });
+            }
+
+            function renderTopProducts(products) {
+                const container = document.getElementById('k_top_products');
+                if (products.length === 0) {
+                    container.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Belum ada data</div>';
+                    return;
+                }
+                container.innerHTML = products.map(p => `
+                    <div class="k-prog-item">
+                        <div class="k-prog-header">
+                            <span class="k-prog-name">${p.nama}</span>
+                            <span class="k-prog-val">${p.qty}x</span>
+                        </div>
+                        <div class="k-prog-track">
+                            <div class="k-prog-fill" style="width: ${p.percentage}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function renderAlerts(alerts) {
+                const container = document.getElementById('k_alerts');
+                container.innerHTML = alerts.map(a => `
+                    <div class="k-alert k-alert-${a.warna}">
+                        <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+                        <span>${a.pesan}</span>
+                    </div>
+                `).join('');
+            }
+
+            async function loadKinerjaTable(page) {
+                const res = await fetchKinerjaAPI('performa', {page});
+                const tbody = document.querySelector('#k_table_outlet tbody');
+                
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Tidak ada data outlet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = res.data.map(o => `
+                    <tr>
+                        <td style="font-weight:700; color:#1e293b;">${o.nama_outlet}</td>
+                        <td style="font-weight:600; color:#3b82f6;">${formatRupiah(o.omset)}</td>
+                        <td><span class="status-badge" style="background:#f0f9ff;color:#0ea5e9;">${o.jumlah_transaksi} TRX</span></td>
+                        <td style="font-weight:700; color:${o.laba_bersih >= 0 ? '#10b981' : '#ef4444'};">${formatRupiah(o.laba_bersih)}</td>
+                    </tr>
+                `).join('');
+
+                // Pagination logic
+                let paginationHtml = '';
+                if(res.last_page > 1) {
+                    for(let i=1; i<=res.last_page; i++){
+                        paginationHtml += `<button class="k-page-btn ${i===res.current_page?'active':''}" onclick="loadKinerjaTable(${i})">${i}</button>`;
+                    }
+                }
+                document.getElementById('k_table_pagination').innerHTML = paginationHtml;
+            }
+
+            // Run when tab activated
+            function initKinerjaTab() {
+                loadKinerjaDashboard();
+            }
             
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="summary-table-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="font-size: 13px; font-weight: 800; color: #1e293b; margin: 0;">Ringkasan Finansial</h3>
-                        <span style="font-size: 10px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 50px;">Bulan Ini</span>
-                    </div>
-                    
-                    <div class="summary-item-card">
-                        <div class="summary-info">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #f0f9ff; color: #0ea5e9; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                                <iconify-icon icon="solar:banknote-linear"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase;">Omset</div>
-                                <div class="summary-val" id="row-omset">Rp 0</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="summary-item-card">
-                        <div class="summary-info">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #fefce8; color: #ca8a04; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                                <iconify-icon icon="solar:box-linear"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase;">Laba Kotor</div>
-                                <div class="summary-val" id="row-laba-kotor">Rp 0</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="summary-item-card">
-                        <div class="summary-info">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                                <iconify-icon icon="solar:chart-square-linear"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase;">Pemasukan</div>
-                                <div class="summary-val" id="row-pemasukan">Rp 0</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="summary-item-card" style="margin-bottom: 0;">
-                        <div class="summary-info">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #fef2f2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                                <iconify-icon icon="solar:card-2-linear"></iconify-icon>
-                            </div>
-                            <div>
-                                <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase;">Biaya</div>
-                                <div class="summary-val" id="row-pengeluaran">Rp 0</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="summary-table-card">
-                    <h3 style="font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 15px;">Top 3 Produk Terlaris</h3>
-                    <div id="top-products-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                        @foreach($topProductsAll as $index => $prod)
-                        <div onclick="showProductDetails({{ json_encode($prod) }})" style="padding: 12px 8px; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; text-align: center; position: relative;" onmouseover="this.style.borderColor='var(--primary-blue)';this.style.background='white';this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 20px rgba(0,0,0,0.05)'" onmouseout="this.style.borderColor='#f1f5f9';this.style.background='#f8fafc';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-                            <div style="position: absolute; top: -6px; left: -6px; background: var(--primary-blue); color: white; width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">{{ $index + 1 }}</div>
-                            <img src="{{ $prod['image'] }}" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover; border: 1px solid #e2e8f0; background: white;">
-                            <div style="width: 100%;">
-                                <div style="font-size: 10px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">{{ $prod['nama'] }}</div>
-                                <div style="font-size: 9px; color: #16a34a; font-weight: 700; background: #f0fdf4; padding: 2px 6px; border-radius: 50px; display: inline-block;">{{ $prod['qty'] }} Terjual</div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-
-
-            </div>
-        </div>
+            document.addEventListener('DOMContentLoaded', () => {
+                if ('{{ $active_tab }}' === 'kinerja') initKinerjaTab();
+            });
+        </script>
     </div>
 
     {{-- MODAL DETAIL PRODUK --}}
@@ -779,43 +952,44 @@
 
         <!-- Main Content (Standard Layout) -->
         <div class="main-content-box">
-            <div class="table-container">
-                <table class="fitur-table" style="white-space: nowrap;">
-                    <thead>
-                        <tr>
-                            <th style="width: 150px;">WAKTU</th>
-                            <th>OUTLET</th>
-                            <th>PRODUK</th>
-                            <th style="width: 100px; text-align: center;">MUTASI</th>
-                            <th>KETERANGAN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stock-history-table-body">
-                        @fragment('stock-history-table')
+            <div id="stock-history-wrapper">
+                @fragment('stock-history-table')
+                <div class="table-container">
+                    <table class="fitur-table" style="white-space: nowrap;">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">WAKTU</th>
+                                <th>OUTLET</th>
+                                <th>PRODUK</th>
+                                <th style="width: 100px; text-align: center;">MUTASI</th>
+                                <th style="padding-left: 20px;">KETERANGAN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-history-table-body">
                         @foreach($stockHistory as $item)
                         <tr class="stock-row" data-outlet="{{ $item->store_id }}" data-date="{{ $item->created_at->format('Y-m-d') }}">
-                            <td style="color: #64748b; font-size: 12px; white-space: nowrap;">
+                            <td data-label="WAKTU" style="color: #64748b; font-size: 12px; white-space: nowrap;">
                                 {{ $item->created_at->format('d/m/Y') }}
                                 <div style="font-size: 10px; opacity: 0.7;">{{ $item->created_at->format('H:i:s') }}</div>
                             </td>
-                            <td style="font-weight: 700; color: var(--primary-blue);">
+                            <td data-label="OUTLET" style="font-weight: 700; color: var(--primary-blue);">
                                 {{ $item->store->nama ?? '-' }}
                             </td>
-                            <td>
+                            <td data-label="PRODUK">
                                 <div class="product-info">
                                     <img src="{{ $item->product->resolved_image_url ?? asset('images/placeholder-product.png') }}" class="product-img">
                                     <div>
-                                        <div style="font-weight: 700; color: #1e293b;">{{ $item->product->nama_produk ?? '-' }}</div>
+                                        <div style="font-weight: 700; color: #1e293b; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 150px; max-width: 250px; line-height: 1.4;">{{ $item->product->nama_produk ?? '-' }}</div>
                                         <div style="font-size: 11px; color: #94a3b8; font-family: monospace;">{{ $item->product->barcode ?? '-' }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td style="text-align: center;">
+                            <td data-label="MUTASI" style="text-align: center;">
                                 <div style="font-size: 16px; font-weight: 900; color: {{ $item->jmlh > 0 ? '#16a34a' : '#ef4444' }}; background: {{ $item->jmlh > 0 ? '#f0fdf4' : '#fef2f2' }}; padding: 8px; border-radius: 10px; border: 1px solid {{ $item->jmlh > 0 ? '#dcfce7' : '#fee2e2' }};">
                                     {{ $item->jmlh > 0 ? '+' : '' }}{{ $item->jmlh }}
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="KETERANGAN" style="padding-left: 20px;">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     @php
                                         $icon = 'solar:info-circle-bold-duotone';
@@ -826,22 +1000,19 @@
                                         elseif(str_contains($label, 'opname')) { $icon = 'solar:clipboard-check-bold-duotone'; $color = '#f59e0b'; }
                                         elseif(str_contains($label, 'transfer')) { $icon = 'solar:transfer-horizontal-bold-duotone'; $color = '#8b5cf6'; }
                                     @endphp
-                                    <iconify-icon icon="{{ $icon }}" style="font-size: 20px; color: {{ $color }};"></iconify-icon>
-                                    <span style="font-weight: 600; color: #475569;">{{ $item->keterangan }}</span>
+                                    <iconify-icon icon="{{ $icon }}" style="font-size: 20px; color: {{ $color }}; flex-shrink: 0;"></iconify-icon>
+                                    <span style="font-weight: 600; color: #475569; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 150px; max-width: 300px; line-height: 1.4;">{{ $item->keterangan }}</span>
                                 </div>
                             </td>
                         </tr>
                         @endforeach
-                        <tr>
-                            <td colspan="5">
-                                <div class="pagination-container">
-                                    {{ $stockHistory->onEachSide(1)->links() }}
-                                </div>
-                            </td>
-                        </tr>
-                        @endfragment
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="twins-pagination-container" style="margin-top: 24px; padding-bottom: 24px;">
+                    {{ $stockHistory->onEachSide(1)->appends(request()->query())->links('vendor.pagination.twins') }}
+                </div>
+                @endfragment
             </div>
         </div>
     </div>
@@ -989,9 +1160,8 @@
         if(viewObj) viewObj.style.display = 'block';
 
         // Trigger kinerja data load when switching to kinerja tab
-        if (tabId === 'kinerja' && typeof updateKinerjaData === 'function') {
-            const selector = document.getElementById('kinerjaOutletSelector');
-            setTimeout(() => updateKinerjaData(selector ? selector.value : 'all'), 100);
+        if (tabId === 'kinerja' && typeof loadKinerjaDashboard === 'function') {
+            setTimeout(() => loadKinerjaDashboard(), 100);
         }
 
         // Trigger stock load when switching to riwayat tab
@@ -1164,174 +1334,7 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const performanceData = @json($performanceData);
-    let performanceChart = null;
 
-    function animateValue(obj, start, end, duration) {
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const currentVal = Math.floor(progress * (end - start) + start);
-            obj.innerHTML = 'Rp ' + currentVal.toLocaleString('id-ID');
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            }
-        };
-        window.requestAnimationFrame(step);
-    }
-
-    function updateKinerjaData(outletUuid) {
-        let data;
-        if (outletUuid === 'all') {
-            data = {
-                omset: performanceData.reduce((acc, curr) => acc + curr.omset, 0),
-                laba_kotor: performanceData.reduce((acc, curr) => acc + curr.laba_kotor, 0),
-                laba_bersih: performanceData.reduce((acc, curr) => acc + curr.laba_bersih, 0),
-                pemasukan: performanceData.reduce((acc, curr) => acc + curr.pemasukan, 0),
-                pengeluaran: performanceData.reduce((acc, curr) => acc + curr.pengeluaran, 0),
-                top_products: @json($topProductsAll)
-            };
-        } else {
-            data = performanceData.find(d => d.outlet_uuid === outletUuid);
-        }
-
-        if (!data) return;
-
-        // Animate Stat Cards
-        animateValue(document.getElementById('kpi-omset'), 0, data.omset, 1000);
-        animateValue(document.getElementById('kpi-laba-kotor'), 0, data.laba_kotor, 1000);
-        animateValue(document.getElementById('kpi-laba-bersih'), 0, data.laba_bersih, 1000);
-
-        // Update Summary Cards
-        document.getElementById('row-omset').innerText = 'Rp ' + data.omset.toLocaleString('id-ID');
-        document.getElementById('row-laba-kotor').innerText = 'Rp ' + data.laba_kotor.toLocaleString('id-ID');
-        document.getElementById('row-pemasukan').innerText = 'Rp ' + data.pemasukan.toLocaleString('id-ID');
-        document.getElementById('row-pengeluaran').innerText = 'Rp ' + data.pengeluaran.toLocaleString('id-ID');
-        
-        document.getElementById('stat-pemasukan').innerText = 'Rp ' + data.pemasukan.toLocaleString('id-ID');
-        document.getElementById('stat-pengeluaran').innerText = 'Rp ' + data.pengeluaran.toLocaleString('id-ID');
-
-        // Extra Info
-        renderTopProducts(data.top_products);
-
-        // Update Chart
-        updateChart(data.pemasukan, data.pengeluaran);
-    }
-
-    function renderTopProducts(products) {
-        const container = document.getElementById('top-products-container');
-        container.innerHTML = '';
-        
-        if (!products || products.length === 0) {
-            container.innerHTML = '<div style="grid-column: span 3; text-align:center; padding: 20px; color: #64748b; font-size: 11px;">Tidak ada data produk</div>';
-            return;
-        }
-
-        products.forEach((prod, index) => {
-            const item = document.createElement('div');
-            item.onclick = () => showProductDetails(prod);
-            item.style = "padding: 12px 8px; background: #f8fafc; border-radius: 16px; border: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s; text-align: center; position: relative;";
-            
-            // Hover effect via JS
-            item.onmouseover = () => { 
-                item.style.borderColor='var(--primary-blue)'; 
-                item.style.background='white';
-                item.style.transform='translateY(-2px)';
-                item.style.boxShadow='0 10px 20px rgba(0,0,0,0.05)';
-            };
-            item.onmouseout = () => { 
-                item.style.borderColor='#f1f5f9'; 
-                item.style.background='#f8fafc';
-                item.style.transform='translateY(0)';
-                item.style.boxShadow='none';
-            };
-
-            item.innerHTML = `
-                <div style="position: absolute; top: -6px; left: -6px; background: var(--primary-blue); color: white; width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">${index + 1}</div>
-                <img src="${prod.image}" style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover; border: 1px solid #e2e8f0; background: white;">
-                <div style="width: 100%;">
-                    <div style="font-size: 10px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">${prod.nama}</div>
-                    <div style="font-size: 9px; color: #16a34a; font-weight: 700; background: #f0fdf4; padding: 2px 6px; border-radius: 50px; display: inline-block;">${prod.qty} Terjual</div>
-                </div>
-            `;
-            container.appendChild(item);
-        });
-    }
-
-
-    function showProductDetails(prod) {
-        if (!prod || prod.nama === 'N/A') return;
-        
-        document.getElementById('modal-product-name').innerText = prod.nama;
-        document.getElementById('modal-product-img').src = prod.image;
-        document.getElementById('modal-product-qty').innerText = prod.qty.toLocaleString('id-ID') + ' pcs';
-        
-        document.getElementById('productDetailModal').style.display = 'flex';
-    }
-
-    function closeProductDetails() {
-        document.getElementById('productDetailModal').style.display = 'none';
-    }
-
-    function updateChart(inflow, outflow) {
-        const ctx = document.getElementById('kinerjaDonutChart').getContext('2d');
-        
-        if (performanceChart) {
-            performanceChart.destroy();
-        }
-
-        // Handle case where both are zero to show a "no data" ring
-        const labels = ['Pemasukan', 'Pengeluaran'];
-        const chartData = [inflow, outflow];
-        const colors = ['#10b981', '#ef4444'];
-
-        if (inflow === 0 && outflow === 0) {
-            chartData.push(1);
-            colors.push('#f1f5f9');
-            labels.push('Belum Ada Data');
-        }
-
-        performanceChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: chartData,
-                    backgroundColor: colors,
-                    borderWidth: 0,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: inflow > 0 || outflow > 0,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed !== null) {
-                                    label += 'Rp ' + context.parsed.toLocaleString('id-ID');
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true
-                }
-            }
-        });
-    }
 
     function toggleDropdown(event) {
         event.stopPropagation();
@@ -1389,11 +1392,11 @@
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
 
-        const tableBody = document.getElementById('stock-history-table-body');
+        const wrapper = document.getElementById('stock-history-wrapper');
         
         // Visual feedback (dimming)
-        tableBody.style.opacity = '0.5';
-        tableBody.style.pointerEvents = 'none';
+        wrapper.style.opacity = '0.5';
+        wrapper.style.pointerEvents = 'none';
 
         fetch('{{ route("outlet.index") }}?' + params.toString(), {
             headers: {
@@ -1402,14 +1405,14 @@
         })
         .then(response => response.text())
         .then(html => {
-            tableBody.innerHTML = html;
-            tableBody.style.opacity = '1';
-            tableBody.style.pointerEvents = 'auto';
+            wrapper.innerHTML = html;
+            wrapper.style.opacity = '1';
+            wrapper.style.pointerEvents = 'auto';
         })
         .catch(err => {
             console.error('Search failed:', err);
-            tableBody.style.opacity = '1';
-            tableBody.style.pointerEvents = 'auto';
+            wrapper.style.opacity = '1';
+            wrapper.style.pointerEvents = 'auto';
         });
     }
 
@@ -1453,37 +1456,37 @@
 
     // AJAX Pagination handler
     document.addEventListener('click', function(e) {
-        const paginationLink = e.target.closest('#stock-history-table-body .pagination a');
+        const paginationLink = e.target.closest('#stock-history-wrapper .twins-pagination a');
         if (paginationLink) {
             e.preventDefault();
             const url = paginationLink.href;
-            const tableBody = document.getElementById('stock-history-table-body');
+            const wrapper = document.getElementById('stock-history-wrapper');
             
-            tableBody.style.opacity = '0.5';
-            tableBody.style.pointerEvents = 'none';
+            wrapper.style.opacity = '0.5';
+            wrapper.style.pointerEvents = 'none';
 
             fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(response => response.text())
             .then(html => {
-                tableBody.innerHTML = html;
-                tableBody.style.opacity = '1';
-                tableBody.style.pointerEvents = 'auto';
+                wrapper.innerHTML = html;
+                wrapper.style.opacity = '1';
+                wrapper.style.pointerEvents = 'auto';
                 // Scroll to top of table
                 document.querySelector('.main-content-box').scrollTop = 0;
             })
             .catch(err => {
                 console.error('Pagination load failed:', err);
-                tableBody.style.opacity = '1';
-                tableBody.style.pointerEvents = 'auto';
+                wrapper.style.opacity = '1';
+                wrapper.style.pointerEvents = 'auto';
             });
         }
     });
 
     // Initial kinerja data load if starting on kinerja tab
     if ('{{ $active_tab }}' === 'kinerja') {
-        updateKinerjaData('all');
+        if (typeof loadKinerjaDashboard === 'function') loadKinerjaDashboard();
     }
 
     // Initial data outlet load

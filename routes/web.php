@@ -97,6 +97,15 @@ Route::prefix('outlet')->middleware(['auth', 'verified', 'role:owner'])->group(f
     Route::put('/{id}', [OutletController::class, 'update'])->name('outlet.update');
     Route::delete('/{id}', [OutletController::class, 'destroy'])->name('outlet.destroy');
     Route::post('/{id}/toggle-status', [OutletController::class, 'toggleStatus'])->name('outlet.toggle-status');
+
+    // API endpoints for Kinerja Dashboard
+    Route::get('/api/kinerja/statistik-utama', [\App\Http\Controllers\KinerjaDashboardController::class, 'getStatistikUtama'])->name('outlet.api.kinerja.statistik');
+    Route::get('/api/kinerja/arus-kas', [\App\Http\Controllers\KinerjaDashboardController::class, 'getArusKas'])->name('outlet.api.kinerja.arus-kas');
+    Route::get('/api/kinerja/ringkasan', [\App\Http\Controllers\KinerjaDashboardController::class, 'getRingkasanPerforma'])->name('outlet.api.kinerja.ringkasan');
+    Route::get('/api/kinerja/grafik', [\App\Http\Controllers\KinerjaDashboardController::class, 'getGrafikPenjualan'])->name('outlet.api.kinerja.grafik');
+    Route::get('/api/kinerja/terlaris', [\App\Http\Controllers\KinerjaDashboardController::class, 'getProdukTerlaris'])->name('outlet.api.kinerja.terlaris');
+    Route::get('/api/kinerja/performa', [\App\Http\Controllers\KinerjaDashboardController::class, 'getPerformaOutlet'])->name('outlet.api.kinerja.performa');
+    Route::get('/api/kinerja/perhatian', [\App\Http\Controllers\KinerjaDashboardController::class, 'getOutletPerhatian'])->name('outlet.api.kinerja.perhatian');
 });
 
 Route::prefix('transaksi')->middleware(['auth', 'verified', 'role:owner,kepala_toko'])->group(function () {
