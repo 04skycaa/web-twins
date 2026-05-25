@@ -140,8 +140,8 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <header class="action-bar mb-4 bg-transparent p-0" style="justify-content: flex-start; border: none; box-shadow: none;">
-            <div id="headerLeftActions" style="display: flex; gap: 12px; align-items: center; width: 100%; flex-wrap: wrap;">
+        <header class="action-bar mb-4 bg-transparent p-0" style="justify-content: space-between; border: none; box-shadow: none; flex-wrap: wrap; gap: 15px;">
+            <div id="headerLeftActions" style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 280px; flex-wrap: wrap;">
                 
                 {{-- 1. Search Bar --}}
                 <div class="search-wrapper" style="min-width: 250px;">
@@ -156,33 +156,37 @@
                         <input type="hidden" name="shift_id" id="filterShiftId" value="{{ $shift_id }}">
                     </form>
 
-                    {{-- 2. Dropdown Toko --}}
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
-                            @foreach($outlets as $o)
-                                <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
-                            @endforeach
+                    <div id="jadwalFilters" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        {{-- 2. Dropdown Toko --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                                @foreach($outlets as $o)
+                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                                @endforeach
+                            </div>
                         </div>
-                    </div>
 
-                    {{-- 3. Dropdown Shift --}}
-                    <div class="dropdown">
-                        <button type="button" class="btn-filter" title="Filter Shift" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 24px;" class="{{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                        </button>
-                        <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
-                            @foreach($shifts as $s)
-                                <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
-                            @endforeach
+                        {{-- 3. Dropdown Shift --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Shift" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 24px;" class="{{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
+                                @foreach($shifts as $s)
+                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 @endif
-                
+            </div>
+            
+            <div class="right-actions" style="display: flex; gap: 12px;">
                 {{-- 4. Add Button --}}
                 <button type="button" class="btn-action" id="btnAddMain" onclick="openCurrentModal()">
                     <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
@@ -243,23 +247,37 @@
 
             // Handle Header Actions Visibility
             const leftActions = document.getElementById('headerLeftActions');
+            const jadwalFilters = document.getElementById('jadwalFilters');
+            const searchInput = document.getElementById('globalSearch');
             const btnAdd = document.getElementById('btnAddMain');
             const txtAdd = document.getElementById('txtAddMain');
             const actionBar = document.querySelector('.action-bar');
 
-            const showGlobalFilters = (tab === 'jadwal');
+            const showSearch = (tab === 'shift' || tab === 'jadwal');
+            const showJadwalFilters = (tab === 'jadwal');
             const showAddButton = (tab === 'shift' || tab === 'jadwal');
 
-            if (leftActions) leftActions.style.display = showGlobalFilters ? 'flex' : 'none';
+            if (leftActions) leftActions.style.display = showSearch ? 'flex' : 'none';
+            
+            if (jadwalFilters) jadwalFilters.style.display = showJadwalFilters ? 'flex' : 'none';
+            
+            if (searchInput) {
+                if (tab === 'shift') {
+                    searchInput.placeholder = 'Cari nama shift...';
+                } else {
+                    searchInput.placeholder = 'Cari nama karyawan/hari...';
+                }
+            }
+
             if (btnAdd) {
                 btnAdd.style.display = showAddButton ? 'flex' : 'none';
                 if (tab === 'shift') txtAdd.innerText = 'Tambah Shift';
                 if (tab === 'jadwal') txtAdd.innerText = 'Tambah Jadwal';
             }
 
-            // Hide action bar entirely if no filters and no add button
+            // Hide action bar entirely if nothing to show
             if (actionBar) {
-                actionBar.style.display = (showGlobalFilters || showAddButton) ? 'flex' : 'none';
+                actionBar.style.display = (showSearch || showAddButton) ? 'flex' : 'none';
             }
 
             filterTable();

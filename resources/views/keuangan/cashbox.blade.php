@@ -11,15 +11,17 @@
 
     {{-- SECTION CASHBOX --}}
     <div id="view-cashbox" class="view-section {{ $active_tab === 'cashbox' ? 'active' : '' }}">
-        <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-            <div class="search-wrapper" style="width: 250px; max-width: 100%;">
+        <div class="action-bar mobile-action-bar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="search-wrapper mobile-search-shrink" style="max-width: 400px; width: 100%; flex: 1;">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                 <input type="text" id="cashboxSearch" class="search-input" placeholder="Cari nama cashbox..." onkeyup="filterCashbox()">
             </div>
-            <button onclick="openModal('modalAddCashbox')" class="btn-action">
-                <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                <span>Tambah Cashbox</span>
-            </button>
+            <div class="right-actions">
+                <button onclick="openModal('modalAddCashbox')" class="btn-action">
+                    <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    <span>Tambah Cashbox</span>
+                </button>
+            </div>
         </div>
 
         <div class="main-content-box">

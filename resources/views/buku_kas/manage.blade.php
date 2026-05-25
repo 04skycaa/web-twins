@@ -127,7 +127,7 @@
 
     {{-- ACTION BAR --}}
     <div class="action-bar" style="flex-wrap: wrap;">
-        <div class="left-actions-group bk-action-bar-mobile" style="width: 100%;">
+        <div class="left-actions-group bk-action-bar-mobile" style="flex: 1;">
             <div class="search-wrapper bk-search-mobile">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="globalSearch" class="search-input" placeholder="Cari data..." onkeyup="filterTable()">
@@ -186,6 +186,9 @@
                     </div>
                 </div>
 
+            </div> <!-- Tutup left-actions-group -->
+            
+            <div class="right-actions" style="display: flex; gap: 12px;">
                 <div class="dropdown">
                     <button type="button" class="btn-action" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
@@ -202,16 +205,18 @@
                     <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
                     <span id="btnAddText">Tambah Data</span>
                 </button>
+            </div>
 
                 {{-- Mobile-only Action Buttons --}}
-                <button type="button" class="mobile-top-btn btn-excel" onclick="openExportModal('excel')" title="Extract Excel">
-                    <iconify-icon icon="vscode-icons:file-type-excel"></iconify-icon>
-                </button>
-                <button type="button" class="mobile-top-btn btn-add" onclick="handleMainAdd()" title="Tambah Data">
-                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                </button>
-            </div>
-        </div>
+                <div class="mobile-only-actions" style="display: none; gap: 8px;">
+                    <button type="button" class="mobile-top-btn btn-excel" onclick="openExportModal('excel')" title="Extract Excel">
+                        <iconify-icon icon="vscode-icons:file-type-excel"></iconify-icon>
+                    </button>
+                    <button type="button" class="mobile-top-btn btn-add" onclick="handleMainAdd()" title="Tambah Data">
+                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                    </button>
+                </div>
+            </div> <!-- Tutup action-bar -->
 
     {{-- SECTION PENGELUARAN --}}
     <div id="view-pengeluaran" class="view-section {{ $active_tab === 'pengeluaran' ? 'active' : '' }}">
