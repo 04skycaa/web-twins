@@ -9,7 +9,7 @@
             @csrf
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
-                    <label>Pilih Toko</label>
+                    <label>Pilih Toko *</label>
                     <select name="store_id" id="jadwalStoreId" class="form-control" required onchange="onJadwalStoreChange()">
                         <option value="" disabled selected>-- Pilih Toko --</option>
                         @foreach($outlets as $o)
@@ -19,7 +19,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Karyawan</label>
+                    <label>Karyawan *</label>
                     <select name="user_id" id="jadwalUserId" class="form-control" required onchange="onKaryawanChange()">
                         <option value="" disabled selected>-- Pilih Toko Dulu --</option>
                         @foreach($karyawanList as $k)
@@ -29,7 +29,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Shift</label>
+                    <label>Shift *</label>
                     <select name="shift_id" id="jadwalShiftId" class="form-control" required>
                         <option value="" disabled selected>-- Pilih Shift --</option>
                         @foreach($shifts as $s)
@@ -39,7 +39,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Hari Kerja <span style="color:#E65100;font-size:0.8rem;">(Bisa pilih lebih dari satu)</span></label>
+                    <label>Hari Kerja * <span style="color:#E65100;font-size:0.8rem;">(Bisa pilih lebih dari satu)</span></label>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
                         @foreach([1=>'Senin',2=>'Selasa',3=>'Rabu',4=>'Kamis',5=>'Jumat',6=>'Sabtu',7=>'Minggu'] as $num => $name)
                             <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #ddd;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
@@ -69,7 +69,7 @@
             @csrf @method('PUT')
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
-                    <label>Shift</label>
+                    <label>Shift *</label>
                     <select name="shift_id" id="editJadwalShift" class="form-control" required>
                         @foreach($shifts as $s)
                             <option value="{{ $s->uuid }}">{{ $s->nama }} | {{ \Carbon\Carbon::parse($s->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($s->waktu_selesai)->format('H:i') }}</option>
@@ -78,7 +78,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Hari</label>
+                    <label>Hari *</label>
                     <select name="hari_dalam_minggu" id="editJadwalHari" class="form-control" required>
                         @foreach([1=>'Senin',2=>'Selasa',3=>'Rabu',4=>'Kamis',5=>'Jumat',6=>'Sabtu',7=>'Minggu'] as $num => $name)
                             <option value="{{ $num }}">{{ $name }}</option>

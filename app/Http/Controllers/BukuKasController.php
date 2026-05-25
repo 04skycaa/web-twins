@@ -302,14 +302,14 @@ class BukuKasController extends Controller
         
         $contact = Contact::where('store_id', $debt->store_id)
             ->where('nama', $request->kontak_nama)
-            ->where('tipe', $debt->tipe == 'Hutang' ? 'supplier' : 'customer')
+            ->where('tipe', $debt->tipe == 'utang' ? 'supplier' : 'customer')
             ->first();
 
         if (!$contact) {
             $contact = Contact::create([
                 'store_id' => $debt->store_id,
                 'nama' => $request->kontak_nama,
-                'tipe' => $debt->tipe == 'Hutang' ? 'supplier' : 'customer',
+                'tipe' => $debt->tipe == 'utang' ? 'supplier' : 'customer',
                 'no_hp' => null,
             ]);
         }

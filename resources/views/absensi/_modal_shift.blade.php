@@ -9,15 +9,15 @@
             @csrf
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
-                    <label>Nama Shift (Contoh: Pagi / Malam)</label>
+                    <label>Nama Shift (Contoh: Pagi / Malam) *</label>
                     <input type="text" name="nama" class="form-control" required placeholder="Contoh: Pagi">
                 </div>
                 <div class="form-group">
-                    <label>Waktu Mulai</label>
+                    <label>Waktu Mulai *</label>
                     <input type="time" name="waktu_mulai" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Waktu Selesai</label>
+                    <label>Waktu Selesai *</label>
                     <input type="time" name="waktu_selesai" class="form-control" required>
                 </div>
             </div>
@@ -40,15 +40,15 @@
             @csrf @method('PUT')
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
-                    <label>Nama Shift</label>
+                    <label>Nama Shift *</label>
                     <input type="text" name="nama" id="editShiftNama" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Waktu Mulai</label>
+                    <label>Waktu Mulai *</label>
                     <input type="time" name="waktu_mulai" id="editShiftMulai" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Waktu Selesai</label>
+                    <label>Waktu Selesai *</label>
                     <input type="time" name="waktu_selesai" id="editShiftSelesai" class="form-control" required>
                 </div>
             </div>
