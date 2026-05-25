@@ -41,7 +41,7 @@
                 <div class="form-group" style="margin-bottom: 15px;"><label style="font-size: 11px; color: #888; display: block;">Metode Pembayaran *</label><select name="metode_pembayaran" class="form-control" required><option value="">-- Pilih Metode --</option>@foreach($paymentMethods as $pm)<option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>@endforeach</select></div>
                 <div class="form-group"><label>Keterangan *</label><textarea name="keterangan" id="ketPemasukan" class="form-control" style="min-height: 80px;" placeholder="Tulis keterangan..." required></textarea><div class="chips-container">@foreach(['Modal Awal', 'Investasi', 'Pinjaman', 'Hibah', 'Lain-lain'] as $sar)<button type="button" class="chip" onclick="document.getElementById('ketPemasukan').value = '{{ $sar }}'">{{ $sar }}</button>@endforeach</div></div>
             </div>
-            <div class="modal-footer"><button type="button" onclick="closeModal('modalPemasukan')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button><button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#2E7D32; color:white;">Simpan</button></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modalPemasukan')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button><button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Simpan</button></div>
         </form>
     </div>
 </div>
@@ -60,7 +60,7 @@
                 <div class="form-group"><label>Supplier / Kontak *</label><select name="kontak_nama" class="form-control" required><option value="">-- Pilih Kontak --</option>@foreach($suppliers as $supplier)<option value="{{ $supplier->nama }}">{{ $supplier->nama }}</option>@endforeach</select></div>
                 <div class="form-group"><label>Total Nilai Hutang *</label><div class="nominal-wrapper"><input type="number" name="nominal" class="form-control" placeholder="0" required></div></div>
                 <div class="form-group"><label>Opsi: Uang Muka / DP</label><div class="nominal-wrapper"><input type="number" name="uang_muka" class="form-control" placeholder="Masukkan jika ada DP"></div></div>
-                <div class="form-group" style="margin-bottom: 15px;"><label style="font-size: 11px; color: #888; display: block;">Metode Pembayaran (Untuk DP)</label><select name="metode_pembayaran" class="form-control"><option value="">-- Pilih Metode --</option>@foreach($paymentMethods as $pm)<option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>@endforeach</select></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label style="font-size: 11px; color: #888; display: block;">Metode Pembayaran (Untuk DP) *</label><select name="metode_pembayaran" class="form-control" required><option value="">-- Pilih Metode --</option>@foreach($paymentMethods as $pm)<option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>@endforeach</select></div>
                 <div class="form-group"><label>Jatuh Tempo *</label><input type="date" name="jatuh_tempo" class="form-control" required></div>
             </div>
             <div class="modal-footer"><button type="button" onclick="closeModal('modalHutang')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button><button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Simpan</button></div>
@@ -82,10 +82,10 @@
                 <div class="form-group"><label>Customer / Kontak *</label><select name="kontak_nama" class="form-control" required><option value="">-- Pilih Kontak --</option>@foreach($customers as $customer)<option value="{{ $customer->nama }}">{{ $customer->nama }}</option>@endforeach</select></div>
                 <div class="form-group"><label>Total Nilai Piutang *</label><div class="nominal-wrapper"><input type="number" name="nominal" class="form-control" placeholder="0" required></div></div>
                 <div class="form-group"><label>Opsi: DP / Terbayar</label><div class="nominal-wrapper"><input type="number" name="uang_muka" class="form-control" placeholder="Masukkan jika ada DP"></div></div>
-                <div class="form-group" style="margin-bottom: 15px;"><label style="font-size: 11px; color: #888; display: block;">Metode Pembayaran (Untuk DP)</label><select name="metode_pembayaran" class="form-control"><option value="">-- Pilih Metode --</option>@foreach($paymentMethods as $pm)<option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>@endforeach</select></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label style="font-size: 11px; color: #888; display: block;">Metode Pembayaran (Untuk DP) *</label><select name="metode_pembayaran" class="form-control" required><option value="">-- Pilih Metode --</option>@foreach($paymentMethods as $pm)<option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>@endforeach</select></div>
                 <div class="form-group"><label>Jatuh Tempo *</label><input type="date" name="jatuh_tempo" class="form-control" required></div>
             </div>
-            <div class="modal-footer"><button type="button" onclick="closeModal('modalPiutang')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button><button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#2E7D32; color:white;">Simpan</button></div>
+            <div class="modal-footer"><button type="button" onclick="closeModal('modalPiutang')" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;">Batal</button><button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;">Simpan</button></div>
         </form>
     </div>
 </div>

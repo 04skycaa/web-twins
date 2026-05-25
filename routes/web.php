@@ -202,6 +202,7 @@ Route::prefix('absensi')->middleware(['auth', 'verified', 'role:owner,kepala_tok
     Route::delete('/jadwal/{uuid}', [AbsensiController::class, 'deleteJadwal'])->name('absensi.jadwal.destroy');
 
     // Riwayat Absensi — Update Status
+    Route::get('/riwayat/export', [AbsensiController::class, 'exportRiwayat'])->name('absensi.riwayat.export');
     Route::put('/riwayat/{uuid}/status', [AbsensiController::class, 'updateAbsensiStatus'])->name('absensi.riwayat.update-status');
 });
 

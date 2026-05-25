@@ -140,59 +140,58 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <header class="action-bar flex flex-col md:flex-row gap-4 mb-4 md:mb-6 bg-transparent p-0">
-            <div id="headerLeftActions" class="w-full">
-                <div class="flex flex-col md:flex-row items-center gap-3 w-full">
-                    <div class="search-wrapper w-full md:w-64">
-                        <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                        <input type="text" id="globalSearch" class="search-input w-full" placeholder="masukan nama/hari"
-                            onkeyup="filterTable()">
-                    </div>
-                    
-                    <div class="flex items-center gap-3 w-full md:w-auto md:ml-auto">
-                        @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
-                            {{-- Form Filter Global --}}
-                            <form id="globalFilterForm" method="GET" action="{{ route('absensi.index') }}" style="display:none;">
-                                <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $active_tab }}">
-                                <input type="hidden" name="store_id" id="filterStoreId" value="{{ $store_id }}">
-                                <input type="hidden" name="shift_id" id="filterShiftId" value="{{ $shift_id }}">
-                            </form>
-
-                            <div class="flex items-center gap-3">
-                                {{-- Dropdown Toko --}}
-                                <div class="dropdown">
-                                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" title="Filter Toko" onclick="toggleDropdown(event)">
-                                        <iconify-icon icon="solar:shop-bold-duotone" class="text-xl {{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                                    </button>
-                                    <div class="dropdown-content">
-                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
-                                        @foreach($outlets as $o)
-                                            <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                {{-- Dropdown Shift --}}
-                                <div class="dropdown">
-                                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" title="Filter Shift" onclick="toggleDropdown(event)">
-                                        <iconify-icon icon="solar:clock-circle-bold-duotone" class="text-xl {{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
-                                    </button>
-                                    <div class="dropdown-content">
-                                        <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
-                                        @foreach($shifts as $s)
-                                            <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                        
-                        <button type="button" class="btn-action flex items-center justify-center h-10 px-4 rounded-xl ml-auto md:ml-0" id="btnAddMain" onclick="openCurrentModal()">
-                            <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-                            <span id="txtAddMain" class="ml-2">Tambah</span>
-                        </button>
-                    </div>
+        <header class="action-bar mb-4 bg-transparent p-0" style="justify-content: space-between; border: none; box-shadow: none; flex-wrap: wrap; gap: 15px;">
+            <div id="headerLeftActions" style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 280px; flex-wrap: wrap;">
+                
+                {{-- 1. Search Bar --}}
+                <div class="search-wrapper" style="min-width: 250px;">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="globalSearch" class="search-input" placeholder="masukan nama/hari" onkeyup="filterTable()" style="width: 100%;">
                 </div>
+
+                @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                    <form id="globalFilterForm" method="GET" action="{{ route('absensi.index') }}" style="display:none;">
+                        <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $active_tab }}">
+                        <input type="hidden" name="store_id" id="filterStoreId" value="{{ $store_id }}">
+                        <input type="hidden" name="shift_id" id="filterShiftId" value="{{ $shift_id }}">
+                    </form>
+
+                    <div id="jadwalFilters" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        {{-- 2. Dropdown Toko --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                                @foreach($outlets as $o)
+                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- 3. Dropdown Shift --}}
+                        <div class="dropdown">
+                            <button type="button" class="btn-filter" title="Filter Shift" onclick="toggleDropdown(event)">
+                                <iconify-icon icon="solar:clock-circle-bold-duotone" style="font-size: 24px;" class="{{ $shift_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                            </button>
+                            <div class="dropdown-content">
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', 'all')" class="{{ $shift_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Shift</a>
+                                @foreach($shifts as $s)
+                                    <a href="javascript:void(0)" onclick="applyGlobalFilter('shift', '{{ $s->uuid }}')" class="{{ $shift_id == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+            
+            <div class="right-actions" style="display: flex; gap: 12px;">
+                {{-- 4. Add Button --}}
+                <button type="button" class="btn-action" id="btnAddMain" onclick="openCurrentModal()">
+                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                    <span id="txtAddMain">Tambah</span>
+                </button>
             </div>
         </header>
 
@@ -248,23 +247,37 @@
 
             // Handle Header Actions Visibility
             const leftActions = document.getElementById('headerLeftActions');
+            const jadwalFilters = document.getElementById('jadwalFilters');
+            const searchInput = document.getElementById('globalSearch');
             const btnAdd = document.getElementById('btnAddMain');
             const txtAdd = document.getElementById('txtAddMain');
             const actionBar = document.querySelector('.action-bar');
 
-            const showGlobalFilters = (tab === 'jadwal');
+            const showSearch = (tab === 'shift' || tab === 'jadwal');
+            const showJadwalFilters = (tab === 'jadwal');
             const showAddButton = (tab === 'shift' || tab === 'jadwal');
 
-            if (leftActions) leftActions.style.display = showGlobalFilters ? 'flex' : 'none';
+            if (leftActions) leftActions.style.display = showSearch ? 'flex' : 'none';
+            
+            if (jadwalFilters) jadwalFilters.style.display = showJadwalFilters ? 'flex' : 'none';
+            
+            if (searchInput) {
+                if (tab === 'shift') {
+                    searchInput.placeholder = 'Cari nama shift...';
+                } else {
+                    searchInput.placeholder = 'Cari nama karyawan/hari...';
+                }
+            }
+
             if (btnAdd) {
                 btnAdd.style.display = showAddButton ? 'flex' : 'none';
                 if (tab === 'shift') txtAdd.innerText = 'Tambah Shift';
                 if (tab === 'jadwal') txtAdd.innerText = 'Tambah Jadwal';
             }
 
-            // Hide action bar entirely if no filters and no add button
+            // Hide action bar entirely if nothing to show
             if (actionBar) {
-                actionBar.style.display = (showGlobalFilters || showAddButton) ? 'flex' : 'none';
+                actionBar.style.display = (showSearch || showAddButton) ? 'flex' : 'none';
             }
 
             filterTable();
@@ -314,6 +327,43 @@
             form.innerHTML = '@csrf @method("PUT") <input type="hidden" name="status_kehadiran" value="' + sel.value + '">';
             document.body.appendChild(form);
             form.submit();
+        }
+
+        function openRiwayatExport(format) {
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '{{ route("absensi.riwayat.export") }}';
+            
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = format;
+            form.appendChild(formatInput);
+
+            const store = document.querySelector('select[name="store_id"]')?.value || '{{ $store_id }}';
+            const storeInput = document.createElement('input');
+            storeInput.type = 'hidden';
+            storeInput.name = 'store_id';
+            storeInput.value = store;
+            form.appendChild(storeInput);
+
+            const bulan = document.querySelector('input[name="filter_bulan"]')?.value || '';
+            const bulanInput = document.createElement('input');
+            bulanInput.type = 'hidden';
+            bulanInput.name = 'filter_bulan';
+            bulanInput.value = bulan;
+            form.appendChild(bulanInput);
+
+            const karyawan = document.querySelector('input[name="filter_karyawan"]')?.value || '';
+            const karyawanInput = document.createElement('input');
+            karyawanInput.type = 'hidden';
+            karyawanInput.name = 'filter_karyawan';
+            karyawanInput.value = karyawan;
+            form.appendChild(karyawanInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         }
 
         switchTab(currentTab);

@@ -378,34 +378,35 @@
                         <p style="font-size: 12px; color: var(--text-muted); margin: 0;"><span id="broadcast-count">0</span> Kontak terpilih</p>
                     </div>
                 </div>
-                <button onclick="closeModal('modalBroadcast')" class="close-btn" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+                <button class="close-modal" onclick="closeModal('modalBroadcast')">&times;</button>
             </div>
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div style="margin-bottom: 20px;">
                     <label for="broadcast-message" style="display: block; font-size: 13px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px;">Pesan Siaran</label>
                     <textarea id="broadcast-message" style="width: 100%; height: 150px; padding: 12px; border: 2px solid var(--border-blue); border-radius: 12px; font-size: 14px; resize: none;" placeholder="Ketik pesan Anda di sini..."></textarea>
                     <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Tips: Pesan akan dikirim secara berurutan ke semua nomor yang Anda centang.</p>
                 </div>
-                <div style="display: flex; gap: 12px;">
-                    <button type="button" onclick="closeModal('modalBroadcast')" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;">Batal</button>
-                    <button type="button" onclick="startBroadcast()" class="btn-action" style="flex: 2; justify-content: center; border-radius: 50px; background: #22c55e;">
-                        <iconify-icon icon="solar:send-square-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                        Kirim Sekarang
-                    </button>
-                </div>
+            </div>
+            <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('modalBroadcast')">Batal</button>
+                <button type="button" class="btn-action" style="flex: 2; justify-content: center; background: #22c55e;" onclick="startBroadcast()">
+                    <iconify-icon icon="solar:send-square-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                    <span>Kirim Sekarang</span>
+                </button>
             </div>
         </div>
     </div>
+
 {{-- MODAL TAMBAH --}}
 <div id="addModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
             <h3 id="modalTitle">Tambah Pelanggan</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
         <form action="{{ route('kontak.store') }}" method="POST">
             @csrf
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <input type="hidden" name="tipe" id="add_tipe" value="customer">
                 <div class="form-group">
                     <label for="add_nama">Nama Lengkap</label>
@@ -425,10 +426,10 @@
                     </select>
                     <small style="color: var(--text-muted); font-size: 11px;">Pilih akun jika kontak ini memiliki akun di aplikasi untuk menghitung total transaksi.</small>
                 </div>
-                <div style="display: flex; gap: 12px; margin-top: 20px;">
-                    <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('addModal')">Batal</button>
-                    <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Simpan Kontak</button>
-                </div>
+            </div>
+            <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('addModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan Kontak</button>
             </div>
         </form>
     </div>
@@ -436,7 +437,7 @@
 
 {{-- MODAL EDIT --}}
 <div id="editModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
             <h3>Edit Kontak</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
@@ -444,7 +445,7 @@
         <form id="editForm" method="POST">
             @csrf
             @method('PUT')
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
                     <label for="edit_nama">Nama Lengkap</label>
                     <input type="text" name="nama" id="edit_nama" class="form-control" required>
@@ -462,10 +463,10 @@
                         @endforeach
                     </select>
                 </div>
-                <div style="display: flex; gap: 12px; margin-top: 20px;">
-                    <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center; border-radius: 50px;" onclick="closeModal('editModal')">Batal</button>
-                    <button type="submit" class="btn-action" style="flex: 1; justify-content: center; border-radius: 50px; background: var(--primary-blue);">Update Kontak</button>
-                </div>
+            </div>
+            <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
+                <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('editModal')">Batal</button>
+                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Simpan Perubahan</button>
             </div>
         </form>
     </div>
@@ -473,36 +474,36 @@
 
 {{-- MODAL VIEW --}}
 <div id="viewModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
             <h3>Detail Kontak</h3>
             <button class="close-modal" onclick="closeModal('viewModal')">&times;</button>
         </div>
-        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding-right: 10px;">
-            <div style="background: var(--light-blue); border-radius: 16px; padding: 20px; border: 1px solid var(--border-blue); margin-bottom: 20px;">
-                <div style="margin-bottom: 15px;">
-                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nama Lengkap</span>
-                    <p id="view_nama" style="color: var(--text-dark); font-weight: 700; font-size: 16px; margin: 0;"></p>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Nomor HP</span>
-                    <p id="view_no_hp" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Akun Terhubung</span>
-                    <p id="view_username" style="color: var(--text-dark); font-weight: 600; font-size: 15px; margin: 0;"></p>
-                </div>
-                <div id="view_stats_row" style="margin-bottom: 15px;">
-                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Total Transaksi</span>
-                    <p id="view_total_transaksi" style="color: var(--text-dark); font-weight: 700; font-size: 15px; margin: 0;"></p>
-                </div>
-                <div style="margin-bottom: 0;">
-                    <span style="display: block; color: var(--primary-blue); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px;">Tipe Kontak</span>
-                    <span id="view_tipe" class="status-badge" style="background: white; color: var(--primary-blue); border: 1px solid var(--primary-blue); font-weight: 700; text-transform: capitalize;"></span>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">Nama Lengkap</label>
+                <div id="view_nama" style="font-weight: 600; color: #334155;">-</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">Nomor HP</label>
+                <div id="view_no_hp" style="font-weight: 600; color: #334155;">-</div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">Akun Terhubung</label>
+                <div id="view_username" style="font-weight: 600; color: #334155;">-</div>
+            </div>
+            <div id="view_stats_row" style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #888;">Total Transaksi</label>
+                <div id="view_total_transaksi" style="font-weight: 600; color: #334155;">-</div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 12px; color: #888;">Tipe Kontak</label>
+                <div style="margin-top: 4px;">
+                    <span id="view_tipe" class="status-badge" style="background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB; font-weight: 700; text-transform: capitalize;"></span>
                 </div>
             </div>
 
-            <div id="transaction_history_section">
+            <div id="transaction_history_section" style="margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h4 style="font-size: 14px; font-weight: 800; color: var(--text-dark); margin: 0; display: flex; align-items: center; gap: 8px;">
                         <iconify-icon icon="solar:bill-list-bold-duotone" style="color: var(--primary-blue); font-size: 20px;"></iconify-icon>
@@ -517,18 +518,18 @@
             </div>
 
             <div style="margin-top: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <a id="view_wa_btn" href="#" target="_blank" class="btn-action" style="justify-content: center; background: #25d366; color: white; border: none; border-radius: 15px; text-decoration: none; padding: 12px;">
+                <a id="view_wa_btn" href="#" target="_blank" class="btn-action" style="justify-content: center; background: #25d366; color: white; border: none; border-radius: 12px; text-decoration: none; padding: 12px; display: flex; align-items: center; gap: 8px;">
                     <iconify-icon icon="ic:baseline-whatsapp" style="font-size: 20px;"></iconify-icon>
                     <span>WhatsApp</span>
                 </a>
-                <a id="view_call_btn" href="#" class="btn-action" style="justify-content: center; background: var(--primary-blue); color: white; border: none; border-radius: 15px; text-decoration: none; padding: 12px;">
+                <a id="view_call_btn" href="#" class="btn-action" style="justify-content: center; background: var(--primary-blue); color: white; border: none; border-radius: 12px; text-decoration: none; padding: 12px; display: flex; align-items: center; gap: 8px;">
                     <iconify-icon icon="solar:phone-calling-bold-duotone" style="font-size: 20px;"></iconify-icon>
                     <span>Telepon</span>
                 </a>
             </div>
         </div>
-        <div style="padding: 15px 20px; border-top: 1px solid #f1f5f9;">
-            <button onclick="closeModal('viewModal')" class="btn-action" style="width: 100%; justify-content: center; background: #f1f5f9; color: #64748b; border: none; border-radius: 50px; font-weight: 700;">Tutup Detail</button>
+        <div style="padding: 0 20px 20px; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn-action" style="padding: 10px 24px;" onclick="closeModal('viewModal')">Tutup</button>
         </div>
     </div>
 </div>

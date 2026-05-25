@@ -248,6 +248,7 @@
             @endif
         });
     </script>
+    <script src="{{ asset('js/frontend_validation.js') }}"></script>
     @stack('scripts')
 </body>
 

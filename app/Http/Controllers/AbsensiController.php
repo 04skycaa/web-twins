@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AbsensiController extends Controller
 {
@@ -378,5 +379,47 @@ class AbsensiController extends Controller
         return redirect()->back()
             ->with('success', 'Status kehadiran berhasil diperbarui!')
             ->with('active_tab', 'riwayat');
+    }
+
+    public function exportRiwayat(Request $request)
+    {
+        $store_id = $request->store_id ?? 'all';
+        $filterBulan = $request->filter_bulan;
+        $filterKaryawan = $request->filter_karyawan;
+        $format = $request->format ?? 'excel';
+
+        $query = Absensi::with(['jadwal.user.operator', 'store', 'jadwal.shift']);
+
+        if ($store_id !== 'all') {
+            $query->where('store_id', $store_id);
+            $outlet_name = DB::table('store')->where('uuid', $store_id)->value('nama') ?? 'Semua Outlet';
+        } else {
+            $outlet_name = 'Semua Outlet';
+        }
+
+        if ($filterBulan) {
+            $month = date('m', strtotime($filterBulan));
+            $year = date('Y', strtotime($filterBulan));
+            $query->whereMonth('tanggal_absensi', $month)->whereYear('tanggal_absensi', $year);
+        }
+
+        if ($filterKaryawan) {
+            $query->whereHas('jadwal.user', function($q) use ($filterKaryawan) {
+                $q->where('name', 'ilike', '%' . $filterKaryawan . '%');
+            });
+        }
+
+        $riwayat = $query->orderBy('tanggal_absensi', 'desc')->get();
+
+        $data = compact('riwayat', 'store_id', 'outlet_name', 'filterBulan', 'filterKaryawan');
+
+        if ($format === 'excel') {
+            return response(view('absensi.export_excel', $data))
+                ->header('Content-Type', 'application/vnd.ms-excel')
+                ->header('Content-Disposition', 'attachment; filename="Export_Riwayat_Absensi_'.date('Ymd_His').'.xls"');
+        }
+
+        $pdf = Pdf::loadView('absensi.export_pdf', $data);
+        return $pdf->download('Export_Riwayat_Absensi_'.date('Ymd_His').'.pdf');
     }
 }

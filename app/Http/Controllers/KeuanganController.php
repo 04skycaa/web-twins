@@ -97,9 +97,8 @@ class KeuanganController extends Controller
         $pengeluaran = floatval($summaryTotals->get('pengeluaran', 0));
         $saldo_bersih = $pemasukan - $pengeluaran;
 
-        return view('keuangan.manage', compact(
-            'cashboxes', 
-            'history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'outlets', 'store_id', 'start_date', 'end_date'
+        return view('keuangan.cashbox', compact(
+            'cashboxes', 'cashFlowTotals', 'history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'start_date', 'end_date', 'outlets', 'store_id'
         ));
     }
 
