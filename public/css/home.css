@@ -1220,11 +1220,13 @@ header.scrolled,
 
     .nft-grid {
         display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
         grid-template-columns: none !important;
         overflow-x: auto !important;
         padding: 20px 0 40px 0 !important;
         gap: 20px !important;
-        scroll-snap-type: x mandatory;
+        scroll-snap-type: x proximity;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
         scrollbar-color: var(--accent-purple) transparent;
@@ -4508,6 +4510,8 @@ body.show-content {
         padding: 20px 15px !important;
         gap: 15px !important;
         display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
         overflow-x: auto !important;
         overscroll-behavior-x: contain !important;
         width: 100% !important;

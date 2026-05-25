@@ -23,6 +23,7 @@
     <meta name="user-name" content="{{ optional(auth()->user())->name ?? '' }}">
     <meta name="user-phone" content="{{ optional(auth()->user())->no_hp ?? '' }}">
     <title>TWINS - Food Delivery Dashboard</title>
+    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/png">
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="dns-prefetch" href="https://unpkg.com">
