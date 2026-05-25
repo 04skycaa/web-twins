@@ -13,7 +13,7 @@
         </thead>
         <tbody>
             @foreach($purchases as $p)
-                <tr>
+                <tr class="restok-row" data-supplier="{{ strtolower($p->contact->nama ?? 'Umum') }}" data-tanggal="{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}" data-user="{{ strtolower($p->user->name ?? '') }}">
                     <td>{{ \Carbon\Carbon::parse($p->tanggal)->format('d/m/Y H:i') }}</td>
                     <td>{{ $p->contact->nama ?? 'Umum' }}</td>
                     <td style="font-weight: 700;">Rp {{ number_format($p->total, 0, ',', '.') }}</td>
@@ -58,6 +58,8 @@
     <div class="pagination-container">
         @if(isset($purchases) && $purchases instanceof \Illuminate\Pagination\LengthAwarePaginator)
             {{ $purchases->links('vendor.pagination.twins') }}
+        @else
+            <div id="restokPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         @endif
     </div>
 @else

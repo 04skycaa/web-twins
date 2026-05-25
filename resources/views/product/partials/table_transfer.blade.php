@@ -13,7 +13,7 @@
         </thead>
         <tbody>
             @foreach($transfers as $t)
-                <tr>
+                <tr class="transfer-row" data-dari="{{ strtolower($t->store->nama ?? '') }}" data-tujuan="{{ strtolower($t->tujuanStore->nama ?? '') }}" data-tanggal="{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y H:i') }}" data-user="{{ strtolower($t->user->username ?? '') }}" data-status="{{ strtolower($t->status ?: 'pending') }}">
                     <td>{{ \Carbon\Carbon::parse($t->tanggal)->format('d/m/Y H:i') }}</td>
                     <td>{{ $t->store->nama ?? '-' }}</td>
                     <td>{{ $t->tujuanStore->nama ?? '-' }}</td>
@@ -35,21 +35,6 @@
                             <button class="btn-filter" title="Lihat Detail" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="viewTransferDetail('{{ $t->uuid }}')">
                                 <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                             </button>
-                            @if(in_array(strtolower($t->status ?: 'pending'), ['pending', 'proses', '']) && Auth::user()->isOwner())
-                                <button class="btn-filter" title="Setujui Transfer" style="width: 32px; height: 32px; border-radius: 8px; color: #0081C9; border-color: #0081C9;" onclick="approveTransfer('{{ $t->uuid }}')">
-                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                                </button>
-                            @endif
-                            @if(strtolower($t->status) == 'disetujui' && Auth::user()->store_id == $t->store_id)
-                                <button class="btn-filter" title="Kirim Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #E65100; border-color: #FFE0B2;" onclick="shipTransfer('{{ $t->uuid }}')">
-                                    <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
-                                </button>
-                            @endif
-                            @if(strtolower($t->status) == 'dikirim' && Auth::user()->store_id == $t->tujuan_store_id)
-                                <button class="btn-filter" title="Terima Barang" style="width: 32px; height: 32px; border-radius: 8px; color: #2F855A; border-color: #C6F6D5;" onclick="confirmReceiveTransfer('{{ $t->uuid }}')">
-                                    <iconify-icon icon="solar:box-bold-duotone"></iconify-icon>
-                                </button>
-                            @endif
                         </div>
                     </td>
                 </tr>
@@ -59,7 +44,9 @@
     </div>
     <div class="pagination-container">
         @if(isset($transfers) && $transfers instanceof \Illuminate\Pagination\LengthAwarePaginator)
-            {{ $transfers->links() }}
+            {{ $transfers->links('vendor.pagination.twins') }}
+        @else
+            <div id="transferPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         @endif
     </div>
 @else

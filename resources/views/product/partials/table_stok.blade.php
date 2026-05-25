@@ -41,7 +41,7 @@
                             \Carbon\Carbon::parse($alert->kadaluarsa)->isFuture() && 
                             \Carbon\Carbon::parse($alert->kadaluarsa)->lessThanOrEqualTo(now()->addDays(30));
             @endphp
-            <tr style="background: white">
+            <tr class="stok-row" style="background: white" data-name="{{ strtolower(optional($alert->product)->nama_produk ?? '') }}" data-store="{{ strtolower(optional($alert->store)->nama ?? '') }}" data-tanggal="{{ $alert->tanggal_masuk ? \Carbon\Carbon::parse($alert->tanggal_masuk)->format('d/m/Y') : '' }}">
                 <td>
                     <div class="product-info">
                         <img src="{{ optional($alert->product)->resolved_image_url ?? asset('images/placeholder-product.png') }}" class="product-img">
@@ -115,6 +115,8 @@
 
 <div class="pagination-container">
     @if(isset($alerts) && $alerts instanceof \Illuminate\Pagination\LengthAwarePaginator)
-        {{ $alerts->links() }}
+        {{ $alerts->links('vendor.pagination.twins') }}
+    @else
+        <div id="stokPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
     @endif
 </div>

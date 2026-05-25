@@ -135,9 +135,10 @@ class ProductController extends Controller
             $query->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
         }
 
-        $products = $request->limit == 'all' ? $query->get() : $query->paginate(10);
+        $products = $query->get();
 
-        $products->getCollection()->transform(function ($product) use ($user, $selectedStoreId) {
+        $collectionToTransform = $products;
+        $collectionToTransform->transform(function ($product) use ($user, $selectedStoreId) {
             $product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($product->image_url);
             
             // Re-calculating current_kadaluarsa from eager-loaded stores
@@ -210,7 +211,7 @@ class ProductController extends Controller
                     $q->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"]);
                 });
             }
-            $opname_details = $request->limit == 'all' ? $query->orderBy('uuid', 'desc')->get() : $query->orderBy('uuid', 'desc')->paginate(10)->withQueryString();
+            $opname_details = $query->orderBy('uuid', 'desc')->get();
             $opnames = collect();
         } else {
             $query = Opname::with(['store', 'user', 'details.product'])->orderBy('tanggal', 'desc');
@@ -235,7 +236,7 @@ class ProductController extends Controller
                     });
                 });
             }
-            $opnames = $request->limit == 'all' ? $query->get() : $query->paginate(10)->withQueryString();
+            $opnames = $query->get();
             $opname_details = collect();
         }
 
@@ -304,8 +305,8 @@ class ProductController extends Controller
                 $q->where('kategori_id', $request->category_id);
             });
         }
-        $alerts = $request->limit == 'all' ? $query->get() : $query->paginate(10)->withQueryString();
-        $alerts->getCollection()->each(function($alert) {
+        $alerts = $query->get();
+        $alerts->each(function($alert) {
             if ($alert->product) {
                 $alert->product->resolved_image_url = \App\Http\Controllers\LandingController::resolveImageUrl($alert->product->image_url);
             }
@@ -373,7 +374,7 @@ class ProductController extends Controller
 
         return [
             'active_tab' => 'restok',
-            'purchases' => $request->limit == 'all' ? $query->get() : $query->paginate(10),
+            'purchases' => $query->get(),
             'suppliers' => Contact::where('tipe', 'ilike', 'supplier')->get(),
             'categories' => Category::all(),
             'stores' => $user->isOwner() ? Outlet::where('status_aktif', true)->get() : collect([$user->outlet]),
@@ -506,7 +507,7 @@ class ProductController extends Controller
         if ($request->start_date) { $query->where('tanggal', '>=', $request->start_date); }
         if ($request->end_date) { $query->where('tanggal', '<=', $request->end_date); }
 
-        $transfers = $request->limit == 'all' ? $query->get() : $query->paginate(10);
+        $transfers = $query->get();
         $stores = Outlet::where('status_aktif', true)->get();
         $sourceStoreId = $user->isOwner() ? ($request->source_store_id ?? $user->store_id) : $user->store_id;
         if ($user->isOwner() && !$sourceStoreId && $stores->count() > 0) { $sourceStoreId = $stores->first()->uuid; }
@@ -556,7 +557,7 @@ class ProductController extends Controller
                 'nama_produk' => $p->nama_produk,
                 'barcode' => $p->barcode,
                 'category_name' => $p->category->nama_category ?? '-',
-                'current_stok' => $storeData ? (float)$storeData->stok : 0,
+                'stok' => $storeData ? (float)$storeData->stok : 0,
                 'harga_modal' => (float)($p->harga_modal ?? 0),
                 'harga_jual' => (float)($p->harga_jual ?? 0)
             ];
@@ -569,9 +570,14 @@ class ProductController extends Controller
     {
         $request->validate([
             'tujuan_store_id' => 'required|uuid',
+            'payment_type' => 'required|in:Tunai,Kredit',
+            'metode_pembayaran' => 'nullable|exists:payment_methods,uuid',
+            'dp_amount' => 'nullable|numeric|min:0',
+            'jatuh_tempo' => 'nullable|date',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|uuid',
             'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.harga' => 'required|numeric|min:0',
         ]);
 
         /** @var User $user */
@@ -592,6 +598,16 @@ class ProductController extends Controller
 
         DB::beginTransaction();
         try {
+            $sourceStore = Outlet::find($sourceStoreId);
+            $tujuanStore = Outlet::find($request->tujuan_store_id);
+
+            $total = 0;
+            foreach ($request->items as $item) {
+                $total += ($item['qty'] * $item['harga']);
+            }
+
+            $dp_paid = $request->payment_type == 'Tunai' ? $total : ($request->dp_amount ?? 0);
+
             $insertData = [
                 'uuid' => Str::uuid(),
                 'jenis' => 'transfer',
@@ -600,9 +616,12 @@ class ProductController extends Controller
                 'user_id' => $user->uuid,
                 'tanggal' => now(),
                 'catatan' => $request->catatan,
+                'total' => $total,
+                'bayar' => $dp_paid,
+                'kembalian' => 0,
+                'metode_pembayaran' => $request->metode_pembayaran,
+                'status' => 'Selesai', // Instant update
             ];
-
-            $insertData['status'] = 'Pending';
 
             $transaction = Transaction::create($insertData);
 
@@ -614,9 +633,111 @@ class ProductController extends Controller
                     'transaction_id' => $transaction->uuid,
                     'product_id' => $item['product_id'],
                     'jmlh' => $item['qty'],
-                    'harga_modal' => $product->harga_modal,
+                    'harga_modal' => $item['harga'], // Use negotiated transfer price
                     'harga_jual' => $product->harga_jual,
                 ]);
+
+                // Kurangi Stok Asal
+                $sourceStock = ProductStore::where('product_id', $item['product_id'])
+                    ->where('store_id', $sourceStoreId)->first();
+                if (!$sourceStock || $sourceStock->stok < $item['qty']) {
+                    throw new \Exception("Stok produk " . $product->nama_produk . " tidak mencukupi di toko asal.");
+                }
+                $sourceStock->decrement('stok', $item['qty']);
+
+                StockCard::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => $item['product_id'],
+                    'store_id' => $sourceStoreId,
+                    'jmlh' => -$item['qty'],
+                    'keterangan' => "Transfer (Dikirim) ke " . ($tujuanStore->nama ?? 'Toko Tujuan') . " (Instan)",
+                ]);
+
+                // Tambah Stok Tujuan
+                $targetStock = ProductStore::firstOrCreate(
+                    ['product_id' => $item['product_id'], 'store_id' => $request->tujuan_store_id],
+                    ['stok' => 0, 'status_aktif' => true]
+                );
+                $targetStock->increment('stok', $item['qty']);
+
+                StockCard::create([
+                    'uuid' => (string) Str::uuid(),
+                    'product_id' => $item['product_id'],
+                    'store_id' => $request->tujuan_store_id,
+                    'jmlh' => $item['qty'],
+                    'keterangan' => "Terima Transfer dari " . ($sourceStore->nama ?? 'Toko Asal') . " (Instan)",
+                ]);
+            }
+
+            // Keuangan: CashFlow
+            if ($request->payment_type == 'Tunai' || $dp_paid > 0) {
+                // Toko Asal Menerima Uang (Pemasukan)
+                CashFlow::create([
+                    'uuid' => (string) Str::uuid(),
+                    'store_id' => $sourceStoreId,
+                    'user_id' => $user->uuid,
+                    'jenis' => 'pemasukan',
+                    'nominal' => $dp_paid,
+                    'metode_pembayaran' => $request->metode_pembayaran,
+                    'keterangan' => "Pemasukan Transfer dari " . ($tujuanStore->nama ?? 'Toko Tujuan') . " (Trx: {$transaction->uuid})",
+                    'tanggal' => now(),
+                ]);
+                
+                // Toko Tujuan Mengeluarkan Uang (Pengeluaran)
+                CashFlow::create([
+                    'uuid' => (string) Str::uuid(),
+                    'store_id' => $request->tujuan_store_id,
+                    'user_id' => $user->uuid,
+                    'jenis' => 'pengeluaran',
+                    'nominal' => $dp_paid,
+                    'metode_pembayaran' => $request->metode_pembayaran,
+                    'keterangan' => "Pembayaran Transfer ke " . ($sourceStore->nama ?? 'Toko Asal') . " (Trx: {$transaction->uuid})",
+                    'tanggal' => now(),
+                ]);
+            }
+
+            // Keuangan: Hutang / Piutang
+            if ($request->payment_type == 'Kredit') {
+                $debt_amount = $total - $dp_paid;
+                if ($debt_amount > 0) {
+                    // Contact representing Source Store (untuk toko tujuan)
+                    $contactSource = Contact::firstOrCreate(
+                        ['store_id' => $request->tujuan_store_id, 'nama' => 'Cabang: ' . ($sourceStore->nama ?? 'Toko Asal')],
+                        ['tipe' => 'supplier', 'user_id' => $user->uuid]
+                    );
+
+                    // Toko Tujuan punya Hutang
+                    Debt::create([
+                        'uuid' => (string) Str::uuid(),
+                        'store_id' => $request->tujuan_store_id, 
+                        'kontak_id' => $contactSource->uuid,
+                        'tipe' => 'utang',
+                        'nominal' => $debt_amount,
+                        'sisa' => $debt_amount,
+                        'jatuh_tempo' => $request->jatuh_tempo ?: now()->addDays(30), 
+                        'transaction_id' => $transaction->uuid,
+                        'keterangan' => 'Hutang Transfer Stok'
+                    ]);
+                    
+                    // Contact representing Target Store (untuk toko asal)
+                    $contactTarget = Contact::firstOrCreate(
+                        ['store_id' => $sourceStoreId, 'nama' => 'Cabang: ' . ($tujuanStore->nama ?? 'Toko Tujuan')],
+                        ['tipe' => 'pelanggan', 'user_id' => $user->uuid]
+                    );
+                    
+                    // Toko Asal punya Piutang
+                    Debt::create([
+                        'uuid' => (string) Str::uuid(),
+                        'store_id' => $sourceStoreId, 
+                        'kontak_id' => $contactTarget->uuid,
+                        'tipe' => 'piutang',
+                        'nominal' => $debt_amount,
+                        'sisa' => $debt_amount,
+                        'jatuh_tempo' => $request->jatuh_tempo ?: now()->addDays(30), 
+                        'transaction_id' => $transaction->uuid,
+                        'keterangan' => 'Piutang Transfer Stok'
+                    ]);
+                }
             }
 
             DB::commit();
@@ -625,11 +746,11 @@ class ProductController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Permintaan transfer stok berhasil dibuat dan menunggu persetujuan.'
+                    'message' => 'Transfer stok berhasil diproses dan stok telah diperbarui instan.'
                 ]);
             }
             
-            return back()->with('success', 'Permintaan transfer stok berhasil dibuat dan menunggu persetujuan.');
+            return back()->with('success', 'Transfer stok berhasil diproses dan stok telah diperbarui instan.');
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -976,7 +1097,8 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'store_id' => 'nullable|exists:store,uuid',
+            'store_ids' => 'nullable|array',
+            'store_ids.*' => 'exists:store,uuid',
             'nama_produk' => 'required|string|max:255',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'kategori_id' => 'required|exists:category,uuid',
@@ -1031,17 +1153,25 @@ class ProductController extends Controller
             'keterangan' => 'Produk baru ditambahkan ke sistem',
         ]);
 
-        // Initialize ProductStore for the appropriate store (owner can specify store_id)
+        // Initialize ProductStore for the appropriate store (owner can specify multiple store_ids)
         $user = \Illuminate\Support\Facades\Auth::user();
-        $storeId = $user->isOwner()
-            ? ($request->input('store_id') ?? $user->store_id)
-            : $user->store_id;
-        ProductStore::create([
-            'product_id' => $product->uuid,
-            'store_id' => $storeId,
-            'stok' => 0,
-            'status_aktif' => true,
-        ]);
+        if ($user->isOwner() && $request->has('store_ids') && count($request->store_ids) > 0) {
+            foreach ($request->store_ids as $storeId) {
+                ProductStore::create([
+                    'product_id' => $product->uuid,
+                    'store_id' => $storeId,
+                    'stok' => 0,
+                    'status_aktif' => true,
+                ]);
+            }
+        } else {
+            ProductStore::create([
+                'product_id' => $product->uuid,
+                'store_id' => $user->store_id,
+                'stok' => 0,
+                'status_aktif' => true,
+            ]);
+        }
 
         \Illuminate\Support\Facades\Cache::flush();
         return redirect()->back()->with('success', 'Produk berhasil ditambahkan!');

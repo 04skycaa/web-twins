@@ -63,7 +63,7 @@
         </thead>
         <tbody>
             @forelse($opnames as $opname)
-                <tr>
+                <tr class="opname-row" data-tanggal="{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}" data-store="{{ strtolower($opname->store->nama ?? '') }}" data-user="{{ strtolower($opname->user->name ?? $opname->user->username ?? '') }}">
                     <td>{{ \Carbon\Carbon::parse($opname->tanggal)->format('d F Y') }}</td>
                     <td>{{ $opname->store->nama ?? '-' }}</td>
                     <td><strong>{{ $opname->user->name ?? $opname->user->username ?? '-' }}</strong></td>
@@ -106,6 +106,8 @@
     <div class="pagination-container">
         @if(isset($opnames) && $opnames instanceof \Illuminate\Pagination\LengthAwarePaginator)
             {{ $opnames->links() }}
+        @else
+            <div id="opnamePagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         @endif
     </div>
 @else
@@ -124,7 +126,7 @@
         </thead>
         <tbody>
             @forelse($opname_details as $detail)
-                <tr>
+                <tr class="rugi-row" data-produk="{{ strtolower($detail->product->nama_produk ?? '') }}" data-store="{{ strtolower($detail->opname->store->nama ?? '') }}" data-tanggal="{{ \Carbon\Carbon::parse($detail->opname->tanggal)->format('d/m/Y') }}">
                     <td>
                         <div style="font-weight: 600;">{{ $detail->product->nama_produk ?? '-' }}</div>
                     </td>
@@ -144,6 +146,8 @@
     <div class="pagination-container">
         @if(isset($opname_details) && $opname_details instanceof \Illuminate\Pagination\LengthAwarePaginator)
             {{ $opname_details->links() }}
+        @else
+            <div id="rugiPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
         @endif
     </div>
 @endif

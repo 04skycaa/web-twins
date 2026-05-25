@@ -15,7 +15,7 @@
     </thead>
     <tbody>
         @forelse($products as $product)
-            <tr>
+            <tr class="produk-row" data-name="{{ strtolower($product->nama_produk) }}" data-barcode="{{ strtolower($product->barcode ?? '') }}" data-category="{{ $product->kategori_id }}" data-store="{{ implode(',', $product->stores->pluck('store_id')->toArray()) }}">
                 <td class="mass-delete-checkbox" style="display: none; text-align: center;">
                     <input type="checkbox" class="product-checkbox" value="{{ $product->uuid }}" data-nama="{{ $product->nama_produk }}" onchange="updateMassDeleteCount()" style="transform: scale(1.2); cursor: pointer;">
                 </td>
@@ -94,4 +94,6 @@
 
 @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
     {{ $products->onEachSide(1)->appends(request()->query())->links('vendor.pagination.twins') }}
+@else
+    <div id="produkPagination" class="twins-pagination-container" style="margin-top: 24px;"></div>
 @endif

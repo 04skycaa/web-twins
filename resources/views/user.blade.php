@@ -263,13 +263,15 @@
                 <h1>{{ $outlet->nama }}</h1>
                 <p>📍 {{ $outlet->alamat }}</p>
 
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px;">
                     <span class="badge"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">🕒
-                        {{ $outlet->jam_buka }}</span>
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 0; padding: 8px 14px; text-transform: none; letter-spacing: 0.5px; font-size: 12px;">
+                        <span style="font-size: 14px; line-height: 1;">🕒</span> <span>{{ $outlet->jam_buka }}</span>
+                    </span>
                     <span class="badge"
-                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">⭐
-                        {{ number_format($outlet->rating, 1) }}</span>
+                        style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 0; padding: 8px 14px; text-transform: none; letter-spacing: 0.5px; font-size: 12px;">
+                        <span style="font-size: 14px; line-height: 1;">⭐</span> <span>{{ number_format($outlet->rating, 1) }}</span>
+                    </span>
                 </div>
             </div>
 

@@ -170,6 +170,17 @@
                                 </div>
                             </div>
                         </div>
+                        @if(Auth::user()->isOwner())
+                        <div class="form-group">
+                            <label for="store_ids_add" style="margin-bottom: 8px; display: block; font-weight: 600; font-size: 14px; color: #475569;">Pilih Outlet</label>
+                            <select name="store_ids[]" id="store_ids_add" multiple required placeholder="-- Pilih Minimal 1 Outlet --">
+                                @foreach($stores ?? [] as $store)
+                                    <option value="{{ $store->uuid }}">{{ $store->nama }}</option>
+                                @endforeach
+                            </select>
+                            <div class="invalid-feedback">Silakan pilih minimal 1 outlet</div>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -415,7 +426,7 @@
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
                     <div class="form-group">
-                        <label>Toko Asal (Source)</label>
+                        <label style="white-space: nowrap;">Toko Asal</label>
                         @if(Auth::user()->isOwner())
                             <select name="store_id" id="sourceStoreSelect" class="form-control" required onchange="handleSourceStoreChange(this.value)">
                                 <option value="">-- Pilih Toko Asal --</option>
@@ -430,7 +441,7 @@
                         @endif
                     </div>
                     <div class="form-group">
-                        <label>Toko Tujuan (Destination)</label>
+                        <label style="white-space: nowrap;">Toko Tujuan</label>
                         <select name="tujuan_store_id" class="form-control" required>
                             <option value="">-- Pilih Toko Tujuan --</option>
                             @foreach($stores as $s)
@@ -445,6 +456,40 @@
                     </div>
                 </div>
 
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Jenis Pembayaran</label>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                        <span style="font-size: 13px; font-weight: 600; color: #64748b;">Kredit (Hutang)</span>
+                        <label class="switch">
+                            <input type="checkbox" name="transfer_payment_type_toggle" id="transferPaymentMethodToggle" checked onchange="updateTransferPaymentLabel()">
+                            <span class="slider round"></span>
+                        </label>
+                        <span style="font-size: 13px; font-weight: 600; color: #2E7D32;" id="transferPaymentLabel">Tunai (Kas)</span>
+                    </div>
+                    <input type="hidden" name="payment_type" id="transferPaymentMethodValue" value="Tunai">
+                </div>
+
+                <div id="transferPaymentOptions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 15px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+                    <div class="form-group">
+                        <label>Metode Pembayaran</label>
+                        <select name="metode_pembayaran" id="transfer_metode_pembayaran_select" class="form-control" required>
+                            <option value="">-- Pilih Metode --</option>
+                            @foreach($payment_methods ?? [] as $pm)
+                                <option value="{{ $pm->uuid }}">{{ $pm->nama_metode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group" id="transferDpAmountGroup" style="display: none;">
+                        <label style="color: #C53030;">Jumlah Uang Muka (Opsional)</label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600; z-index: 5;">Rp</span>
+                            <input type="number" name="dp_amount" id="transfer_dp_amount" class="form-control" style="padding-left: 48px;" placeholder="0" min="0">
+                        </div>
+                        <label style="color: #C53030; margin-top: 10px; display: block;">Jatuh Tempo</label>
+                        <input type="date" name="jatuh_tempo" id="transfer_jatuh_tempo" class="form-control" min="{{ date('Y-m-d') }}">
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h4 style="margin: 0; color: #334155;">Daftar Produk yang Dipindah</h4>
@@ -453,17 +498,25 @@
                         </button>
                     </div>
                     <div class="table-scroll-container" style="overflow-x: auto; max-height: 230px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 16px; background: white;">
-                        <table class="fitur-table" style="font-size: 13px; min-width: 500px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
+                        <table class="fitur-table" style="font-size: 13px; min-width: 600px; border-collapse: separate; border-spacing: 0; margin-bottom: 0;">
                             <thead style="position: sticky; top: 0; z-index: 11; background: #f8fafc;">
                                 <tr style="background: #f8fafc;">
-                                    <th style="width: 75%; min-width: 250px;">Nama Produk / Barcode</th>
-                                    <th style="width: 20%; min-width: 80px;">Qty</th>
+                                    <th style="width: 45%; min-width: 200px;">Nama Produk / Barcode</th>
+                                    <th style="width: 15%; min-width: 80px;">Qty</th>
+                                    <th style="width: 25%; min-width: 120px;">Harga Transfer</th>
+                                    <th style="width: 15%; min-width: 100px;">Subtotal</th>
                                     <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody id="transferItemsTable">
                                 {{-- Rows injected via JS --}}
                             </tbody>
+                            <tfoot style="position: sticky; bottom: 0; z-index: 11; background: #f8fafc;">
+                                <tr style="background: #f8fafc; font-weight: 700;">
+                                    <td colspan="3" style="text-align: right; padding: 12px; border-top: 2px solid #e2e8f0;">TOTAL TRANSFER</td>
+                                    <td colspan="2" id="transferGrandTotal" style="padding: 12px; color: var(--primary-blue); font-size: 16px; border-top: 2px solid #e2e8f0;">Rp 0</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -879,8 +932,10 @@
     <div id="section-{{ $tab }}" class="view-section {{ $active_tab == $tab ? 'active' : '' }}">
         {{-- TAB-SPECIFIC ACTION BAR --}}
         <div class="action-bar mobile-action-bar">
-            <div class="left-actions-group mobile-action-bar" style="width: 100%;">
-                <div class="search-wrapper mobile-search-shrink">
+            <div class="left-actions-group mobile-action-bar" style="width: 100%; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <!-- Kiri: Search & Filter -->
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1;">
+                    <div class="search-wrapper mobile-search-shrink" style="max-width: 400px; width: 100%;">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="searchInput-{{ $tab }}" class="search-input" 
                         placeholder="Cari di {{ $tab }}..." 
@@ -943,7 +998,11 @@
                         </div>
                     </div>
                 @endif
-                <div class="dropdown">
+                </div>
+
+                <!-- Kanan: Extract, Hapus, Tambah -->
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                    <div class="dropdown">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                         <span>Extract</span>
@@ -990,6 +1049,7 @@
                         <span>Tambah Opname</span>
                     </button>
                 @endif
+                </div>
             </div>
         </div>
 
@@ -1020,6 +1080,17 @@
 
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('store_ids_add')) {
+            new TomSelect('#store_ids_add', {
+                plugins: ['checkbox_options'],
+                maxOptions: null,
+                hideSelected: false,
+                closeAfterSelect: false
+            });
+        }
+    });
+
     // --- Global Data Maps & State ---
     const allProductsMap = {};
     const stockAlertsMap = {};
@@ -2252,7 +2323,9 @@
         }
 
         const urlObj = new URL(url, window.location.origin);
-        const tab = urlObj.searchParams.get('tab') || window.currentTab || 'produk';
+        // Selalu gunakan window.currentTab saat navigasi ajax agar tidak terlempar ke tab lain
+        // akibat query string 'tab' bawaan dari link pagination Laravel.
+        const tab = window.currentTab || 'produk';
         urlObj.searchParams.set('tab', tab);
         const finalUrl = urlObj.toString();
 
@@ -2317,7 +2390,7 @@
     }
 
     function prefetchAdjacentPages(container) {
-        const nextLink = container.querySelector('.pagination .page-item:not(.active):not(.disabled) a');
+        const nextLink = container.querySelector('.pagination .page-item:not(.active):not(.disabled) a, .twins-pagination .twins-page-item:not(.active):not(.disabled) a');
         if (nextLink && !pageCache.has(nextLink.href)) {
             fetch(nextLink.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(r => r.text())
@@ -2369,7 +2442,7 @@
     // Intercept Pagination for High Performance
     document.addEventListener('click', function(e) {
         // Pagination links (intercept for AJAX)
-        const paginationLink = e.target.closest('.pagination a');
+        const paginationLink = e.target.closest('.pagination a, .twins-pagination a');
         if (paginationLink && !paginationLink.href.includes('javascript:')) {
             e.preventDefault();
             updateTableContent(paginationLink.href);
@@ -2379,7 +2452,7 @@
 
     // Aggressive Prefetching: Start loading next pages as soon as user hovers over them
     document.addEventListener('mouseover', function(e) {
-        const link = e.target.closest('.pagination a');
+        const link = e.target.closest('.pagination a, .twins-pagination a');
         if (link && link.href && !pageCache.has(link.href) && !link.href.includes('javascript:')) {
             fetch(link.href, { 
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -3321,7 +3394,7 @@
         let productOptions = '<option value="">-- Pilih Produk --</option>';
         if (currentStoreProducts.length > 0) {
             currentStoreProducts.forEach(p => {
-                productOptions += `<option value="${p.uuid}" data-stok="${p.stok}">${p.nama_produk} (${p.barcode || 'N/A'}) (Stok: ${p.stok})</option>`;
+                productOptions += `<option value="${p.uuid}" data-stok="${p.stok}" data-harga="${p.harga_modal || 0}">${p.nama_produk} (${p.barcode || 'N/A'}) (Stok: ${p.stok})</option>`;
             });
         } else {
             productOptions = '<option value="">-- Tidak ada produk tersedia --</option>';
@@ -3335,8 +3408,14 @@
                 <div class="invalid-feedback">Pilih produk yang akan dipindah</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][qty]" id="transfer_qty_${i}" class="form-control" placeholder="Qty" min="1" step="0.01" required style="min-width: 80px;" oninput="validateTransferQty(this)">
+                <input type="number" name="items[${i}][qty]" id="transfer_qty_${i}" class="form-control" placeholder="Qty" min="1" step="0.01" required style="min-width: 80px;" oninput="validateTransferQty(this); calculateTransferTotal()">
                 <div class="invalid-feedback">Qty wajib diisi</div>
+            </td>
+            <td>
+                <input type="number" name="items[${i}][harga]" id="transfer_harga_${i}" class="form-control" placeholder="Harga" min="0" step="0.01" required oninput="calculateTransferTotal()">
+            </td>
+            <td id="transfer_subtotal_${i}" style="font-weight: 600; color: #334155; text-align: right;">
+                Rp 0
             </td>
             <td>
                 <button type="button" class="btn-filter" onclick="removeTransferRow(this)" style="color: #D9534F;">
@@ -3351,19 +3430,30 @@
         const row = btn.closest('tr');
         if (document.getElementById('transferItemsTable').rows.length > 1) {
             row.remove();
+            calculateTransferTotal();
         }
     }
 
     function handleTransferProductChange(select, index) {
         const option = select.options[select.selectedIndex];
         const stok = parseFloat(option.getAttribute('data-stok')) || 0;
+        const harga = parseFloat(option.getAttribute('data-harga')) || 0;
+        
         const qtyInput = document.getElementById(`transfer_qty_${index}`);
+        const hargaInput = document.getElementById(`transfer_harga_${index}`);
+        
         if (qtyInput) {
             qtyInput.max = stok;
             if (parseFloat(qtyInput.value) > stok) {
                 qtyInput.value = stok;
             }
         }
+        
+        if (hargaInput && option.value) {
+            hargaInput.value = harga;
+        }
+        
+        calculateTransferTotal();
     }
 
     function validateTransferQty(input) {
@@ -3378,6 +3468,68 @@
                 confirmButtonColor: 'var(--primary-blue)',
                 confirmButtonText: 'Oke, Mengerti'
             });
+        }
+    }
+
+    function calculateTransferTotal() {
+        const table = document.getElementById('transferItemsTable');
+        if (!table) return;
+        
+        let grandTotal = 0;
+        
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            const qtyInput = row.querySelector('input[name^="items["][name$="][qty]"]');
+            const hargaInput = row.querySelector('input[name^="items["][name$="][harga]"]');
+            
+            if (qtyInput && hargaInput) {
+                const match = qtyInput.name.match(/items\[(\d+)\]\[qty\]/);
+                if (match) {
+                    const index = match[1];
+                    const subtotalTd = document.getElementById(`transfer_subtotal_${index}`);
+                    
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    const harga = parseFloat(hargaInput.value) || 0;
+                    const subtotal = qty * harga;
+                    
+                    grandTotal += subtotal;
+                    
+                    if (subtotalTd) {
+                        subtotalTd.textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
+                    }
+                }
+            }
+        }
+        
+        const grandTotalElement = document.getElementById('transferGrandTotal');
+        if (grandTotalElement) {
+            grandTotalElement.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+        }
+    }
+
+    function updateTransferPaymentLabel() {
+        const toggle = document.getElementById('transferPaymentMethodToggle');
+        const label = document.getElementById('transferPaymentLabel');
+        const hiddenInput = document.getElementById('transferPaymentMethodValue');
+        const dpGroup = document.getElementById('transferDpAmountGroup');
+        const methodSelect = document.getElementById('transfer_metode_pembayaran_select');
+
+        if (toggle && toggle.checked) {
+            if (label) {
+                label.textContent = 'Tunai (Kas)';
+                label.style.color = '#2E7D32';
+            }
+            if (hiddenInput) hiddenInput.value = 'Tunai';
+            if (dpGroup) dpGroup.style.display = 'none';
+            if (methodSelect) methodSelect.setAttribute('required', 'required');
+        } else {
+            if (label) {
+                label.textContent = 'Kredit (Hutang)';
+                label.style.color = '#C53030';
+            }
+            if (hiddenInput) hiddenInput.value = 'Kredit';
+            if (dpGroup) dpGroup.style.display = 'block';
+            if (methodSelect) methodSelect.removeAttribute('required');
         }
     }
 
@@ -3754,6 +3906,258 @@
             });
         @endif
     });
+    // --- Client-side Pagination for All Tabs ---
+    let stokState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let restokState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let transferState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let opnameState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let rugiState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+    let produkState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+
+    function initAllPaginators() {
+        if (document.getElementById('produkTable')) {
+            produkState.filtered = Array.from(document.querySelectorAll('#produkTable tbody tr.produk-row'));
+            produkState.currentPage = 1;
+            renderPaginator('produk', produkState, 'produkPagination', 'produkTable', 'produk-row');
+        }
+        if (document.getElementById('stokTable')) {
+            stokState.filtered = Array.from(document.querySelectorAll('#stokTable tbody tr.stok-row'));
+            stokState.currentPage = 1;
+            renderPaginator('stok', stokState, 'stokPagination', 'stokTable', 'stok-row');
+        }
+        if (document.getElementById('restokTable')) {
+            restokState.filtered = Array.from(document.querySelectorAll('#restokTable tbody tr.restok-row'));
+            restokState.currentPage = 1;
+            renderPaginator('restok', restokState, 'restokPagination', 'restokTable', 'restok-row');
+        }
+        if (document.getElementById('transferTable')) {
+            transferState.filtered = Array.from(document.querySelectorAll('#transferTable tbody tr.transfer-row'));
+            transferState.currentPage = 1;
+            renderPaginator('transfer', transferState, 'transferPagination', 'transferTable', 'transfer-row');
+        }
+        if (document.getElementById('opnameTable')) {
+            opnameState.filtered = Array.from(document.querySelectorAll('#opnameTable tbody tr.opname-row'));
+            opnameState.currentPage = 1;
+            renderPaginator('opname', opnameState, 'opnamePagination', 'opnameTable', 'opname-row');
+        }
+        if (document.getElementById('rugiTable')) {
+            rugiState.filtered = Array.from(document.querySelectorAll('#rugiTable tbody tr.rugi-row'));
+            rugiState.currentPage = 1;
+            renderPaginator('rugi', rugiState, 'rugiPagination', 'rugiTable', 'rugi-row');
+        }
+    }
+
+    function renderPaginator(type, state, containerId, tableId, rowClass) {
+        const totalRows = state.filtered.length;
+        const totalPages = Math.ceil(totalRows / state.rowsPerPage) || 1;
+        
+        if (state.currentPage > totalPages) state.currentPage = totalPages;
+        if (state.currentPage < 1) state.currentPage = 1;
+
+        const startIndex = (state.currentPage - 1) * state.rowsPerPage;
+        const endIndex = startIndex + state.rowsPerPage;
+
+        // Hide all rows
+        document.querySelectorAll(`#${tableId} tbody tr.${rowClass}`).forEach(row => {
+            row.style.display = 'none';
+        });
+
+        // Show paginated rows
+        state.filtered.forEach((row, index) => {
+            if (index >= startIndex && index < endIndex) {
+                row.style.display = '';
+            }
+        });
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        let html = '<ul class="twins-pagination">';
+        html += `<li class="twins-page-item ${state.currentPage === 1 ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePaginatorPage('${type}', ${state.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-line-duotone"></iconify-icon></a></li>`;
+
+        let startPage = Math.max(1, state.currentPage - 1);
+        let endPage = Math.min(totalPages, startPage + 2);
+        
+        if (endPage - startPage < 2) {
+            startPage = Math.max(1, endPage - 2);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="twins-page-item ${i === state.currentPage ? 'active' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePaginatorPage('${type}', ${i})">${i}</a></li>`;
+        }
+
+        html += `<li class="twins-page-item ${state.currentPage === totalPages ? 'disabled' : ''}"><a href="javascript:void(0)" class="twins-page-link" onclick="changePaginatorPage('${type}', ${state.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-line-duotone"></iconify-icon></a></li>`;
+        html += '</ul>';
+
+        container.innerHTML = html;
+        container.style.display = totalPages > 1 ? 'flex' : 'none';
+    }
+
+    function changePaginatorPage(type, newPage) {
+        if (type === 'produk') { produkState.currentPage = newPage; renderPaginator('produk', produkState, 'produkPagination', 'produkTable', 'produk-row'); }
+        if (type === 'stok') { stokState.currentPage = newPage; renderPaginator('stok', stokState, 'stokPagination', 'stokTable', 'stok-row'); }
+        if (type === 'restok') { restokState.currentPage = newPage; renderPaginator('restok', restokState, 'restokPagination', 'restokTable', 'restok-row'); }
+        if (type === 'transfer') { transferState.currentPage = newPage; renderPaginator('transfer', transferState, 'transferPagination', 'transferTable', 'transfer-row'); }
+        if (type === 'opname') { opnameState.currentPage = newPage; renderPaginator('opname', opnameState, 'opnamePagination', 'opnameTable', 'opname-row'); }
+        if (type === 'rugi') { rugiState.currentPage = newPage; renderPaginator('rugi', rugiState, 'rugiPagination', 'rugiTable', 'rugi-row'); }
+    }
+
+    function realtimeSearch(tab) {
+        if (tab === 'produk') {
+            const search = document.getElementById('searchInput-produk').value.toLowerCase();
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoryFilter = urlParams.get('category_id') || '';
+            const storeFilter = urlParams.get('store_id') || '';
+            
+            const rows = Array.from(document.querySelectorAll('#produkTable tbody tr.produk-row'));
+            
+            let matched = [];
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const barcode = row.getAttribute('data-barcode');
+                const category = row.getAttribute('data-category');
+                const stores = row.getAttribute('data-store') ? row.getAttribute('data-store').split(',') : [];
+                
+                const matchSearch = name.includes(search) || barcode.includes(search);
+                const matchCategory = categoryFilter === '' || category === categoryFilter;
+                const matchStore = storeFilter === '' || storeFilter === 'all' || stores.includes(storeFilter);
+                
+                if (matchSearch && matchCategory && matchStore) {
+                    matched.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            produkState.filtered = matched;
+            produkState.currentPage = 1;
+            renderPaginator('produk', produkState, 'produkPagination', 'produkTable', 'produk-row');
+        } else if (tab === 'restok') {
+            const search = document.getElementById('searchInput-restok').value.toLowerCase();
+            const urlParams = new URLSearchParams(window.location.search);
+            const supplierFilter = urlParams.get('supplier_id') || '';
+            
+            const rows = Array.from(document.querySelectorAll('#restokTable tbody tr.restok-row'));
+            let matched = [];
+            
+            rows.forEach(row => {
+                const supplier = row.getAttribute('data-supplier') || '';
+                const tanggal = row.getAttribute('data-tanggal') || '';
+                const user = row.getAttribute('data-user') || '';
+                
+                const matchSearch = supplier.includes(search) || tanggal.includes(search) || user.includes(search);
+                const matchSupplier = supplierFilter === '' || row.getAttribute('data-supplier-id') === supplierFilter;
+                
+                if (matchSearch && matchSupplier) {
+                    matched.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            restokState.filtered = matched;
+            restokState.currentPage = 1;
+            renderPaginator('restok', restokState, 'restokPagination', 'restokTable', 'restok-row');
+        } else if (tab === 'stok') {
+            const search = document.getElementById('searchInput-stok').value.toLowerCase();
+            
+            const rows = Array.from(document.querySelectorAll('#stokTable tbody tr.stok-row'));
+            let matched = [];
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const store = row.getAttribute('data-store') || '';
+                const tanggal = row.getAttribute('data-tanggal') || '';
+                
+                const matchSearch = name.includes(search) || store.includes(search) || tanggal.includes(search);
+                
+                if (matchSearch) {
+                    matched.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            stokState.filtered = matched;
+            stokState.currentPage = 1;
+            renderPaginator('stok', stokState, 'stokPagination', 'stokTable', 'stok-row');
+        } else if (tab === 'transfer') {
+            const search = document.getElementById('searchInput-transfer').value.toLowerCase();
+            
+            const rows = Array.from(document.querySelectorAll('#transferTable tbody tr.transfer-row'));
+            let matched = [];
+            
+            rows.forEach(row => {
+                const dari = row.getAttribute('data-dari') || '';
+                const tujuan = row.getAttribute('data-tujuan') || '';
+                const tanggal = row.getAttribute('data-tanggal') || '';
+                const user = row.getAttribute('data-user') || '';
+                const status = row.getAttribute('data-status') || '';
+                
+                const matchSearch = dari.includes(search) || tujuan.includes(search) || tanggal.includes(search) || user.includes(search) || status.includes(search);
+                
+                if (matchSearch) {
+                    matched.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            transferState.filtered = matched;
+            transferState.currentPage = 1;
+            renderPaginator('transfer', transferState, 'transferPagination', 'transferTable', 'transfer-row');
+        } else if (tab === 'opname') {
+            const search = document.getElementById('searchInput-opname').value.toLowerCase();
+            
+            // Opname
+            const opnameRows = Array.from(document.querySelectorAll('#opnameTable tbody tr.opname-row'));
+            if(opnameRows.length > 0) {
+                let matchedOpname = [];
+                opnameRows.forEach(row => {
+                    const tanggal = row.getAttribute('data-tanggal') || '';
+                    const store = row.getAttribute('data-store') || '';
+                    const user = row.getAttribute('data-user') || '';
+                    
+                    const matchSearch = tanggal.includes(search) || store.includes(search) || user.includes(search);
+                    if (matchSearch) {
+                        matchedOpname.push(row);
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                opnameState.filtered = matchedOpname;
+                opnameState.currentPage = 1;
+                renderPaginator('opname', opnameState, 'opnamePagination', 'opnameTable', 'opname-row');
+            }
+            
+            // Rugi
+            const rugiRows = Array.from(document.querySelectorAll('#rugiTable tbody tr.rugi-row'));
+            if(rugiRows.length > 0) {
+                let matchedRugi = [];
+                rugiRows.forEach(row => {
+                    const produk = row.getAttribute('data-produk') || '';
+                    const store = row.getAttribute('data-store') || '';
+                    const tanggal = row.getAttribute('data-tanggal') || '';
+                    
+                    const matchSearch = produk.includes(search) || store.includes(search) || tanggal.includes(search);
+                    if (matchSearch) {
+                        matchedRugi.push(row);
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                rugiState.filtered = matchedRugi;
+                rugiState.currentPage = 1;
+                renderPaginator('rugi', rugiState, 'rugiPagination', 'rugiTable', 'rugi-row');
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initAllPaginators();
+    });
+
 </script>
 {{-- Duplicate modal removed --}}
 

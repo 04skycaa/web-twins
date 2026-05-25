@@ -8,6 +8,7 @@
     <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{ asset('css/menu.css') }}">
     <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" crossorigin="anonymous"></script>
@@ -202,6 +203,29 @@
 
 
     <script>
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateEl = document.getElementById('date-text');
+            const timeEl = document.getElementById('time-text');
+            const greetingEl = document.getElementById('greeting-text');
+
+            if (dateEl) dateEl.innerText = now.toLocaleDateString('id-ID', dateOptions);
+            if (timeEl) timeEl.innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+            if (greetingEl) {
+                const hour = now.getHours();
+                let greeting = 'Selamat Pagi';
+                if (hour >= 11 && hour < 15) greeting = 'Selamat Siang';
+                else if (hour >= 15 && hour < 18) greeting = 'Selamat Sore';
+                else if (hour >= 18) greeting = 'Selamat Malam';
+                greetingEl.innerText = greeting;
+            }
+        }
+        
+        setInterval(updateDateTime, 1000);
+        document.addEventListener('DOMContentLoaded', updateDateTime);
+        
         document.addEventListener('DOMContentLoaded', function() {
             @if (session('success'))
                 Swal.fire({
