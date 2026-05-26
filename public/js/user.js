@@ -1909,10 +1909,14 @@ function checkout() {
     });
 }
 
-function getPaymentStatusLabel(status) {
+function getPaymentStatusLabel(status, fulfillmentStatus) {
     const normalized = (status || '').toLowerCase();
+    const fStatus = (fulfillmentStatus || '').toLowerCase();
     if (normalized === 'pending') return 'MENUNGGU PEMBAYARAN';
-    if (normalized === 'paid' || normalized === 'success' || normalized === 'settlement' || normalized === 'capture') return 'PESANAN DIPROSES';
+    if (normalized === 'paid' || normalized === 'success' || normalized === 'settlement' || normalized === 'capture') {
+        if (fStatus === 'selesai') return 'SELESAI';
+        return 'PESANAN DIPROSES';
+    }
     if (normalized === 'expired') return 'KADALUWARSA';
     if (normalized === 'canceled' || normalized === 'cancel') return 'DIBATALKAN';
     if (normalized === 'denied') return 'DITOLAK';
@@ -1945,7 +1949,7 @@ function renderHistory() {
             </div>
             <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                 <span style="font-size: 1.1rem; font-weight: 800; color: var(--orange-brand);">${formatRupiah(trx.total)}</span>
-                <p style="color: ${getPaymentStatusColor(trx.payment_status)}; font-size: 0.7rem; font-weight: bold;">${getPaymentStatusLabel(trx.payment_status)}</p>
+                <p style="color: ${getPaymentStatusColor(trx.payment_status)}; font-size: 0.7rem; font-weight: bold;">${getPaymentStatusLabel(trx.payment_status, trx.fulfillment_status)}</p>
                 ${(trx.payment_status || '').toLowerCase() === 'pending' && trx.snap_token ? `
                     <button onclick="event.stopPropagation(); payPendingOrder('${trx.snap_token}', '${trx.id}')" style="background: var(--orange-brand); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);">Bayar Sekarang</button>
                 ` : ''}
@@ -2084,7 +2088,7 @@ function showTransactionDetail(dbId, legacyId) {
                             <div style="background: rgba(148,163,184,0.05); padding: 12px; border-radius: 12px; margin-bottom: 20px;">
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                                     <span style="color: var(--sub-text);">Status:</span>
-                                    <strong style="color: ${getPaymentStatusColor(order.payment_status)};">${getPaymentStatusLabel(order.payment_status)}</strong>
+                                    <strong style="color: ${getPaymentStatusColor(order.payment_status)};">${getPaymentStatusLabel(order.payment_status, order.fulfillment_status)}</strong>
                                 </div>
                                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                                     <span style="color: var(--sub-text);">Waktu:</span>
@@ -2198,7 +2202,7 @@ function showTransactionDetail(dbId, legacyId) {
                 <div style="background: rgba(148,163,184,0.05); padding: 12px; border-radius: 12px; margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                         <span style="color: var(--sub-text);">Status:</span>
-                        <strong style="color: ${getPaymentStatusColor(found.payment_status)};">${getPaymentStatusLabel(found.payment_status)}</strong>
+                        <strong style="color: ${getPaymentStatusColor(found.payment_status)};">${getPaymentStatusLabel(found.payment_status, found.fulfillment_status)}</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span style="color: var(--sub-text);">Waktu:</span>

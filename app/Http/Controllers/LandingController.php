@@ -797,6 +797,7 @@ class LandingController extends Controller
                     'recipient_phone' => $order->recipient_phone,
                     'address' => $order->delivery_address,
                     'payment_status' => $order->payment_status,
+                    'fulfillment_status' => $order->fulfillment_status,
                     'snap_token' => $order->snap_token,
                 ];
             });
