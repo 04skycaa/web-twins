@@ -854,10 +854,6 @@
     }
 
     function handleDropdownCheck(checkbox, type, mode) {
-        const promoType = document.getElementById(`${mode}_promo_tipe`).value.toLowerCase();
-        if (type === 'product' && promoType === 'diskon' && checkbox.checked) {
-            checkbox.closest('.dropdown-list').querySelectorAll('input[type="checkbox"]').forEach(cb => { if (cb !== checkbox) cb.checked = false; });
-        }
         updatePills(checkbox.closest('.dropdown-checkbox-wrapper'), mode, type);
     }
 
@@ -991,7 +987,18 @@
         const endIndex = startIndex + state.rowsPerPage;
 
         state.filtered.forEach((row, index) => {
-            row.style.display = (index >= startIndex && index < endIndex) ? '' : 'none';
+            const isVisible = (index >= startIndex && index < endIndex);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) {
+                // Force refresh iconify-icon elements to prevent disappearance on DOM move
+                row.querySelectorAll('iconify-icon').forEach(iconEl => {
+                    const iconName = iconEl.getAttribute('icon');
+                    if (iconName) {
+                        iconEl.setAttribute('icon', '');
+                        iconEl.setAttribute('icon', iconName);
+                    }
+                });
+            }
         });
 
         const container = document.getElementById(view + 'Pagination');

@@ -10,12 +10,12 @@ const safeLocalStorage = {
     setItem(key, value) {
         try {
             if (window.localStorage) window.localStorage.setItem(key, value);
-        } catch (e) {}
+        } catch (e) { }
     },
     removeItem(key) {
         try {
             if (window.localStorage) window.localStorage.removeItem(key);
-        } catch (e) {}
+        } catch (e) { }
     }
 };
 
@@ -24,7 +24,7 @@ function toggleUserMenu() {
     menu.classList.toggle('show');
 }
 
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     const menu = document.getElementById('userMenu');
     const btn = document.querySelector('.user-icon-btn');
     if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
@@ -198,13 +198,13 @@ function loadPersistence() {
     if (savedCart) {
         try {
             cart = JSON.parse(savedCart);
-        } catch (e) {}
+        } catch (e) { }
     }
     const savedHistory = safeLocalStorage.getItem('twins_history');
     if (savedHistory) {
         try {
             historyData = JSON.parse(savedHistory);
-        } catch (e) {}
+        } catch (e) { }
     }
     const savedDetail = safeLocalStorage.getItem('twins_delivery_detail');
     if (savedDetail) window.deliveryDetailAddress = savedDetail;
@@ -222,23 +222,23 @@ function savePersistedDeliveryAddress() {
     if (!safeAddress) return Promise.resolve(false);
 
     return fetch(deliveryAddressStoreUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                address: safeAddress,
-                recipient_name: deliveryContactName,
-                recipient_phone: deliveryPhone,
-                coordinates: hasCoordinates ? {
-                    lat: deliveryCoordinates.lat,
-                    lng: deliveryCoordinates.lng
-                } : null
-            })
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            address: safeAddress,
+            recipient_name: deliveryContactName,
+            recipient_phone: deliveryPhone,
+            coordinates: hasCoordinates ? {
+                lat: deliveryCoordinates.lat,
+                lng: deliveryCoordinates.lng
+            } : null
         })
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`save_delivery_failed_${response.status}`);
@@ -267,7 +267,7 @@ function toggleAllCategories(checkbox) {
 }
 
 // Event listener untuk kategori satuan
-document.addEventListener('change', function(e) {
+document.addEventListener('change', function (e) {
     if (e.target.classList.contains('cat-check')) {
         if (e.target.checked) {
             // Jika kategori satuan dicentang, hapus centang 'Semua'
@@ -351,8 +351,12 @@ function removeFilterBadge(catId) {
     }
 }
 const outletAddress = document.querySelector('meta[name="outlet-address"]').content;
+const outletLatMeta = document.querySelector('meta[name="outlet-lat"]')?.content;
+const outletLngMeta = document.querySelector('meta[name="outlet-lng"]')?.content;
+const maxDeliveryDistance = parseFloat(document.querySelector('meta[name="max-delivery-distance"]')?.content) || 30;
+
 let deliveryAddress = (persistedDeliveryPreference && typeof persistedDeliveryPreference.address === 'string' &&
-        persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() :
+    persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() :
     document.querySelector('meta[name="outlet-address"]').content;
 let deliveryCoordinates = (persistedDeliveryPreference && persistedDeliveryPreference.coordinates && Number
     .isFinite(persistedDeliveryPreference.coordinates.lat) && Number.isFinite(persistedDeliveryPreference
@@ -360,11 +364,16 @@ let deliveryCoordinates = (persistedDeliveryPreference && persistedDeliveryPrefe
     lat: Number(persistedDeliveryPreference.coordinates.lat),
     lng: Number(persistedDeliveryPreference.coordinates.lng)
 } : null;
-let deliveryContactName = document.querySelector('meta[name="user-name"]').content;
-let deliveryPhone = document.querySelector('meta[name="user-phone"]').content;
+let deliveryContactName = (persistedDeliveryPreference && persistedDeliveryPreference.recipient_name) ?
+    persistedDeliveryPreference.recipient_name : document.querySelector('meta[name="user-name"]').content;
+let deliveryPhone = (persistedDeliveryPreference && persistedDeliveryPreference.recipient_phone) ?
+    persistedDeliveryPreference.recipient_phone : document.querySelector('meta[name="user-phone"]').content;
 let deliveryDistanceKm = 0;
-let outletCoordinates = null;
-let outletGeocodeTried = false;
+let outletCoordinates = (outletLatMeta && outletLngMeta) ? {
+    lat: parseFloat(outletLatMeta),
+    lng: parseFloat(outletLngMeta)
+} : null;
+let outletGeocodeTried = !!outletCoordinates;
 
 function updateDeliveryAddressUI() {
     const safeAddress = (deliveryAddress || '').trim() || 'Alamat belum diisi';
@@ -403,7 +412,7 @@ function calculateDistanceKmBetweenPoints(from, to) {
 
 function resolveOutletCoordinatesFromAddress() {
     if (outletCoordinates) return Promise.resolve(outletCoordinates);
-    
+
     // Performa Tinggi: Gunakan cache localStorage agar terhindar dari pemanggilan API lambat berulang kali
     const cacheKey = 'twins_outlet_coords_' + btoa(unescape(encodeURIComponent(outletAddress)));
     const cachedCoords = localStorage.getItem(cacheKey);
@@ -411,15 +420,15 @@ function resolveOutletCoordinatesFromAddress() {
         try {
             outletCoordinates = JSON.parse(cachedCoords);
             return Promise.resolve(outletCoordinates);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     if (outletGeocodeTried) return Promise.resolve(null);
     outletGeocodeTried = true;
 
     return fetch(
-            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
-        )
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
+    )
         .then(response => response.ok ? response.json() : [])
         .then(results => {
             if (!Array.isArray(results) || results.length === 0) return null;
@@ -433,7 +442,7 @@ function resolveOutletCoordinatesFromAddress() {
             };
             try {
                 localStorage.setItem(cacheKey, JSON.stringify(outletCoordinates));
-            } catch (e) {}
+            } catch (e) { }
             return outletCoordinates;
         })
         .catch(() => null);
@@ -457,8 +466,8 @@ function syncPersistedDeliveryDistance() {
         }
 
         fetch(
-                `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${deliveryCoordinates.lng},${deliveryCoordinates.lat}?overview=false`
-            )
+            `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${deliveryCoordinates.lng},${deliveryCoordinates.lat}?overview=false`
+        )
             .then(response => response.ok ? response.json() : null)
             .then(data => {
                 const route = data && Array.isArray(data.routes) && data.routes.length > 0 ? data
@@ -501,6 +510,17 @@ function openAddressPopup(event) {
     let geocodeDebounceTimer = null;
     let geocodeRequestToken = 0;
 
+    function calculateDistanceKm(from, to) {
+        const earthRadiusKm = 6371;
+        const dLat = (to.lat - from.lat) * (Math.PI / 180);
+        const dLng = (to.lng - from.lng) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+
     const popupHtml = `
         <div class="address-popup-wrap">
             <div class="address-popup-layout">
@@ -521,9 +541,10 @@ function openAddressPopup(event) {
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 18px;">
+                    <div style="margin-bottom: 18px; position: relative;">
                         <label for="manualAddressInput">Alamat Utama (Pencarian/Geser Peta)</label>
                         <textarea id="manualAddressInput" rows="3" placeholder="Nama jalan, kecamatan, kota..."></textarea>
+                        <div id="addressSuggestionsDropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none;"></div>
                     </div>
 
                     <div>
@@ -588,16 +609,7 @@ function openAddressPopup(event) {
                 routeTrackingSummary.textContent = text || '';
             }
 
-            function calculateDistanceKm(from, to) {
-                const earthRadiusKm = 6371;
-                const dLat = (to.lat - from.lat) * (Math.PI / 180);
-                const dLng = (to.lng - from.lng) * (Math.PI / 180);
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                    Math.cos(from.lat * (Math.PI / 180)) * Math.cos(to.lat * (Math.PI / 180)) *
-                    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                return earthRadiusKm * c;
-            }
+
 
             function resolveOutletCoordinates() {
                 if (outletCoordinates) return Promise.resolve(outletCoordinates);
@@ -606,8 +618,8 @@ function openAddressPopup(event) {
                 outletGeocodeTried = true;
 
                 return fetch(
-                        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
-                    )
+                    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(outletAddress)}`
+                )
                     .then(response => response.ok ? response.json() : [])
                     .then(results => {
                         if (!Array.isArray(results) || results.length === 0) return null;
@@ -665,8 +677,8 @@ function openAddressPopup(event) {
                     renderRouteTrackingText('Menghitung rute dari outlet ke tujuan...');
 
                     fetch(
-                            `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${selectedLatLng.lng},${selectedLatLng.lat}?overview=full&geometries=geojson`
-                        )
+                        `https://router.project-osrm.org/route/v1/driving/${outletLatLng.lng},${outletLatLng.lat};${selectedLatLng.lng},${selectedLatLng.lat}?overview=full&geometries=geojson`
+                    )
                         .then(response => response.ok ? response.json() : null)
                         .then(data => {
                             if (!data || !Array.isArray(data.routes) || data.routes
@@ -676,7 +688,7 @@ function openAddressPopup(event) {
 
                             const route = data.routes[0];
                             const coords = route.geometry && Array.isArray(route.geometry
-                                    .coordinates) ?
+                                .coordinates) ?
                                 route.geometry.coordinates : [];
                             const latLngs = coords.map(point => [point[1], point[0]]);
 
@@ -744,8 +756,8 @@ function openAddressPopup(event) {
                     `Koordinat dipilih: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`);
 
                 fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`
-                    )
+                    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`
+                )
                     .then(response => response.ok ? response.json() : null)
                     .then(data => {
                         if (data && data.display_name) {
@@ -772,8 +784,8 @@ function openAddressPopup(event) {
                 const currentToken = geocodeRequestToken;
 
                 fetch(
-                        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`
-                    )
+                    `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`
+                )
                     .then(response => response.ok ? response.json() : [])
                     .then(results => {
                         if (currentToken !== geocodeRequestToken) return;
@@ -840,13 +852,66 @@ function openAddressPopup(event) {
                 updateRouteTracking();
             }
 
+            const suggestionsDropdown = popup.querySelector('#addressSuggestionsDropdown');
+
             manualAddressInput.addEventListener('input', () => {
+                const query = manualAddressInput.value.trim();
+                if (query.length < 3) {
+                    suggestionsDropdown.innerHTML = '';
+                    suggestionsDropdown.style.display = 'none';
+                    return;
+                }
                 if (geocodeDebounceTimer) {
                     clearTimeout(geocodeDebounceTimer);
                 }
                 geocodeDebounceTimer = setTimeout(() => {
-                    geocodeAddressToMap(manualAddressInput.value);
-                }, 700);
+                    fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=id&q=${encodeURIComponent(query)}`)
+                        .then(response => response.ok ? response.json() : [])
+                        .then(results => {
+                            suggestionsDropdown.innerHTML = '';
+                            if (results.length === 0) {
+                                suggestionsDropdown.style.display = 'none';
+                                return;
+                            }
+                            results.forEach(item => {
+                                const div = document.createElement('div');
+                                div.style.padding = '10px 14px';
+                                div.style.cursor = 'pointer';
+                                div.style.borderBottom = '1px solid var(--border-color)';
+                                div.style.fontSize = '12px';
+                                div.style.color = 'var(--text-color)';
+                                div.style.textAlign = 'left';
+                                div.style.transition = 'background 0.2s';
+                                div.className = 'suggestion-item';
+                                div.innerHTML = escapeHtml(item.display_name);
+
+                                div.addEventListener('mouseenter', () => {
+                                    div.style.background = 'rgba(14, 165, 233, 0.15)';
+                                });
+                                div.addEventListener('mouseleave', () => {
+                                    div.style.background = 'transparent';
+                                });
+                                div.addEventListener('click', () => {
+                                    manualAddressInput.value = item.display_name;
+                                    suggestionsDropdown.style.display = 'none';
+                                    const lat = parseFloat(item.lat);
+                                    const lng = parseFloat(item.lon);
+                                    setMarker({ lat, lng }, true);
+                                });
+                                suggestionsDropdown.appendChild(div);
+                            });
+                            suggestionsDropdown.style.display = 'block';
+                        })
+                        .catch(() => {
+                            suggestionsDropdown.style.display = 'none';
+                        });
+                }, 500);
+            });
+
+            popup.addEventListener('click', (e) => {
+                if (!manualAddressInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+                    suggestionsDropdown.style.display = 'none';
+                }
             });
 
             useCurrentLocationBtn.addEventListener('click', () => {
@@ -887,10 +952,10 @@ function openAddressPopup(event) {
                         useCurrentLocationBtn.innerText = '📍 Gunakan Lokasi Saat Ini';
                         useCurrentLocationBtn.disabled = false;
                     }, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
                 );
             });
 
@@ -923,6 +988,17 @@ function openAddressPopup(event) {
 
             if (!manualAddress) {
                 Swal.showValidationMessage('Pilih alamat pada peta atau isi alamat utama.');
+                return false;
+            }
+
+            if (outletCoordinates && selectedLatLng) {
+                const distanceVal = calculateDistanceKm(outletCoordinates, selectedLatLng);
+                if (distanceVal > maxDeliveryDistance) {
+                    Swal.showValidationMessage(`Alamat di luar radius pengiriman (${distanceVal.toFixed(2)} km). Maksimum: ${maxDeliveryDistance} km.`);
+                    return false;
+                }
+            } else if (selectedDistanceKm > maxDeliveryDistance) {
+                Swal.showValidationMessage(`Alamat di luar radius pengiriman (${selectedDistanceKm.toFixed(2)} km). Maksimum: ${maxDeliveryDistance} km.`);
                 return false;
             }
 
@@ -1122,13 +1198,13 @@ function getCartPricedItems() {
 function calculateCartSummary() {
     const pricedItems = getCartPricedItems();
     const subtotal = pricedItems.reduce((acc, item) => acc + item.subtotal, 0);
-    
+
     // Calculate total from original prices to get total product discount
     const originalSubtotal = pricedItems.reduce((acc, item) => acc + (item.original_price * item.qty), 0);
     const productDiscountAmount = originalSubtotal - subtotal;
-    
+
     const shippingFee = calculateTemporaryShippingFee(deliveryDistanceKm);
-    
+
     // Hitung potongan promo secara dinamis berdasarkan tipe voucher/diskon
     let promoDiscountAmount = 0;
     let calculatedDiscountPercent = 0;
@@ -1141,10 +1217,10 @@ function calculateCartSummary() {
             calculatedDiscountPercent = subtotal > 0 ? (promoDiscountAmount / subtotal) : 0;
         }
     }
-    
+
     discountPercent = calculatedDiscountPercent; // update global variable for checkout payload
     const discountedSubtotal = subtotal - promoDiscountAmount;
-    
+
     const totalDiscountAmount = productDiscountAmount + promoDiscountAmount;
     const total = discountedSubtotal + shippingFee;
 
@@ -1396,18 +1472,18 @@ function showWholesaleInfo(productId) {
 function applyPromo(target = 'desktop') {
     const inputId = target === 'mobile' ? 'promoInputMobile' : 'promoInput';
     const msgId = target === 'mobile' ? '.promoMessage' : '#promoMessage';
-    
+
     const inputEl = document.getElementById(inputId);
     if (!inputEl) return;
-    
+
     const code = inputEl.value.trim().toUpperCase();
     const messageEls = target === 'mobile' ? document.querySelectorAll('.promoMessage') : [document.getElementById('promoMessage')];
-    
+
     const promosEl = document.getElementById('promos-data');
     const activePromos = promosEl ? JSON.parse(promosEl.textContent || '[]') : [];
-    
+
     const foundPromo = activePromos.find(p => p.kode === code);
-    
+
     if (foundPromo) {
         appliedPromo = foundPromo;
         messageEls.forEach(el => {
@@ -1538,6 +1614,19 @@ function checkout() {
         return;
     }
 
+    const distanceVal = Number(deliveryDistanceKm || 0);
+    if (distanceVal > maxDeliveryDistance) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Di Luar Jangkauan Pengiriman',
+            text: `Maaf, alamat pengiriman Anda berada di luar radius pelayanan outlet. Jarak maksimum pengiriman dari outlet ini adalah ${maxDeliveryDistance} km, sedangkan jarak Anda saat ini adalah ${distanceVal.toFixed(2)} km.`,
+            background: 'var(--bg-color)',
+            color: 'var(--text-color)',
+            confirmButtonColor: 'var(--orange-brand)'
+        });
+        return;
+    }
+
     const summary = calculateCartSummary();
     if (summary.total <= 0) {
         Swal.fire('Oops', 'Total pembayaran tidak valid.', 'error');
@@ -1629,33 +1718,33 @@ function checkout() {
         },
         preConfirm: () => {
             return fetch(checkoutTokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        recipient_name: recipientName,
-                        recipient_phone: recipientPhone,
-                        address,
-                        coordinates: deliveryCoordinates ? {
-                            lat: deliveryCoordinates.lat,
-                            lng: deliveryCoordinates.lng
-                        } : null,
-                        distance_km: deliveryDistanceKm,
-                        discount_percent: discountPercent,
-                        shipping_fee: summary.shippingFee,
-                        items: summary.pricedItems.map(i => ({
-                            product_id: i.product_id,
-                            name: i.name,
-                            qty: i.qty,
-                            unit_price: i.original_price,
-                            discount_amount: (i.original_price - i.displayPrice) * i.qty
-                        }))
-                    })
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    recipient_name: recipientName,
+                    recipient_phone: recipientPhone,
+                    address,
+                    coordinates: deliveryCoordinates ? {
+                        lat: deliveryCoordinates.lat,
+                        lng: deliveryCoordinates.lng
+                    } : null,
+                    distance_km: deliveryDistanceKm,
+                    discount_percent: discountPercent,
+                    shipping_fee: summary.shippingFee,
+                    items: summary.pricedItems.map(i => ({
+                        product_id: i.product_id,
+                        name: i.name,
+                        qty: i.qty,
+                        unit_price: i.original_price,
+                        discount_amount: (i.original_price - i.displayPrice) * i.qty
+                    }))
                 })
+            })
                 .then(async (response) => {
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok) {
@@ -1706,10 +1795,10 @@ function checkout() {
             discountPercent = 0;
             appliedPromo = null;
             savePersistence();
-            
+
             // Reload otomatis ke halaman riwayat
             safeLocalStorage.setItem('open_history_on_load', 'true');
-            
+
             const loader = document.getElementById('global-page-loader');
             if (loader) {
                 const loaderText = document.getElementById('global-page-loader-text');
@@ -1717,7 +1806,7 @@ function checkout() {
                 loader.style.visibility = 'visible';
                 loader.style.opacity = '1';
             }
-            
+
             setTimeout(() => {
                 window.location.reload();
             }, 150);
@@ -1740,7 +1829,7 @@ function checkout() {
         };
 
         window.snap.pay(paymentData.snap_token, {
-            onSuccess: function(resultSnap) {
+            onSuccess: function (resultSnap) {
                 Swal.fire({
                     title: 'Memproses Transaksi...',
                     text: 'Pembayaran berhasil! Sedang mensinkronkan pesanan Anda.',
@@ -1766,7 +1855,7 @@ function checkout() {
                     });
                 });
             },
-            onPending: function(resultSnap) {
+            onPending: function (resultSnap) {
                 Swal.fire({
                     title: 'Menunggu Konfirmasi...',
                     text: 'Sedang menyiapkan instruksi pembayaran.',
@@ -1792,7 +1881,7 @@ function checkout() {
                     });
                 });
             },
-            onError: function() {
+            onError: function () {
                 Swal.fire({
                     icon: 'error',
                     title: 'Pembayaran Gagal',
@@ -1804,7 +1893,7 @@ function checkout() {
                     finalizeOrder('failed', null);
                 });
             },
-            onClose: function() {
+            onClose: function () {
                 Swal.fire({
                     icon: 'info',
                     title: 'Pembayaran Tertunda',
@@ -1888,7 +1977,7 @@ function payPendingOrder(token, orderId) {
     };
 
     window.snap.pay(token, {
-        onSuccess: function(resultSnap) {
+        onSuccess: function (resultSnap) {
             Swal.fire({
                 title: 'Memproses Transaksi...',
                 text: 'Sedang mensinkronkan status pembayaran Anda.',
@@ -1913,7 +2002,7 @@ function payPendingOrder(token, orderId) {
                 });
             });
         },
-        onPending: function(resultSnap) {
+        onPending: function (resultSnap) {
             Swal.fire({
                 title: 'Menunggu Konfirmasi...',
                 text: 'Sedang mengecek status pembayaran.',
@@ -1944,7 +2033,7 @@ function payPendingOrder(token, orderId) {
 // Show transaction detail modal. Try DB lookup by numeric id first, fall back to minimal data in history.
 function showTransactionDetail(dbId, legacyId) {
     const outletUuid = document.querySelector('meta[name="outlet-uuid"]').content || '';
-    
+
     // Show fast loading animation
     Swal.fire({
         title: 'Memuat Pesanan...',
@@ -1959,11 +2048,11 @@ function showTransactionDetail(dbId, legacyId) {
     if (dbId) {
         const url = `/outlet/${outletUuid}/payment-order/${encodeURIComponent(dbId)}`;
         fetch(url, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
             .then(r => r.ok ? r.json() : Promise.reject(r))
             .then(data => {
                 const order = data.order;
@@ -2020,15 +2109,15 @@ function showTransactionDetail(dbId, legacyId) {
 
                             <div style="margin-top:20px; background: rgba(249, 115, 22, 0.05); padding: 12px; border-radius: 12px; font-size:0.9rem;">
                                 ${(() => {
-                                    let meta = {};
-                                    try { meta = typeof order.meta === 'string' ? JSON.parse(order.meta) : (order.meta || {}); } catch(e) {}
-                                    const itemDisc = Number(meta.item_discount_total) || 0;
-                                    const globalDisc = Number(meta.global_discount_amount) || 0;
-                                    const totalDisc = itemDisc + globalDisc;
-                                    const originalSubtotal = Number(order.subtotal_amount) + itemDisc;
+                            let meta = {};
+                            try { meta = typeof order.meta === 'string' ? JSON.parse(order.meta) : (order.meta || {}); } catch (e) { }
+                            const itemDisc = Number(meta.item_discount_total) || 0;
+                            const globalDisc = Number(meta.global_discount_amount) || 0;
+                            const totalDisc = itemDisc + globalDisc;
+                            const originalSubtotal = Number(order.subtotal_amount) + itemDisc;
 
-                                    const formattedDisc = totalDisc > 0 ? `- ${formatRupiah(totalDisc)}` : 'Rp 0';
-                                    return `
+                            const formattedDisc = totalDisc > 0 ? `- ${formatRupiah(totalDisc)}` : 'Rp 0';
+                            return `
                                         ${totalDisc > 0 ? `
                                             <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Harga Awal</span><strong>${formatRupiah(originalSubtotal)}</strong></div>
                                             <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Diskon</span><strong style="color: #10b981;">${formattedDisc}</strong></div>
@@ -2039,7 +2128,7 @@ function showTransactionDetail(dbId, legacyId) {
                                         <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="color: var(--sub-text);">Ongkir</span><strong>${formatRupiah(order.shipping_fee || 0)}</strong></div>
                                         <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:1.1rem; color: var(--orange-brand);"><span>Total</span><strong>${formatRupiah(order.total_amount)}</strong></div>
                                     `;
-                                })()}
+                        })()}
                             </div>
 
                             <div style="margin-top: 25px; display: grid; gap: 10px;">
@@ -2180,7 +2269,7 @@ function updateActiveThemeBtn(themeName) {
 }
 
 // Close dropdown when clicking outside
-window.addEventListener('click', function(e) {
+window.addEventListener('click', function (e) {
     const menu = document.getElementById('themeMenu');
     const btn = document.querySelector('.theme-btn');
     if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
@@ -2211,7 +2300,7 @@ if (globalLoader) {
     globalLoader.style.visibility = 'hidden';
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const items = ['🧁', '🥐', '🍰', '🥨', '🎂', '🍪', '🥖', '🥞', '🍩'];
     const bgContainer = document.getElementById('bakery-bg');
     let parallaxLayers = [];
@@ -2363,18 +2452,18 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify({ order_id: redirectOrderId })
         })
-        .then(res => res.json())
-        .then(data => {
-            Swal.close();
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-            if (isAuthenticated) fetchHistoryFromServer();
-        })
-        .catch(err => {
-            console.error('Auto-sync failed:', err);
-            Swal.close();
-            if (isAuthenticated) fetchHistoryFromServer();
-        });
+            .then(res => res.json())
+            .then(data => {
+                Swal.close();
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                if (isAuthenticated) fetchHistoryFromServer();
+            })
+            .catch(err => {
+                console.error('Auto-sync failed:', err);
+                Swal.close();
+                if (isAuthenticated) fetchHistoryFromServer();
+            });
     } else {
         if (isAuthenticated) fetchHistoryFromServer();
     }
@@ -2409,7 +2498,7 @@ async function fetchHistoryFromServer() {
         if (savedHistory) {
             try {
                 historyData = JSON.parse(savedHistory);
-            } catch (e) {}
+            } catch (e) { }
         }
     }
 }

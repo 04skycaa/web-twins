@@ -43,8 +43,8 @@
                 </div>
 
                 <div class="grup-input">
-                    <label class="label-input">Email</label>
-                    <input type="email" name="email" class="field-input @error('email') is-invalid @enderror" placeholder="nama@email.com" value="{{ old('email') }}">
+                    <label class="label-input">Gmail</label>
+                    <input type="email" name="email" class="field-input @error('email') is-invalid @enderror" placeholder="nama@gmail.com" value="{{ old('email') }}">
                     @error('email')
                         <span class="pesan-error">{{ $message }}</span>
                     @enderror

@@ -9,6 +9,9 @@
     <meta name="auth-check" content="{{ auth()->check() ? 'true' : 'false' }}">
     <meta name="login-url" content="{{ route('login') }}">
     <meta name="outlet-address" content="{{ $outlet->alamat ?? 'Alamat outlet belum tersedia' }}">
+    <meta name="outlet-lat" content="{{ $outlet->latitude ?? '' }}">
+    <meta name="outlet-lng" content="{{ $outlet->longitude ?? '' }}">
+    <meta name="max-delivery-distance" content="{{ $outlet->max_delivery_distance ?? 30 }}">
     <meta name="store-hours" content="{{ $outlet->jam_buka ?? '' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="outlet-uuid" content="{{ $outlet->uuid }}">
@@ -204,6 +207,9 @@
                         <p class="delivery-contact-note"
                             style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; margin-top: 4px;">
                             Penerima: - | No HP: -</p>
+                        <p style="font-size: 0.75rem; color: #ff9f43; font-weight: 700; margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+                            ⚠️ Pastikan alamat sudah sesuai
+                        </p>
                     </div>
                 </div>
             </div>
@@ -534,6 +540,9 @@
                             <p class="delivery-contact-note"
                                 style="font-size: 0.75rem; color: var(--sub-text); line-height: 1.4; margin-top: 4px;">
                                 Penerima: - | No HP: -</p>
+                            <p style="font-size: 0.75rem; color: #ff9f43; font-weight: 700; margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+                                ⚠️ Pastikan alamat sudah sesuai
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -1033,14 +1033,14 @@
         </div>
         <form action="{{ route('outlet.store') }}" method="POST">
             @csrf
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" class="form-control" placeholder="Contoh: TWINS Bakery Pusat" required>
                 </div>
                 <div class="form-group">
                     <label>Alamat Lengkap</label>
-                    <textarea name="alamat" class="form-control" rows="3" placeholder="Jl. Raya No. 123..."></textarea>
+                    <textarea name="alamat" id="add_alamat" class="form-control" rows="3" placeholder="Jl. Raya No. 123..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>Nomor Telepon</label>
@@ -1049,6 +1049,25 @@
                 <div class="form-group">
                     <label>Jam Operasional</label>
                     <input type="text" name="jam_buka" class="form-control" placeholder="Contoh: 08.00 - 22.00" value="08.00 - 23.59">
+                </div>
+                <div class="form-group">
+                    <label>Batas Jarak Pengiriman Maksimal (km)</label>
+                    <input type="number" name="max_delivery_distance" class="form-control" placeholder="30" value="30" min="1" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Latitude</label>
+                        <input type="text" name="latitude" id="add_latitude" class="form-control" placeholder="Pilih di peta" readonly>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Longitude</label>
+                        <input type="text" name="longitude" id="add_longitude" class="form-control" placeholder="Pilih di peta" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Pilih Lokasi Outlet pada Peta</label>
+                    <div id="adminAddMap" style="height: 200px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 10px; z-index: 1;"></div>
+                    <small style="color: #64748b; font-style: italic;">Klik pada peta untuk menetapkan koordinat outlet secara otomatis.</small>
                 </div>
             </div>
             <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
@@ -1069,7 +1088,7 @@
         <form id="editForm" method="POST">
             @csrf
             @method('PUT')
-            <div class="modal-body" style="padding: 20px;">
+            <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" id="edit_nama" class="form-control" required>
@@ -1085,6 +1104,25 @@
                 <div class="form-group">
                     <label>Jam Operasional</label>
                     <input type="text" name="jam_buka" id="edit_jam_buka" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Batas Jarak Pengiriman Maksimal (km)</label>
+                    <input type="number" name="max_delivery_distance" id="edit_max_delivery_distance" class="form-control" min="1" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Latitude</label>
+                        <input type="text" name="latitude" id="edit_latitude" class="form-control" placeholder="Pilih di peta" readonly>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Longitude</label>
+                        <input type="text" name="longitude" id="edit_longitude" class="form-control" placeholder="Pilih di peta" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Pilih Lokasi Outlet pada Peta</label>
+                    <div id="adminEditMap" style="height: 200px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 10px; z-index: 1;"></div>
+                    <small style="color: #64748b; font-style: italic;">Klik pada peta untuk memperbarui koordinat outlet secara otomatis.</small>
                 </div>
             </div>
             <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
@@ -1121,6 +1159,16 @@
                     <div id="view_jam_buka" style="font-weight: 600; color: #334155;">-</div>
                 </div>
             </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-size: 12px; color: #888;">KOORDINAT (LAT, LNG)</label>
+                    <div id="view_koordinat" style="font-weight: 600; color: #334155;">-</div>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #888;">BATAS RADIUS PENGIRIMAN</label>
+                    <div id="view_radius" style="font-weight: 600; color: #334155;">-</div>
+                </div>
+            </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <label style="font-size: 12px; color: #888;">RATING</label>
@@ -1140,9 +1188,148 @@
         </div>
     </div>
 </div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    let adminAddMap = null;
+    let adminAddMarker = null;
+    let adminEditMap = null;
+    let adminEditMarker = null;
+
+    const defaultIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+
+    function initAdminAddMap() {
+        setTimeout(() => {
+            if (!adminAddMap) {
+                adminAddMap = L.map('adminAddMap').setView([-8.1724, 113.7003], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(adminAddMap);
+                
+                adminAddMap.on('click', function(e) {
+                    setAdminAddMarker(e.latlng, true);
+                });
+            } else {
+                adminAddMap.setView([-8.1724, 113.7003], 13);
+                if (adminAddMarker) {
+                    adminAddMap.removeLayer(adminAddMarker);
+                    adminAddMarker = null;
+                }
+            }
+            document.getElementById('add_latitude').value = '';
+            document.getElementById('add_longitude').value = '';
+            adminAddMap.invalidateSize();
+        }, 200);
+    }
+
+    function setAdminAddMarker(latlng, isClick = false) {
+        if (!adminAddMarker) {
+            adminAddMarker = L.marker(latlng, { icon: defaultIcon }).addTo(adminAddMap);
+        } else {
+            adminAddMarker.setLatLng(latlng);
+        }
+        document.getElementById('add_latitude').value = latlng.lat.toFixed(8);
+        document.getElementById('add_longitude').value = latlng.lng.toFixed(8);
+
+        if (isClick) {
+            const addAlamatEl = document.getElementById('add_alamat');
+            if (addAlamatEl) {
+                addAlamatEl.value = 'Mencari alamat...';
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.ok ? res.json() : null)
+                    .then(data => {
+                        if (data && data.display_name) {
+                            addAlamatEl.value = data.display_name;
+                        } else {
+                            addAlamatEl.value = '';
+                        }
+                    })
+                    .catch(() => {
+                        addAlamatEl.value = '';
+                    });
+            }
+        }
+    }
+
+    function initAdminEditMap() {
+        const latInput = document.getElementById('edit_latitude').value;
+        const lngInput = document.getElementById('edit_longitude').value;
+        
+        const lat = latInput ? parseFloat(latInput) : -8.1724;
+        const lng = lngInput ? parseFloat(lngInput) : 113.7003;
+
+        setTimeout(() => {
+            if (!adminEditMap) {
+                adminEditMap = L.map('adminEditMap').setView([lat, lng], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(adminEditMap);
+                
+                adminEditMap.on('click', function(e) {
+                    setAdminEditMarker(e.latlng, true);
+                });
+            } else {
+                adminEditMap.setView([lat, lng], 13);
+            }
+            
+            if (latInput && lngInput) {
+                setAdminEditMarker({lat, lng}, false);
+            } else {
+                if (adminEditMarker) {
+                    adminEditMap.removeLayer(adminEditMarker);
+                    adminEditMarker = null;
+                }
+            }
+            adminEditMap.invalidateSize();
+        }, 200);
+    }
+
+    function setAdminEditMarker(latlng, isClick = false) {
+        if (!adminEditMarker) {
+            adminEditMarker = L.marker(latlng, { icon: defaultIcon }).addTo(adminEditMap);
+        } else {
+            adminEditMarker.setLatLng(latlng);
+        }
+        document.getElementById('edit_latitude').value = latlng.lat.toFixed(8);
+        document.getElementById('edit_longitude').value = latlng.lng.toFixed(8);
+
+        if (isClick) {
+            const editAlamatEl = document.getElementById('edit_alamat');
+            if (editAlamatEl) {
+                editAlamatEl.value = 'Mencari alamat...';
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.ok ? res.json() : null)
+                    .then(data => {
+                        if (data && data.display_name) {
+                            editAlamatEl.value = data.display_name;
+                        } else {
+                            editAlamatEl.value = '';
+                        }
+                    })
+                    .catch(() => {
+                        editAlamatEl.value = '';
+                    });
+            }
+        }
+    }
+
+    function openModal(id) { 
+        document.getElementById(id).style.display = 'flex'; 
+        if (id === 'addModal') {
+            initAdminAddMap();
+        } else if (id === 'editModal') {
+            initAdminEditMap();
+        }
+    }
+    
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     let currentTab = '{{ $active_tab }}';
@@ -1151,49 +1338,41 @@
     function switchTab(tabId) {
         currentTab = tabId;
         
-        // Reset pills
         document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
         let activePill = document.getElementById('pill-' + tabId);
         if(activePill) activePill.classList.add('active');
         
-        // Hide all views
         document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
         
-        // Show active view
         let viewObj = document.getElementById('view-' + tabId);
         if(viewObj) viewObj.style.display = 'block';
 
-        // Trigger kinerja data load when switching to kinerja tab
         if (tabId === 'kinerja' && typeof initKinerjaTab === 'function') {
             initKinerjaTab();
         }
 
-        // Trigger stock load when switching to riwayat tab (removed because now it is preloaded)
-
-        // Update URL without reload
         const url = new URL(window.location);
         url.searchParams.set('active_tab', tabId);
         window.history.pushState({}, '', url);
     }
 
     async function selectOutlet(row, data) {
-        // Remove active class from all rows
         document.querySelectorAll('.outlet-row').forEach(r => r.classList.remove('active-row'));
-        // Add active class to clicked row
         row.classList.add('active-row');
 
-        // Loading states
         document.getElementById('side_nama').innerText = data.nama;
         document.getElementById('side_alamat').innerText = data.alamat || '-';
         document.getElementById('side_notelp').innerText = data.notelp || '-';
         document.getElementById('side_jam').innerText = data.jam_buka || '-';
+        document.getElementById('side_koordinat').innerText = data.latitude && data.longitude ? (data.latitude + ', ' + data.longitude) : '-';
+        document.getElementById('side_radius').innerText = (data.max_delivery_distance || 30) + ' km';
+        
         document.getElementById('side_omzet').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
         document.getElementById('side_transaksi').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
         document.getElementById('side_terlaris').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
         document.getElementById('side_terlaris_qty').innerText = '';
         document.getElementById('side_stok').innerHTML = '<iconify-icon icon="solar:spinner-linear" class="spin"></iconify-icon>';
         
-        // Update status badge in side panel
         const statusEl = document.getElementById('side_status');
         if (data.status_aktif) {
             statusEl.innerHTML = '<span class="status-badge status-active">Aktif</span>';
@@ -1232,6 +1411,8 @@
         document.getElementById('view_notelp').innerText = data.notelp || '-';
         document.getElementById('view_jam_buka').innerText = data.jam_buka || '-';
         document.getElementById('view_rating').querySelector('span').innerText = parseFloat(data.rating || 0).toFixed(1);
+        document.getElementById('view_koordinat').innerText = data.latitude && data.longitude ? (data.latitude + ', ' + data.longitude) : '-';
+        document.getElementById('view_radius').innerText = (data.max_delivery_distance || 30) + ' km';
         
         const statusEl = document.getElementById('view_status');
         if (data.status_aktif) {
@@ -1249,6 +1430,9 @@
         document.getElementById('edit_alamat').value = data.alamat || '';
         document.getElementById('edit_notelp').value = data.notelp || '';
         document.getElementById('edit_jam_buka').value = data.jam_buka || '';
+        document.getElementById('edit_latitude').value = data.latitude || '';
+        document.getElementById('edit_longitude').value = data.longitude || '';
+        document.getElementById('edit_max_delivery_distance').value = data.max_delivery_distance || 30;
         openModal('editModal');
     }
 
@@ -1494,6 +1678,13 @@
         }
     });
 </script>
+@endpush
+@push('styles')
+<style>
+    .leaflet-container {
+        font-family: inherit;
+    }
+</style>
 @endpush
 @endsection
 
