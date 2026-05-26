@@ -1694,7 +1694,8 @@ class ProductController extends Controller
             'stok' => 'Katalog & Stok',
             'restok' => 'Restok Produk',
             'transfer' => 'Transfer Stok',
-            'opname' => 'Stock Opname'
+            'opname' => 'Stock Opname',
+            'riwayat' => 'Riwayat Stok'
         ];
         $title = "Laporan " . ($titles[$tab] ?? 'Produk');
 
@@ -1872,6 +1873,34 @@ class ProductController extends Controller
             return $query->get();
         }
 
+        if ($tab == 'riwayat') {
+            $query = \App\Models\StockCard::with(['product', 'store'])->orderBy('created_at', 'desc');
+
+            if ($request->search) {
+                $search = strtolower($request->search);
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('product', function($sq) use ($search) {
+                        $sq->whereRaw('LOWER(nama_produk) LIKE ?', ["%{$search}%"])
+                           ->orWhereRaw('LOWER(barcode) LIKE ?', ["%{$search}%"]);
+                    })->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"]);
+                });
+            }
+
+            if ($request->store_id && $request->store_id != 'all') {
+                $query->where('store_id', $request->store_id);
+            }
+
+            if ($request->start_date) {
+                $query->whereDate('created_at', '>=', $request->start_date);
+            }
+
+            if ($request->end_date) {
+                $query->whereDate('created_at', '<=', $request->end_date);
+            }
+
+            return $query->get();
+        }
+
         return collect();
     }
 
@@ -1887,6 +1916,7 @@ class ProductController extends Controller
         if ($tab == 'stok' || $tab == 'request') return ['Produk', 'Outlet', 'Stok', 'Kadaluarsa', 'Kategori'];
         if ($tab == 'restok') return ['Tanggal', 'Supplier', 'Total', 'Status', 'Petugas'];
         if ($tab == 'transfer') return ['Tanggal', 'Dari', 'Tujuan', 'Status', 'Petugas'];
+        if ($tab == 'riwayat') return ['Waktu', 'Outlet', 'Produk', 'Barcode', 'Mutasi', 'Keterangan'];
         return [];
     }
 
@@ -2038,6 +2068,16 @@ class ProductController extends Controller
                 $item->tujuanStore->nama ?? '-',
                 $item->status ?: 'Pending',
                 $item->user->username ?? '-'
+            ];
+        }
+        if ($tab == 'riwayat') {
+            return [
+                \Carbon\Carbon::parse($item->created_at)->format('d-m-Y H:i:s'),
+                $item->store->nama ?? '-',
+                $item->product->nama_produk ?? '-',
+                $item->product->barcode ?? '-',
+                ($item->jmlh > 0 ? '+' : '') . $item->jmlh,
+                $item->keterangan
             ];
         }
         return [];

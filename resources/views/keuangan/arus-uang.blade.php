@@ -126,12 +126,12 @@
                                 <div style="font-size: 11px; color: #64748b;">Oleh: {{ $item->user->name ?? $item->user->username ?? '-' }}</div>
                             </td>
                             <td>{{ $item->outlet->nama ?? '-' }}</td>
-                            <td>
-                                <span class="status-badge {{ $item->jenis == 'pemasukan' ? 'badge-masuk' : 'badge-keluar' }}">
+                            <td style="white-space: nowrap; text-align: center;">
+                                <span class="status-badge {{ $item->jenis == 'pemasukan' ? 'badge-masuk' : 'badge-keluar' }}" style="white-space: nowrap;">
                                     {{ $item->jenis }}
                                 </span>
                             </td>
-                            <td style="text-align: right; font-weight: 700; color: {{ $item->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
+                            <td style="text-align: right; font-weight: 700; white-space: nowrap; color: {{ $item->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
                                 {{ $item->jenis == 'pemasukan' ? '+' : '-' }} Rp {{ number_format($item->nominal, 0, ',', '.') }}
                             </td>
                         </tr>
@@ -155,10 +155,26 @@
 <script>
     function exportToExcel() {
         const table = document.getElementById('arusUangTable');
-        if (!table || typeof XLSX === 'undefined') return;
+        if (!table) return;
+        
+        if (typeof XLSX === 'undefined') {
+            alert('Library Excel belum dimuat. Silakan muat ulang halaman.');
+            return;
+        }
+
+        const rows = table.querySelectorAll('tbody tr');
+        let hiddenRows = [];
+        rows.forEach(row => {
+            if (row.style.display === 'none' && historyState.filtered.includes(row)) {
+                row.style.display = '';
+                hiddenRows.push(row);
+            }
+        });
         
         const wb = XLSX.utils.table_to_book(table, {sheet: "Arus Uang"});
         XLSX.writeFile(wb, `Laporan_Arus_Uang_{{ date('d_M_Y') }}.xlsx`);
+
+        hiddenRows.forEach(row => row.style.display = 'none');
     }
 
     let historyState = { currentPage: 1, rowsPerPage: 10, filtered: [] };

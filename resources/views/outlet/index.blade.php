@@ -935,7 +935,7 @@
                 </button>
                 
                 <!-- Extract moved here -->
-                <div class="dropdown">
+                <div class="dropdown" style="margin-left: auto;">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                         <span>Extract</span>
@@ -943,11 +943,11 @@
                     <div class="dropdown-content" style="right: 0; left: auto;">
                         <a href="javascript:void(0)" onclick="exportStock('excel')">
                             <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                            Excel (.xlsx)
+                            Excel 
                         </a>
                         <a href="javascript:void(0)" onclick="exportStock('pdf')">
                             <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                            PDF Document
+                            PDF 
                         </a>
                     </div>
                 </div>

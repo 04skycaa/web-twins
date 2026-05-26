@@ -81,6 +81,14 @@
                     <th>Tujuan</th>
                     <th>Status</th>
                     <th>Petugas</th>
+                @elseif($tab == 'riwayat')
+                    <th>No</th>
+                    <th>Waktu</th>
+                    <th>Outlet</th>
+                    <th>Produk</th>
+                    <th>Barcode</th>
+                    <th>Mutasi</th>
+                    <th>Keterangan</th>
                 @endif
             </tr>
         </thead>
@@ -149,6 +157,13 @@
                         <td>{{ $item->tujuanStore->nama ?? '-' }}</td>
                         <td>{{ $item->status ?: 'Pending' }}</td>
                         <td>{{ $item->user->username ?? '-' }}</td>
+                    @elseif($tab == 'riwayat')
+                        <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d-m-Y H:i:s') }}</td>
+                        <td>{{ $item->store->nama ?? '-' }}</td>
+                        <td>{{ $item->product->nama_produk ?? '-' }}</td>
+                        <td>{{ $item->product->barcode ?? '-' }}</td>
+                        <td>{{ ($item->jmlh > 0 ? '+' : '') . $item->jmlh }}</td>
+                        <td>{{ $item->keterangan }}</td>
                     @endif
                 </tr>
             @endforeach

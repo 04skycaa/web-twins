@@ -105,10 +105,7 @@
             </div>
             
             <div class="right-actions">
-                <button type="button" class="btn-action" style="background: #0081C9;" onclick="openModal('modalTransferSaldo')">
-                    <iconify-icon icon="solar:card-transfer-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                    <span>Pemindahan Saldo</span>
-                </button>
+
                 <div class="dropdown">
                     <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 20px;"></iconify-icon>
@@ -176,8 +173,8 @@
                                     <div style="font-size: 11px; color: #64748b;">Oleh: {{ $item->user->name ?? $item->user->username ?? '-' }}</div>
                                 </td>
                                 <td>{{ $item->outlet->nama ?? '-' }}</td>
-                                <td><span class="status-badge {{ $item->jenis == 'pemasukan' ? 'badge-masuk' : 'badge-keluar' }}">{{ $item->jenis }}</span></td>
-                                <td style="text-align: right; font-weight: 700; color: {{ $item->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
+                                <td style="white-space: nowrap; text-align: center;"><span class="status-badge {{ $item->jenis == 'pemasukan' ? 'badge-masuk' : 'badge-keluar' }}" style="white-space: nowrap;">{{ $item->jenis }}</span></td>
+                                <td style="text-align: right; font-weight: 700; white-space: nowrap; color: {{ $item->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
                                     {{ $item->jenis == 'pemasukan' ? '+' : '-' }} Rp {{ number_format($item->nominal, 0, ',', '.') }}
                                 </td>
                             </tr>
@@ -314,6 +311,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer crossorigin="anonymous"></script>
 <script>
     let currentTab = '{{ request('tab', 'cashbox') }}';
 
@@ -498,8 +496,55 @@
             }
         }
         
-        if (typeof XLSX === 'undefined') return;
-        const wb = XLSX.utils.table_to_book(table, {sheet: title});
+        if (typeof XLSX === 'undefined') {
+            Swal.fire('Error', 'Library Excel belum dimuat. Silakan muat ulang halaman.', 'error');
+            return;
+        }
+
+        // Clone table to only include filtered rows
+        const clone = table.cloneNode(true);
+        const tbody = clone.querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        if (activeSection.id === 'view-arus-uang') {
+            const totalBersihStr = '{{ number_format($saldo_bersih, 0, ",", ".") }}';
+            const totalPemasukanStr = '{{ number_format($pemasukan, 0, ",", ".") }}';
+            const totalPengeluaranStr = '{{ number_format($pengeluaran, 0, ",", ".") }}';
+
+            historyState.filtered.forEach(row => {
+                const clonedRow = row.cloneNode(true);
+                clonedRow.style.display = '';
+                tbody.appendChild(clonedRow);
+            });
+
+            const colCount = table.rows[0].cells.length;
+
+            const trSpacer = document.createElement('tr');
+            trSpacer.innerHTML = `<td colspan="${colCount}"></td>`;
+            tbody.appendChild(trSpacer);
+
+            const tr1 = document.createElement('tr');
+            tr1.innerHTML = `<td colspan="${colCount - 1}" style="text-align: right; font-weight: bold;">Total Saldo Masuk</td><td style="font-weight: bold; color: #16a34a;">Rp ${totalPemasukanStr}</td>`;
+            tbody.appendChild(tr1);
+            
+            const tr2 = document.createElement('tr');
+            tr2.innerHTML = `<td colspan="${colCount - 1}" style="text-align: right; font-weight: bold;">Total Saldo Keluar</td><td style="font-weight: bold; color: #dc2626;">Rp ${totalPengeluaranStr}</td>`;
+            tbody.appendChild(tr2);
+
+            const tr3 = document.createElement('tr');
+            tr3.innerHTML = `<td colspan="${colCount - 1}" style="text-align: right; font-weight: bold;">Total Saldo Bersih</td><td style="font-weight: bold;">Rp ${totalBersihStr}</td>`;
+            tbody.appendChild(tr3);
+        } else {
+            // For cashbox table, just get visible rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    tbody.appendChild(row.cloneNode(true));
+                }
+            });
+        }
+        
+        const wb = XLSX.utils.table_to_book(clone, {sheet: title});
         XLSX.writeFile(wb, `${title.replace(/\s+/g, '_')}.xlsx`);
     }
 
@@ -508,6 +553,11 @@
         if (!activeSection) return;
         const table = activeSection.querySelector('table');
         if (!table) return;
+        
+        if (typeof html2pdf === 'undefined') {
+            Swal.fire('Error', 'Library PDF belum dimuat. Silakan tunggu sebentar atau muat ulang halaman.', 'error');
+            return;
+        }
         
         let title = 'Data Keuangan';
         const headerText = activeSection.querySelector('h3, h4');
@@ -520,48 +570,93 @@
             }
         }
         
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>\${title}</title>
-                <style>
-                    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 30px; color: #1e293b; background: #fff; }
-                    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
-                    .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #0081C9; }
-                    .header .meta { text-align: right; font-size: 12px; color: #64748b; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                    th, td { border: 1px solid #e2e8f0; padding: 12px 10px; text-align: left; font-size: 13px; }
-                    th { background-color: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
-                    tr:nth-child(even) { background-color: #f8fafc; }
-                    .price-text { font-weight: 600; font-family: monospace; }
-                    .pemasukan-text { color: #2E7D32; }
-                    .pengeluaran-text { color: #C62828; }
-                    @media print {
-                        body { padding: 0; }
-                        @page { margin: 1.5cm; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>\${title}</h1>
-                    <div class="meta">
-                        <div>Sistem POS & Keuangan TWINS</div>
-                        <div>Dicetak pada: \${new Date().toLocaleString('id-ID')}</div>
+        // Clone table to only include filtered rows
+        const clone = table.cloneNode(true);
+        const tbody = clone.querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        let summaryHtml = '';
+
+        if (activeSection.id === 'view-arus-uang') {
+            const totalBersihStr = '{{ number_format($saldo_bersih, 0, ",", ".") }}';
+            const totalPemasukanStr = '{{ number_format($pemasukan, 0, ",", ".") }}';
+            const totalPengeluaranStr = '{{ number_format($pengeluaran, 0, ",", ".") }}';
+
+            historyState.filtered.forEach(row => {
+                const clonedRow = row.cloneNode(true);
+                clonedRow.style.display = '';
+                tbody.appendChild(clonedRow);
+            });
+
+            summaryHtml = `
+                <div style="display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 5px;">Saldo Masuk</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #16a34a;">Rp ${totalPemasukanStr}</div>
+                    </div>
+                    <div style="flex: 1; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 5px;">Saldo Keluar</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #dc2626;">Rp ${totalPengeluaranStr}</div>
+                    </div>
+                    <div style="flex: 1; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 5px;">Total Bersih</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #0f172a;">Rp ${totalBersihStr}</div>
                     </div>
                 </div>
-                \${table.outerHTML}
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        setTimeout(function() { window.close(); }, 500);
-                    };
-                <\/script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
+            `;
+        } else {
+            // For cashbox table, just get visible rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    tbody.appendChild(row.cloneNode(true));
+                }
+            });
+        }
+        
+        const htmlContent = `
+            <div style="width: 1050px; background: #fff; padding: 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <style>
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    th, td { border: 1px solid #e2e8f0; padding: 12px 10px; text-align: left; font-size: 13px; color: #334155; }
+                    th { background-color: #f8fafc; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+                    tr:nth-child(even) { background-color: #f8fafc; }
+                    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+                    .badge-masuk { background: #dcfce7; color: #16a34a; }
+                    .badge-keluar { background: #fee2e2; color: #dc2626; }
+                </style>
+                <div style="margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #0081C9;">${title}</h1>
+                    <div style="text-align: right; font-size: 12px; color: #64748b;">
+                        <div>Sistem POS & Keuangan TWINS</div>
+                        <div>Dicetak pada: ${new Date().toLocaleString('id-ID')}</div>
+                    </div>
+                </div>
+                ${summaryHtml}
+                ${clone.outerHTML}
+            </div>
+        `;
+
+        Swal.fire({
+            title: 'Memproses PDF...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        const opt = {
+            margin:       0.4,
+            filename:     `${title.replace(/\s+/g, '_')}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        
+        html2pdf().set(opt).from(htmlContent).save().then(() => {
+            Swal.close();
+        }).catch(err => {
+            Swal.fire('Error', 'Gagal membuat PDF', 'error');
+        });
     }
 
     function filterTransfer() {
