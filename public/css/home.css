@@ -4749,7 +4749,26 @@ section {
 .swal2-success-circular-line-left,
 .swal2-success-circular-line-right,
 .swal2-success-fix {
-    background-color: transparent !important;
+    display: none !important;
+}
+
+.swal2-icon.swal2-success {
+    border: 0.25em solid #10b981 !important;
+    border-color: #10b981 !important;
+    box-shadow: none !important;
+}
+
+.swal2-icon.swal2-success .swal2-success-ring {
+    display: none !important;
+}
+
+.swal2-icon.swal2-success [class^=swal2-success-line] {
+    background-color: #10b981 !important;
+}
+
+.swal2-icon {
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .swal2-title,

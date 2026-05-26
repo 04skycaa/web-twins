@@ -176,6 +176,8 @@ class LandingController extends Controller
 
             $deliveryPreference = [
                 'address' => trim((string) $storedDeliveryAddress['address']),
+                'recipient_name' => $storedDeliveryAddress['recipient_name'] ?? null,
+                'recipient_phone' => $storedDeliveryAddress['recipient_phone'] ?? null,
                 'coordinates' => $validCoordinates ? [
                     'lat' => (float) $coords['lat'],
                     'lng' => (float) $coords['lng'],
@@ -233,6 +235,29 @@ class LandingController extends Controller
             ];
         }
 
+        if ($outlet->latitude && $outlet->longitude && $coordinates) {
+            $earthRadius = 6371; // km
+            $latFrom = deg2rad((float) $outlet->latitude);
+            $lonFrom = deg2rad((float) $outlet->longitude);
+            $latTo = deg2rad((float) $coordinates['lat']);
+            $lonTo = deg2rad((float) $coordinates['lng']);
+
+            $latDelta = $latTo - $latFrom;
+            $lonDelta = $lonTo - $lonFrom;
+
+            $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+                cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+            $actualDistance = $angle * $earthRadius;
+            
+            $maxDistance = (float) ($outlet->max_delivery_distance ?? 30);
+            
+            if ($actualDistance > ($maxDistance + 0.05)) {
+                return response()->json([
+                    'message' => "Alamat pengiriman di luar radius pelayanan outlet ({$maxDistance} km).",
+                ], 422);
+            }
+        }
+
         $deliveryData = [
             'address' => trim($validated['address']),
             'recipient_name' => $validated['recipient_name'],
@@ -273,6 +298,29 @@ class LandingController extends Controller
             'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:1'],
             'items.*.discount_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        if ($outlet->latitude && $outlet->longitude && isset($validated['coordinates']['lat'], $validated['coordinates']['lng'])) {
+            $earthRadius = 6371; // km
+            $latFrom = deg2rad((float) $outlet->latitude);
+            $lonFrom = deg2rad((float) $outlet->longitude);
+            $latTo = deg2rad((float) $validated['coordinates']['lat']);
+            $lonTo = deg2rad((float) $validated['coordinates']['lng']);
+
+            $latDelta = $latTo - $latFrom;
+            $lonDelta = $lonTo - $lonFrom;
+
+            $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+                cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+            $actualDistance = $angle * $earthRadius;
+            
+            $maxDistance = (float) ($outlet->max_delivery_distance ?? 30);
+            
+            if ($actualDistance > ($maxDistance + 0.05)) {
+                return response()->json([
+                    'message' => "Alamat pengiriman di luar radius pelayanan outlet ({$maxDistance} km). Rute tidak dapat diproses.",
+                ], 422);
+            }
+        }
 
         $serverKey = (string) config('services.midtrans.server_key', '');
         if ($serverKey === '') {

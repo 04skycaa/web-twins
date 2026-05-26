@@ -361,6 +361,9 @@ class OutletController extends Controller
             'alamat' => 'nullable|string',
             'notelp' => 'nullable|string|max:20',
             'jam_buka' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'max_delivery_distance' => 'nullable|integer|min:1',
         ]);
 
         Outlet::create([
@@ -369,6 +372,9 @@ class OutletController extends Controller
             'notelp' => $request->notelp,
             'jam_buka' => $request->jam_buka ?? '08.00 - 23.59',
             'status_aktif' => true,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'max_delivery_distance' => $request->max_delivery_distance ?? 30,
         ]);
 
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil ditambahkan');
@@ -381,6 +387,9 @@ class OutletController extends Controller
             'alamat' => 'nullable|string',
             'notelp' => 'nullable|string|max:20',
             'jam_buka' => 'nullable|string|max:255',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'max_delivery_distance' => 'nullable|integer|min:1',
         ]);
 
         $outlet = Outlet::where('uuid', $uuid)->firstOrFail();
@@ -390,6 +399,9 @@ class OutletController extends Controller
             'alamat' => $request->alamat,
             'notelp' => $request->notelp,
             'jam_buka' => $request->jam_buka,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'max_delivery_distance' => $request->max_delivery_distance ?? 30,
         ]);
 
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil diperbarui');
