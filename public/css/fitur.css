@@ -1001,6 +1001,7 @@
     display: inline-block;
     width: 46px;
     height: 24px;
+    flex-shrink: 0;
 }
 
 .switch input {
@@ -1292,6 +1293,7 @@ input:checked+.slider:before {
     display: inline-block;
     width: 44px;
     height: 24px;
+    flex-shrink: 0;
 }
 
 .switch input {

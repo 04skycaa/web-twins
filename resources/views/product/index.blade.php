@@ -147,12 +147,13 @@
                             <div class="form-group">
                                 <label for="barcode">Barcode / SKU</label>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="text" name="barcode" id="barcodeAdd" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;">
+                                    <input type="text" name="barcode" id="barcodeAdd" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;" required>
                                     <button type="button" class="btn-action" style="width: 44px; height: 44px; padding: 0; background: #FFB300; color: #333; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('barcodeFileInputAdd').click()" title="Scan dari Gambar">
                                         <iconify-icon icon="solar:gallery-bold-duotone" style="font-size: 24px;"></iconify-icon>
                                     </button>
                                 </div>
                                 <input type="file" id="barcodeFileInputAdd" accept="image/*" style="display: none;" onchange="handleBarcodeImageScan(event, 'barcodeAdd')">
+                                <div class="invalid-feedback">Barcode / SKU wajib diisi</div>
                             </div>
                             <div class="form-group">
                                 <label for="kategori_id">Kategori</label>
@@ -263,12 +264,13 @@
                             <div class="form-group">
                                 <label for="edit_barcode">Barcode / SKU</label>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="text" name="barcode" id="edit_barcode" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;">
+                                    <input type="text" name="barcode" id="edit_barcode" class="form-control" placeholder="Scan/Ketik Barcode atau SKU" style="flex: 1;" required>
                                     <button type="button" class="btn-action" style="width: 44px; height: 44px; padding: 0; background: #FFB300; color: #333; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" onclick="document.getElementById('barcodeFileInputEdit').click()" title="Scan dari Gambar">
                                         <iconify-icon icon="solar:gallery-bold-duotone" style="font-size: 24px;"></iconify-icon>
                                     </button>
                                 </div>
                                 <input type="file" id="barcodeFileInputEdit" accept="image/*" style="display: none;" onchange="handleBarcodeImageScan(event, 'edit_barcode')">
+                                <div class="invalid-feedback">Barcode / SKU wajib diisi</div>
                             </div>
                             <div class="form-group">
                                 <label for="edit_kategori">Kategori</label>
@@ -661,7 +663,7 @@
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
                     <div class="form-group">
-                        <label>Target Outlet / Toko</label>
+                        <label>Target Outlet</label>
                         @if(Auth::user()->isOwner())
                             <select name="store_id" class="form-control" required>
                                 <option value="">-- Pilih Toko --</option>

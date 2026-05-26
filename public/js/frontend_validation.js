@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
-    // Apply to all forms
-    const forms = document.querySelectorAll('form');
+    // Apply to all forms except those with custom JS validation
+    const forms = document.querySelectorAll('form:not([onsubmit*="validateProductForm"])');
     
     forms.forEach(form => {
         // Disable browser default validation UI

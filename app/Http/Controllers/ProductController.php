@@ -62,14 +62,7 @@ class ProductController extends Controller
             3600,
             function() use ($user, $selectedStoreId) {
                 return $this->mapProductsForJs(
-                    Product::whereHas('stores', function($q) use ($user, $selectedStoreId) {
-                        if (!$user->isOwner()) {
-                            $q->where('store_id', $user->store_id);
-                        } elseif ($selectedStoreId && $selectedStoreId != 'all') {
-                            $q->where('store_id', $selectedStoreId);
-                        }
-                    })
-                    ->select('uuid', 'nama_produk', 'barcode', 'harga_jual', 'harga_modal', 'kategori_id')
+                    Product::select('uuid', 'nama_produk', 'barcode', 'harga_jual', 'harga_modal', 'kategori_id')
                     ->with([
                         'category:uuid,nama_category',
                         'priceLevels:uuid,product_id,jmlh,harga',
@@ -518,15 +511,19 @@ class ProductController extends Controller
                 'transfer_products_' . $sourceStoreId,
                 3600,
                 function() use ($sourceStoreId) {
-                    return ProductStore::where('store_id', $sourceStoreId)->where('stok', '>', 0)->where('status_aktif', true)->with('product')->get()
-                        ->map(function ($item) {
-                            return [
-                                'uuid' => $item->product->uuid,
-                                'nama_produk' => $item->product->nama_produk,
-                                'barcode' => $item->product->barcode,
-                                'stok' => $item->stok
-                            ];
-                        })->toArray();
+                    $allProds = Product::with(['stores' => function($q) use ($sourceStoreId) {
+                        $q->where('store_id', $sourceStoreId);
+                    }])->get();
+
+                    return $allProds->map(function ($p) {
+                        $storeData = $p->stores->first();
+                        return [
+                            'uuid' => $p->uuid,
+                            'nama_produk' => $p->nama_produk,
+                            'barcode' => $p->barcode,
+                            'stok' => $storeData ? (float)$storeData->stok : 0
+                        ];
+                    })->toArray();
                 }
             );
         }
@@ -544,9 +541,7 @@ class ProductController extends Controller
 
     public function getProductsByStore($store_id)
     {
-        $products = Product::whereHas('stores', function($q) use ($store_id) {
-            $q->where('store_id', $store_id);
-        })->with(['stores' => function($q) use ($store_id) {
+        $products = Product::with(['stores' => function($q) use ($store_id) {
             $q->where('store_id', $store_id);
         }, 'category'])->get();
 
