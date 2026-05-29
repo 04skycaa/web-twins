@@ -737,7 +737,7 @@ function openAddressPopup(event) {
                 });
             }
 
-            function setMarker(latlng, shouldCenter = false) {
+            function setMarker(latlng, shouldCenter = false, updateInput = true) {
                 selectedLatLng = {
                     lat: latlng.lat,
                     lng: latlng.lng
@@ -755,23 +755,25 @@ function openAddressPopup(event) {
                 renderMapResultText(
                     `Koordinat dipilih: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`);
 
-                fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`
-                )
-                    .then(response => response.ok ? response.json() : null)
-                    .then(data => {
-                        if (data && data.display_name) {
-                            manualAddressInput.value = data.display_name;
-                            renderMapResultText(data.display_name);
-                        }
-                        updateRouteTracking();
-                    })
-                    .catch(() => {
-                        // Keep coordinate fallback when reverse geocoding fails.
-                        updateRouteTracking();
-                    });
-
-                updateRouteTracking();
+                if (updateInput) {
+                    fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=id&lat=${latlng.lat}&lon=${latlng.lng}`
+                    )
+                        .then(response => response.ok ? response.json() : null)
+                        .then(data => {
+                            if (data && data.display_name) {
+                                manualAddressInput.value = data.display_name;
+                                renderMapResultText(data.display_name);
+                            }
+                            updateRouteTracking();
+                        })
+                        .catch(() => {
+                            // Keep coordinate fallback when reverse geocoding fails.
+                            updateRouteTracking();
+                        });
+                } else {
+                    updateRouteTracking();
+                }
             }
 
             function geocodeAddressToMap(addressText) {
@@ -873,6 +875,12 @@ function openAddressPopup(event) {
                                 suggestionsDropdown.style.display = 'none';
                                 return;
                             }
+                            
+                            // Forward Geocoding: Pindahkan pin secara otomatis ke hasil pertama saat mengetik
+                            const firstLat = parseFloat(results[0].lat);
+                            const firstLng = parseFloat(results[0].lon);
+                            setMarker({ lat: firstLat, lng: firstLng }, true, false);
+
                             results.forEach(item => {
                                 const div = document.createElement('div');
                                 div.style.padding = '10px 14px';

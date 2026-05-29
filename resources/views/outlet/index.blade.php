@@ -1206,6 +1206,29 @@
         shadowSize: [41, 41]
     });
 
+    let addAddressTimeout;
+    function setupAddAddressListener() {
+        const input = document.getElementById('add_alamat');
+        if (!input || input.dataset.listenerAttached) return;
+        input.dataset.listenerAttached = 'true';
+        input.addEventListener('input', function() {
+            clearTimeout(addAddressTimeout);
+            const query = this.value.trim();
+            if (query.length < 5) return;
+            addAddressTimeout = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`)
+                    .then(res => res.ok ? res.json() : [])
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const latlng = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                            if (adminAddMap) adminAddMap.setView([latlng.lat, latlng.lng], 16);
+                            setAdminAddMarker(latlng, false);
+                        }
+                    }).catch(err => console.error(err));
+            }, 1000);
+        });
+    }
+
     function initAdminAddMap() {
         setTimeout(() => {
             if (!adminAddMap) {
@@ -1227,6 +1250,7 @@
             document.getElementById('add_latitude').value = '';
             document.getElementById('add_longitude').value = '';
             adminAddMap.invalidateSize();
+            setupAddAddressListener();
         }, 200);
     }
 
@@ -1259,6 +1283,29 @@
         }
     }
 
+    let editAddressTimeout;
+    function setupEditAddressListener() {
+        const input = document.getElementById('edit_alamat');
+        if (!input || input.dataset.listenerAttached) return;
+        input.dataset.listenerAttached = 'true';
+        input.addEventListener('input', function() {
+            clearTimeout(editAddressTimeout);
+            const query = this.value.trim();
+            if (query.length < 5) return;
+            editAddressTimeout = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`)
+                    .then(res => res.ok ? res.json() : [])
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const latlng = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                            if (adminEditMap) adminEditMap.setView([latlng.lat, latlng.lng], 16);
+                            setAdminEditMarker(latlng, false);
+                        }
+                    }).catch(err => console.error(err));
+            }, 1000);
+        });
+    }
+
     function initAdminEditMap() {
         const latInput = document.getElementById('edit_latitude').value;
         const lngInput = document.getElementById('edit_longitude').value;
@@ -1289,6 +1336,7 @@
                 }
             }
             adminEditMap.invalidateSize();
+            setupEditAddressListener();
         }, 200);
     }
 

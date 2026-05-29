@@ -8,7 +8,7 @@
 @section('content')
     <div class="fitur-container" id="perilaku-app">
         {{-- PILL TABS --}}
-        <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-start pb-2">
+        <div class="tab-navigation overflow-x-auto whitespace-nowrap justify-center pb-2">
             <a href="#" class="tab-pill {{ ($active_tab ?? 'customer') === 'customer' ? 'active' : '' }}" onclick="switchTab('customer')" id="pill-customer">
                 <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
                 <span>Perilaku Customer</span>
