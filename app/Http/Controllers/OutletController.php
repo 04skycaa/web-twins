@@ -35,7 +35,9 @@ class OutletController extends Controller
             elseif ($hasRiwayatStok) $activeTab = 'riwayat';
         }
 
-        $outlets = Outlet::with(['users.operator'])->get();
+        $outlets = Outlet::with(['users.operator'])
+            ->orderByRaw("CASE WHEN nama LIKE '%Pusat%' THEN 1 WHEN nama LIKE '%cabang 2%' THEN 2 ELSE 3 END")
+            ->get();
         
         $performanceData = collect();
         $top3All = [];

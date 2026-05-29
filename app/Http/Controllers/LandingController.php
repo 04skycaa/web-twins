@@ -23,7 +23,9 @@ class LandingController extends Controller
 {
     public function index()
     {
-        $outlets = Outlet::where('status_aktif', true)->get();
+        $outlets = Outlet::where('status_aktif', true)
+            ->orderByRaw("CASE WHEN nama LIKE '%Pusat%' THEN 1 WHEN nama LIKE '%cabang 2%' THEN 2 ELSE 3 END")
+            ->get();
         $now = Carbon::now();
         $promos = Promo::with('stores')
             ->where('status', true)
