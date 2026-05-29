@@ -20,78 +20,73 @@
         </div>
 
         {{-- ACTION BAR --}}
-        <header class="action-bar flex flex-col md:flex-row gap-4 mb-4 md:mb-6 bg-transparent p-0">
-            <div class="w-full">
-                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-                    {{-- Search --}}
-                    <div class="search-wrapper flex-1 w-full" id="searchWrapper">
-                        <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                        <input type="text" id="globalSearch" class="search-input w-full"
-                            placeholder="Cari..." onkeyup="handleSearch()">
+        <header class="action-bar mb-4 bg-transparent p-0" style="justify-content: space-between; border: none; box-shadow: none; flex-wrap: wrap; gap: 15px;">
+            <div id="headerLeftActions" style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 280px; flex-wrap: wrap;">
+                
+                {{-- Search Bar --}}
+                <div class="search-wrapper" style="min-width: 250px;">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="globalSearch" class="search-input" placeholder="Cari..." onkeyup="handleSearch()" style="width: 100%;">
+                </div>
+
+                <form id="globalFilterForm" method="GET" action="{{ route('perilaku.index') }}" style="display:none;">
+                    <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $active_tab ?? 'customer' }}">
+                    <input type="hidden" name="store_id" id="filterStoreId" value="{{ $store_id }}">
+                    <input type="hidden" name="year" id="filterYear" value="{{ $year ?? date('Y') }}">
+                    <input type="hidden" name="month" id="filterMonth" value="{{ $month ?? '' }}">
+                    <input type="hidden" name="sort" id="filterSort" value="{{ $sort ?? 'omset' }}">
+                </form>
+
+                <div id="perilakuFilters" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    {{-- Dropdown Toko --}}
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('store', 'all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                            @endif
+                            @foreach ($outlets as $o)
+                                <a href="javascript:void(0)" onclick="applyGlobalFilter('store', '{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                            @endforeach
+                        </div>
                     </div>
 
-                    <div class="flex flex-row items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0" style="scrollbar-width: none;">
-                        {{-- Filter Outlet --}}
-                        <div class="dropdown">
-                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Filter Toko" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"
-                                    class="{{ $store_id ? 'text-primary-blue' : '' }}"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px);">
-                                @foreach ($outlets as $o)
-                                    <a href="javascript:void(0)" onclick="selectStore('{{ $o->uuid }}')"
-                                        class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
-                                @endforeach
+                    {{-- Dropdown Year & Month --}}
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Waktu" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" class="{{ $year || !empty($month) ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content" style="padding: 15px; width: 220px;">
+                            <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Tahun</label>
+                            <input id="year-selector" type="number" class="form-control" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;" min="2020" max="2100" value="{{ $year ?? date('Y') }}">
+                            
+                            <div id="month-filter-group" style="display: {{ ($active_tab ?? 'customer') === 'produk' ? 'block' : 'none' }};">
+                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Bulan (Opsional)</label>
+                                <select id="month-selector" class="form-control" style="width: 100%; padding: 8px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;">
+                                    <option value="">-- Semua Bulan --</option>
+                                    @for($m=1; $m<=12; $m++)
+                                        <option value="{{ $m }}" {{ (isset($month) && $month == $m) ? 'selected' : '' }}>
+                                            {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][$m-1] }}
+                                        </option>
+                                    @endfor
+                                </select>
                             </div>
+                            
+                            <button type="button" class="btn-action w-full" style="justify-content: center; margin-top: 12px; padding: 8px; border-radius: 8px; background: var(--primary-blue); color: white; border: none; cursor: pointer;" onclick="applyDateFilter()">Terapkan</button>
                         </div>
+                    </div>
 
-                        {{-- Filter Year --}}
-                        <div class="dropdown">
-                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Filter Tahun" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px;"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px); padding: 15px; width: 200px;">
-                                <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Tahun</label>
-                                <input id="year-selector" type="number" class="form-control w-full" min="2020" max="2100"
-                                    value="{{ $year }}">
-                                <div id="month-filter-group" style="margin-top: 10px; display: none;">
-                                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Bulan
-                                        (Opsional)</label>
-                                    <select id="month-selector" class="form-control w-full">
-                                        <option value="">-- Semua Bulan --</option>
-                                        <option value="1">Januari</option>
-                                        <option value="2">Februari</option>
-                                        <option value="3">Maret</option>
-                                        <option value="4">April</option>
-                                        <option value="5">Mei</option>
-                                        <option value="6">Juni</option>
-                                        <option value="7">Juli</option>
-                                        <option value="8">Agustus</option>
-                                        <option value="9">September</option>
-                                        <option value="10">Oktober</option>
-                                        <option value="11">November</option>
-                                        <option value="12">Desember</option>
-                                    </select>
-                                </div>
-                                <button type="button" class="btn-action w-full"
-                                    style="justify-content: center; margin-top: 12px;"
-                                    onclick="applyFilter()">Terapkan</button>
-                            </div>
-                        </div>
-
-                        {{-- Sort (visible for produk tab) --}}
-                        <div class="dropdown" id="sortDropdown" style="display: none;">
-                            <button type="button" class="btn-filter shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 12px; padding: 0;" title="Urutkan" onclick="toggleDropdown(event)">
-                                <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone"
-                                    style="font-size: 20px;"></iconify-icon>
-                            </button>
-                            <div class="dropdown-content" style="right: 0; left: auto; top: calc(100% + 8px);">
-                                <a href="javascript:void(0)" onclick="setSort('omset')" id="sort-omset"
-                                    class="active-dropdown-item">Omset Tertinggi</a>
-                                <a href="javascript:void(0)" onclick="setSort('frekuensi')" id="sort-frekuensi">Frekuensi
-                                    Tertinggi</a>
-                                <a href="javascript:void(0)" onclick="setSort('laba')" id="sort-laba">Laba Tertinggi</a>
-                            </div>
+                    {{-- Dropdown Sort (Only for Produk) --}}
+                    <div class="dropdown" id="sortDropdown" style="display: {{ ($active_tab ?? 'customer') === 'produk' ? 'inline-block' : 'none' }};">
+                        <button type="button" class="btn-filter" title="Urutkan" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone" style="font-size: 24px;" class="{{ isset($sort) && $sort ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="javascript:void(0)" onclick="applyGlobalFilter('sort', 'omset')" class="{{ (isset($sort) ? $sort : 'omset') == 'omset' ? 'active-dropdown-item' : '' }}">Omset Tertinggi</a>
+                            <a href="javascript:void(0)" onclick="applyGlobalFilter('sort', 'frekuensi')" class="{{ (isset($sort) ? $sort : 'omset') == 'frekuensi' ? 'active-dropdown-item' : '' }}">Frekuensi Tertinggi</a>
+                            <a href="javascript:void(0)" onclick="applyGlobalFilter('sort', 'laba')" class="{{ (isset($sort) ? $sort : 'omset') == 'laba' ? 'active-dropdown-item' : '' }}">Laba Tertinggi</a>
                         </div>
                     </div>
                 </div>
@@ -113,8 +108,8 @@
         let currentTab = '{{ $active_tab ?? 'customer' }}';
         let currentStoreId = '{{ $store_id ?? '' }}';
         let currentYear = {{ $year ?? date('Y') }};
-        let currentMonth = '';
-        let currentSort = 'omset';
+        let currentMonth = '{{ $month ?? '' }}';
+        let currentSort = '{{ $sort ?? 'omset' }}';
         let currentKanal = 'semua';
         let searchTimeout = null;
 
@@ -131,11 +126,30 @@
             }).format(value || 0);
         }
 
+        function applyGlobalFilter(type, value) {
+            document.getElementById('filterActiveTab').value = currentTab;
+            if (type === 'store') document.getElementById('filterStoreId').value = value;
+            if (type === 'sort') document.getElementById('filterSort').value = value;
+            document.getElementById('globalFilterForm').submit();
+        }
+
+        function applyDateFilter() {
+            document.getElementById('filterActiveTab').value = currentTab;
+            document.getElementById('filterYear').value = document.getElementById('year-selector').value;
+            const monthSelect = document.getElementById('month-selector');
+            document.getElementById('filterMonth').value = monthSelect ? monthSelect.value : '';
+            document.getElementById('globalFilterForm').submit();
+        }
+
         // ═══════════════════════════════════════
         //  Tab Switching
         // ═══════════════════════════════════════
         function switchTab(tab) {
             currentTab = tab;
+            if (document.getElementById('filterActiveTab')) {
+                document.getElementById('filterActiveTab').value = tab;
+            }
+
             document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
             document.getElementById('pill-' + tab).classList.add('active');
 
@@ -159,28 +173,6 @@
         // ═══════════════════════════════════════
         //  Filters
         // ═══════════════════════════════════════
-        function selectStore(storeId) {
-            currentStoreId = storeId;
-            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
-            loadData();
-        }
-
-        function applyFilter() {
-            currentYear = parseInt(document.getElementById('year-selector').value) || {{ date('Y') }};
-            const monthSelect = document.getElementById('month-selector');
-            currentMonth = monthSelect ? monthSelect.value : '';
-            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
-            loadData();
-        }
-
-        function setSort(sort) {
-            currentSort = sort;
-            document.querySelectorAll('#sortDropdown .dropdown-content a').forEach(a => a.classList.remove(
-                'active-dropdown-item'));
-            document.getElementById('sort-' + sort).classList.add('active-dropdown-item');
-            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
-            loadData();
-        }
 
         function switchKanal(kanal) {
             currentKanal = kanal;

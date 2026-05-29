@@ -25,11 +25,13 @@ class PerilakuController extends Controller
         }
 
         $defaultStore = $user->role === 'owner'
-            ? ($outlets->first()->uuid ?? null)
+            ? 'all'
             : ($user->outlet_id ?? ($outlets->first()->uuid ?? null));
 
         $store_id = $request->input('store_id', session('perilaku_store_id', $defaultStore));
         $year = $request->input('year', date('Y'));
+        $month = $request->input('month', '');
+        $sort = $request->input('sort', 'omset');
         $active_tab = $request->input('active_tab', 'customer');
 
         // Save to session
@@ -39,8 +41,22 @@ class PerilakuController extends Controller
             'outlets'    => $outlets,
             'store_id'   => $store_id,
             'year'       => $year,
+            'month'      => $month,
+            'sort'       => $sort,
             'active_tab' => $active_tab,
         ]);
+    }
+
+    private function getOutletsToFetch($store_id)
+    {
+        if ($store_id === 'all') {
+            $user = Auth::user();
+            if ($user->role === 'owner') {
+                return DB::table('store')->where('status_aktif', true)->pluck('uuid')->toArray();
+            }
+            return [$user->outlet_id];
+        }
+        return [$store_id];
     }
 
     // ═══════════════════════════════════════════
@@ -58,15 +74,20 @@ class PerilakuController extends Controller
             return response()->json(['customers' => [], 'total_omset' => 0, 'total_customers' => 0]);
         }
 
-        $cacheKey = "customer_behavior_{$store_id}_{$year}";
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
 
         try {
-            $data = Cache::remember($cacheKey, 1800, function () use ($store_id, $year) {
-                $rows = DB::select('SELECT * FROM get_customer_behavior_yearly(?, ?)', [$store_id, $year]);
-                return array_map(function($row) {
-                    return (array) $row;
-                }, $rows);
-            });
+            foreach ($outletsToFetch as $sid) {
+                $cacheKey = "customer_behavior_{$sid}_{$year}";
+                $data = Cache::remember($cacheKey, 1800, function () use ($sid, $year) {
+                    $rows = DB::select('SELECT * FROM get_customer_behavior_yearly(?, ?)', [$sid, $year]);
+                    return array_map(function($row) {
+                        return (array) $row;
+                    }, $rows);
+                });
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] customerYearly RPC failed: ' . $e->getMessage());
             return response()->json([
@@ -78,24 +99,21 @@ class PerilakuController extends Controller
         }
 
         // Group by customer
-        $grouped = collect($data)->map(fn($r) => (object)$r)->groupBy('contact_id')->map(function ($rows) {
+        $grouped = collect($allData)->map(fn($r) => (object)$r)->groupBy('contact_id')->map(function ($rows) {
             $first = $rows->first();
-            $months = [];
-            $totalOmset = 0;
-
-            foreach ($rows as $row) {
-                $months[] = [
-                    'bulan' => (int) $row->bulan,
-                    'total_omset' => (float) $row->total_omset,
+            
+            $monthlyData = collect($rows)->groupBy('bulan')->map(function ($mRows) {
+                return [
+                    'bulan' => (int) $mRows->first()->bulan,
+                    'total_omset' => (float) $mRows->sum('total_omset'),
                 ];
-                $totalOmset += (float) $row->total_omset;
-            }
+            })->values()->toArray();
 
             return [
                 'contact_id'    => $first->contact_id,
                 'nama_customer' => $first->nama_customer,
-                'total_omset'   => $totalOmset,
-                'months'        => $months,
+                'total_omset'   => collect($monthlyData)->sum('total_omset'),
+                'months'        => $monthlyData,
             ];
         })->values();
 
@@ -142,23 +160,29 @@ class PerilakuController extends Controller
             return response()->json(['daily' => []]);
         }
 
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
+
         try {
-            $data = DB::select(
-                'SELECT * FROM get_customer_behavior_daily(?, ?, ?, ?)',
-                [$store_id, $contact_id, $year, $month]
-            );
+            foreach ($outletsToFetch as $sid) {
+                $data = DB::select(
+                    'SELECT * FROM get_customer_behavior_daily(?, ?, ?, ?)',
+                    [$sid, $contact_id, $year, $month]
+                );
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] customerDaily RPC failed: ' . $e->getMessage());
             return response()->json(['daily' => [], 'error' => 'Gagal memuat data harian customer.'], 500);
         }
 
-        $daily = collect($data)->map(function ($row) {
+        $daily = collect($allData)->groupBy('tanggal')->map(function ($rows) {
             return [
-                'tanggal'   => $row->tanggal,
-                'total'     => (float) $row->total,
-                'frekuensi' => (int) $row->frekuensi,
+                'tanggal'   => $rows->first()->tanggal,
+                'total'     => (float) $rows->sum('total'),
+                'frekuensi' => (int) $rows->sum('frekuensi'),
             ];
-        });
+        })->values()->sortBy('tanggal')->values();
 
         return response()->json(['daily' => $daily]);
     }
@@ -178,17 +202,23 @@ class PerilakuController extends Controller
             return response()->json(['history' => []]);
         }
 
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
+
         try {
-            $data = DB::select(
-                'SELECT * FROM get_customer_transactions_history(?, ?, ?, ?)',
-                [$store_id, $contact_id, $year, $month]
-            );
+            foreach ($outletsToFetch as $sid) {
+                $data = DB::select(
+                    'SELECT * FROM get_customer_transactions_history(?, ?, ?, ?)',
+                    [$sid, $contact_id, $year, $month]
+                );
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] customerHistory RPC failed: ' . $e->getMessage());
             return response()->json(['history' => [], 'error' => 'Gagal memuat riwayat transaksi customer.'], 500);
         }
 
-        $history = collect($data)->map(function ($row) {
+        $history = collect($allData)->map(function ($row) {
             return [
                 'tanggal'          => $row->tanggal,
                 'jenis_kanal'      => $row->jenis_kanal,
@@ -196,7 +226,7 @@ class PerilakuController extends Controller
                 'kembalian'        => (float) $row->kembalian,
                 'transaction_uuid' => $row->transaction_uuid,
             ];
-        });
+        })->sortByDesc('tanggal')->values();
 
         return response()->json(['history' => $history]);
     }
@@ -222,15 +252,20 @@ class PerilakuController extends Controller
             return $this->productMonthly($store_id, $year, (int) $month, $sort, $search);
         }
 
-        $cacheKey = "product_behavior_{$store_id}_{$year}";
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
 
         try {
-            $data = Cache::remember($cacheKey, 1800, function () use ($store_id, $year) {
-                $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
-                return array_map(function($row) {
-                    return (array) $row;
-                }, $rows);
-            });
+            foreach ($outletsToFetch as $sid) {
+                $cacheKey = "product_behavior_{$sid}_{$year}";
+                $data = Cache::remember($cacheKey, 1800, function () use ($sid, $year) {
+                    $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$sid, $year]);
+                    return array_map(function($row) {
+                        return (array) $row;
+                    }, $rows);
+                });
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productYearly RPC failed: ' . $e->getMessage());
             return response()->json([
@@ -245,33 +280,26 @@ class PerilakuController extends Controller
         }
 
         // Group by product
-        $grouped = collect($data)->map(fn($r) => (object)$r)->groupBy('product_id')->map(function ($rows) {
+        $grouped = collect($allData)->map(fn($r) => (object)$r)->groupBy('product_id')->map(function ($rows) {
             $first = $rows->first();
-            $months = [];
-            $totalOmset = 0;
-            $totalLaba = 0;
-            $totalFreq = 0;
-
-            foreach ($rows as $row) {
-                $months[] = [
-                    'bulan'       => (int) $row->bulan,
-                    'total_omset' => (float) $row->total_omset,
-                    'total_laba'  => (float) $row->total_laba,
-                    'frekuensi'   => (int) $row->frekuensi,
+            
+            $monthlyData = collect($rows)->groupBy('bulan')->map(function ($mRows) {
+                return [
+                    'bulan'       => (int) $mRows->first()->bulan,
+                    'total_omset' => (float) $mRows->sum('total_omset'),
+                    'total_laba'  => (float) $mRows->sum('total_laba'),
+                    'frekuensi'   => (int) $mRows->sum('frekuensi'),
                 ];
-                $totalOmset += (float) $row->total_omset;
-                $totalLaba += (float) $row->total_laba;
-                $totalFreq += (int) $row->frekuensi;
-            }
+            })->values()->toArray();
 
             return [
                 'product_id'    => $first->product_id,
                 'barcode'       => $first->barcode,
                 'nama_produk'   => $first->nama_produk,
-                'total_omset'   => $totalOmset,
-                'total_laba'    => $totalLaba,
-                'frekuensi'     => $totalFreq,
-                'months'        => $months,
+                'total_omset'   => collect($monthlyData)->sum('total_omset'),
+                'total_laba'    => collect($monthlyData)->sum('total_laba'),
+                'frekuensi'     => collect($monthlyData)->sum('frekuensi'),
+                'months'        => $monthlyData,
             ];
         })->values();
 
@@ -307,16 +335,20 @@ class PerilakuController extends Controller
      */
     private function productMonthly(string $store_id, int $year, int $month, string $sort, string $search)
     {
-        $cacheKey = "product_behavior_{$store_id}_{$year}_{$month}";
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
 
-        // Get yearly data first, then filter to specific month to get product list
         try {
-            $yearlyData = Cache::remember("product_behavior_{$store_id}_{$year}", 1800, function () use ($store_id, $year) {
-                $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$store_id, $year]);
-                return array_map(function($row) {
-                    return (array) $row;
-                }, $rows);
-            });
+            foreach ($outletsToFetch as $sid) {
+                $cacheKey = "product_behavior_{$sid}_{$year}";
+                $yearlyData = Cache::remember($cacheKey, 1800, function () use ($sid, $year) {
+                    $rows = DB::select('SELECT * FROM get_product_behavior_yearly(?, ?)', [$sid, $year]);
+                    return array_map(function($row) {
+                        return (array) $row;
+                    }, $rows);
+                });
+                $allData = array_merge($allData, $yearlyData);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productMonthly RPC failed: ' . $e->getMessage());
             return response()->json([
@@ -330,29 +362,28 @@ class PerilakuController extends Controller
             ], 500);
         }
 
-        // Filter to specific month
-        $monthData = collect($yearlyData)->map(fn($r) => (object)$r)->filter(function ($row) use ($month) {
+        // Group by product and filter to specific month
+        $grouped = collect($allData)->map(fn($r) => (object)$r)->filter(function ($row) use ($month) {
             return (int) $row->bulan === $month;
-        });
-
-        $products = $monthData->map(function ($row) {
+        })->groupBy('product_id')->map(function ($rows) {
+            $first = $rows->first();
             return [
-                'product_id'  => $row->product_id,
-                'barcode'     => $row->barcode,
-                'nama_produk' => $row->nama_produk,
-                'total_omset' => (float) $row->total_omset,
-                'total_laba'  => (float) $row->total_laba,
-                'frekuensi'   => (int) $row->frekuensi,
+                'product_id'  => $first->product_id,
+                'barcode'     => $first->barcode,
+                'nama_produk' => $first->nama_produk,
+                'total_omset' => (float) $rows->sum('total_omset'),
+                'total_laba'  => (float) $rows->sum('total_laba'),
+                'frekuensi'   => (int) $rows->sum('frekuensi'),
             ];
-        });
+        })->values();
 
         // Filter by search
         if ($search) {
-            $products = $products->filter(function ($item) use ($search) {
+            $grouped = $grouped->filter(function ($item) use ($search) {
                 $q = strtolower($search);
                 return str_contains(strtolower($item['nama_produk']), $q)
                     || str_contains(strtolower($item['barcode'] ?? ''), $q);
-            });
+            })->values();
         }
 
         // Sort
@@ -361,7 +392,7 @@ class PerilakuController extends Controller
             'laba' => 'total_laba',
             default => 'total_omset',
         };
-        $sorted = $products->sortByDesc($sortField)->values();
+        $sorted = $grouped->sortByDesc($sortField)->values();
 
         return response()->json([
             'products'       => $sorted,
@@ -388,24 +419,30 @@ class PerilakuController extends Controller
             return response()->json(['daily' => []]);
         }
 
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
+
         try {
-            $data = DB::select(
-                'SELECT * FROM get_product_behavior_daily(?, ?, ?, ?)',
-                [$store_id, $product_id, $year, $month]
-            );
+            foreach ($outletsToFetch as $sid) {
+                $data = DB::select(
+                    'SELECT * FROM get_product_behavior_daily(?, ?, ?, ?)',
+                    [$sid, $product_id, $year, $month]
+                );
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productDaily RPC failed: ' . $e->getMessage());
             return response()->json(['daily' => [], 'error' => 'Gagal memuat data harian produk.'], 500);
         }
 
-        $daily = collect($data)->map(function ($row) {
+        $daily = collect($allData)->groupBy('tanggal')->map(function ($rows) {
             return [
-                'tanggal'     => $row->tanggal,
-                'total_omset' => (float) $row->total_omset,
-                'total_laba'  => (float) $row->total_laba,
-                'frekuensi'   => (int) $row->frekuensi,
+                'tanggal'     => $rows->first()->tanggal,
+                'total_omset' => (float) $rows->sum('total_omset'),
+                'total_laba'  => (float) $rows->sum('total_laba'),
+                'frekuensi'   => (int) $rows->sum('frekuensi'),
             ];
-        });
+        })->values()->sortBy('tanggal')->values();
 
         return response()->json(['daily' => $daily]);
     }
@@ -425,17 +462,23 @@ class PerilakuController extends Controller
             return response()->json(['history' => []]);
         }
 
+        $outletsToFetch = $this->getOutletsToFetch($store_id);
+        $allData = [];
+
         try {
-            $data = DB::select(
-                'SELECT * FROM get_product_transactions_history(?, ?, ?, ?)',
-                [$store_id, $product_id, $year, $month]
-            );
+            foreach ($outletsToFetch as $sid) {
+                $data = DB::select(
+                    'SELECT * FROM get_product_transactions_history(?, ?, ?, ?)',
+                    [$sid, $product_id, $year, $month]
+                );
+                $allData = array_merge($allData, $data);
+            }
         } catch (\Exception $e) {
             \Log::error('[PerilakuController] productHistory RPC failed: ' . $e->getMessage());
             return response()->json(['history' => [], 'error' => 'Gagal memuat riwayat transaksi produk.'], 500);
         }
 
-        $history = collect($data)->map(function ($row) {
+        $history = collect($allData)->map(function ($row) {
             return [
                 'tanggal'          => $row->tanggal,
                 'jenis_kanal'      => $row->jenis_kanal,
@@ -445,7 +488,7 @@ class PerilakuController extends Controller
                 'kembalian'        => (float) $row->kembalian,
                 'transaction_uuid' => $row->transaction_uuid,
             ];
-        });
+        })->sortByDesc('tanggal')->values();
 
         return response()->json(['history' => $history]);
     }
