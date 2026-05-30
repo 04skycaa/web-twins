@@ -15,7 +15,7 @@ class Outlet extends Model
     protected $primaryKey = 'uuid';
     protected $keyType = 'string';
 
-    protected $fillable = ['nama', 'alamat', 'notelp', 'status_aktif', 'jam_buka', 'rating', 'latitude', 'longitude', 'max_delivery_distance'];
+    protected $fillable = ['nama', 'alamat', 'notelp', 'status_aktif', 'jam_buka', 'rating', 'latitude', 'longitude', 'max_delivery_distance', 'image_url'];
 
     public function users(): HasMany
     {

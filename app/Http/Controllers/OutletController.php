@@ -368,6 +368,26 @@ class OutletController extends Controller
             'max_delivery_distance' => 'nullable|integer|min:1',
         ]);
 
+        $imageUrl = null;
+        if ($request->filled('cropped_image')) {
+            $base64Image = $request->input('cropped_image');
+            $cloudinaryUrl = LandingController::uploadToCloudinary($base64Image, 'outlets');
+            
+            if ($cloudinaryUrl) {
+                $imageUrl = $cloudinaryUrl;
+            } else {
+                @list(, $fileData) = explode(';', $base64Image);
+                @list(, $fileData) = explode(',', $fileData);
+                if ($fileData) {
+                    $imageBinary = base64_decode($fileData);
+                    $fileName = \Illuminate\Support\Str::uuid() . '.png';
+                    $newPath = 'outlets/' . $fileName;
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($newPath, $imageBinary);
+                    $imageUrl = '/storage/' . $newPath;
+                }
+            }
+        }
+
         Outlet::create([
             'nama' => $request->nama,
             'alamat' => $request->alamat,
@@ -377,6 +397,7 @@ class OutletController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'max_delivery_distance' => $request->max_delivery_distance ?? 30,
+            'image_url' => $imageUrl,
         ]);
 
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil ditambahkan');
@@ -396,7 +417,7 @@ class OutletController extends Controller
 
         $outlet = Outlet::where('uuid', $uuid)->firstOrFail();
         
-        $outlet->update([
+        $updateData = [
             'nama' => $request->nama,
             'alamat' => $request->alamat,
             'notelp' => $request->notelp,
@@ -404,7 +425,36 @@ class OutletController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'max_delivery_distance' => $request->max_delivery_distance ?? 30,
-        ]);
+        ];
+
+        if ($request->filled('cropped_image')) {
+            $base64Image = $request->input('cropped_image');
+            $cloudinaryUrl = LandingController::uploadToCloudinary($base64Image, 'outlets');
+            
+            if ($cloudinaryUrl) {
+                $updateData['image_url'] = $cloudinaryUrl;
+            } else {
+                @list(, $fileData) = explode(';', $base64Image);
+                @list(, $fileData) = explode(',', $fileData);
+                if ($fileData) {
+                    $imageBinary = base64_decode($fileData);
+                    $fileName = \Illuminate\Support\Str::uuid() . '.png';
+                    $newPath = 'outlets/' . $fileName;
+                    
+                    if ($outlet->image_url && !str_starts_with($outlet->image_url, 'http')) {
+                        $oldPath = ltrim(str_replace(['storage/', '/storage/'], '', $outlet->image_url), '/');
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                        }
+                    }
+
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($newPath, $imageBinary);
+                    $updateData['image_url'] = '/storage/' . $newPath;
+                }
+            }
+        }
+
+        $outlet->update($updateData);
 
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil diperbarui');
     }

@@ -2,6 +2,7 @@
 
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" crossorigin="anonymous">
 
 <style>
     .fitur-layout-wrapper {
@@ -532,8 +533,9 @@
 
     {{-- VIEW KINERJA --}}
     <div id="view-kinerja" class="tab-view mobile-pb" style="{{ $active_tab == 'kinerja' ? '' : 'display: none;' }}">
-        <!-- Include Chart.js -->
+        <!-- Include Chart.js & Cropper.js -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" crossorigin="anonymous"></script>
         
         <div class="kinerja-header-container">
             <div>
@@ -1051,12 +1053,25 @@
             <h3>Tambah Outlet Baru</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
-        <form action="{{ route('outlet.store') }}" method="POST">
+        <form action="{{ route('outlet.store') }}" method="POST" onsubmit="showLoading('Menyimpan Outlet Baru...')">
             @csrf
             <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" class="form-control" placeholder="Contoh: TWINS Bakery Pusat" required>
+                </div>
+                <!-- Image Upload (Foto Outlet) -->
+                <div class="form-group">
+                    <label>Foto Outlet</label>
+                    <input type="file" id="imageInputAdd" class="form-control" accept="image/*" style="display: none;">
+                    
+                    <div id="imagePreviewContainer" style="width: 150px; height: 150px; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f8fafc; position: relative;" onclick="document.getElementById('imageInputAdd').click()">
+                        <div style="text-align: center; color: #94a3b8;">
+                            <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px;"></iconify-icon>
+                            <div style="font-size: 11px; margin-top: 4px;">Pilih Foto 1:1</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="cropped_image" id="croppedImageResult">
                 </div>
                 <div class="form-group" style="position: relative;">
                     <label>Alamat Lengkap</label>
@@ -1106,13 +1121,26 @@
             <h3>Edit Outlet</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" onsubmit="showLoading('Menyimpan Perubahan...')">
             @csrf
             @method('PUT')
             <div class="modal-body" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
                 <div class="form-group">
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" id="edit_nama" class="form-control" required>
+                </div>
+                <!-- Edit Image Upload -->
+                <div class="form-group">
+                    <label>Foto Outlet</label>
+                    <input type="file" id="editImageInput" class="form-control" accept="image/*" style="display: none;">
+                    
+                    <div id="editImagePreviewContainer" style="width: 150px; height: 150px; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; background: #f8fafc; position: relative;" onclick="document.getElementById('editImageInput').click()">
+                        <div style="text-align: center; color: #94a3b8;" id="editImagePlaceholder">
+                            <iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px;"></iconify-icon>
+                            <div style="font-size: 11px; margin-top: 4px;">Pilih Foto 1:1</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="cropped_image" id="editCroppedImageResult">
                 </div>
                 <div class="form-group" style="position: relative;">
                     <label>Alamat Lengkap</label>
@@ -1431,8 +1459,30 @@
         }
     }
 
-    function openModal(id) { 
-        document.getElementById(id).style.display = 'flex'; 
+    function showLoading(text = 'Sedang Memproses Data...') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: text,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+    }
+    
+    function hideLoading() {
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+    }
+
+    function openModal(id, zIndex = 20000) { 
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'flex'; 
+            if (zIndex) modal.style.zIndex = zIndex;
+        }
         if (id === 'addModal') {
             initAdminAddMap();
         } else if (id === 'editModal') {
@@ -1542,7 +1592,27 @@
         document.getElementById('edit_jam_buka').value = data.jam_buka || '';
         document.getElementById('edit_latitude').value = data.latitude || '';
         document.getElementById('edit_longitude').value = data.longitude || '';
-        document.getElementById('edit_max_delivery_distance').value = data.max_delivery_distance || 30;
+        document.getElementById('edit_max_delivery_distance').value = data.max_delivery_distance ?? 30;
+        
+        // Setup image preview
+        const previewContainer = document.getElementById('editImagePreviewContainer');
+        const hiddenInput = document.getElementById('editCroppedImageResult');
+        const placeholder = document.getElementById('editImagePlaceholder');
+        
+        // Reset cropper input
+        document.getElementById('editImageInput').value = '';
+        hiddenInput.value = '';
+        
+        if (data.image_url) {
+            previewContainer.innerHTML = `<img src="${data.image_url}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+            previewContainer.style.border = 'none';
+            previewContainer.style.background = 'white';
+        } else {
+            previewContainer.innerHTML = placeholder ? placeholder.outerHTML : `<div style="text-align: center; color: #94a3b8;" id="editImagePlaceholder"><iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px;"></iconify-icon><div style="font-size: 11px; margin-top: 4px;">Pilih Foto 1:1</div></div>`;
+            previewContainer.style.border = '2px dashed #cbd5e1';
+            previewContainer.style.background = '#f8fafc';
+        }
+
         openModal('editModal');
     }
 
@@ -1787,6 +1857,112 @@
             }
         }
     });
+    // --- Generic Cropper Logic ---
+    let cropper = null;
+    let currentActiveInput = null;
+
+    function initCropper(inputElement, previewContainer, resultInput) {
+        if (!inputElement || !previewContainer || !resultInput) return;
+        
+        inputElement.addEventListener('change', e => {
+            const f = e.target.files[0]; 
+            if (!f) return;
+            
+            if (!f.type.startsWith('image/')) {
+                Swal.fire('Error', 'File yang dipilih bukan gambar.', 'error');
+                return;
+            }
+
+            currentActiveInput = { preview: previewContainer, result: resultInput };
+            const reader = new FileReader();
+            
+            showLoading('Menyiapkan Pemotong Foto...');
+            
+            reader.onload = ev => {
+                const cropImg = document.getElementById('cropperImage');
+                cropImg.src = ev.target.result; 
+                
+                cropImg.onload = () => {
+                    hideLoading();
+                    openModal('cropperModal', 999999);
+                    
+                    if (cropper) {
+                        cropper.destroy();
+                    }
+                    
+                    cropper = new Cropper(cropImg, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+            };
+            reader.readAsDataURL(f);
+        });
+    }
+
+    initCropper(
+        document.getElementById('imageInputAdd'), 
+        document.getElementById('imagePreviewContainer'), 
+        document.getElementById('croppedImageResult')
+    );
+
+    if (document.getElementById('editImageInput')) {
+        initCropper(
+            document.getElementById('editImageInput'), 
+            document.getElementById('editImagePreviewContainer'), 
+            document.getElementById('editCroppedImageResult')
+        );
+    }
+
+    function closeCropperModal() { 
+        document.getElementById('cropperModal').style.display='none'; 
+        if (cropper) cropper.destroy(); 
+    }
+
+    function applyCrop() {
+        if (!cropper || !currentActiveInput) {
+            Swal.fire('Gagal', 'Sesi pemotong foto tidak aktif.', 'error');
+            return;
+        }
+        showLoading('Menerapkan Potongan Foto...');
+        
+        // Beri jeda sedikit agar UI sempat ter-update sebelum proses berat (toDataURL)
+        setTimeout(() => {
+            const canvas = cropper.getCroppedCanvas({ 
+                width: 800, 
+                height: 800,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            
+            const b64 = canvas.toDataURL('image/jpeg', 0.9);
+            
+            currentActiveInput.result.value = b64;
+            currentActiveInput.preview.innerHTML = `<img src="${b64}" style="width:100%; height:100%; object-fit:cover; display:block;">`;
+            currentActiveInput.preview.style.border = 'none';
+            currentActiveInput.preview.style.background = 'white';
+            
+            hideLoading();
+            closeCropperModal();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Foto outlet berhasil dipotong dan diterapkan!',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }, 100);
+    }
 </script>
 @endpush
 @push('styles')
@@ -1796,5 +1972,52 @@
     }
 </style>
 @endpush
+
+<!-- Modal Cropper -->
+<div id="cropperModal" class="modal-overlay" style="display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.85); z-index: 999999 !important; backdrop-filter: blur(8px);">
+    <div style="background: white; border-radius: 20px; overflow: hidden; width: 95%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+        
+        <!-- Header -->
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <iconify-icon icon="solar:crop-bold-duotone" style="font-size: 24px; color: var(--primary-blue);"></iconify-icon>
+                <h3 style="margin: 0; font-size: 16px; color: #1e293b; font-weight: 700;">Sesuaikan Foto</h3>
+            </div>
+            <button type="button" onclick="closeCropperModal()" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: all 0.2s;">&times;</button>
+        </div>
+
+        <!-- Body -->
+        <div style="flex: 1; padding: 20px; background: #f8fafc; min-height: 300px; display: flex; justify-content: center; align-items: center;">
+            <img id="cropperImage" src="" style="max-width: 100%; display: block;">
+        </div>
+        
+        <!-- Toolbar & Footer -->
+        <div style="padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0;">
+            <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; padding: 8px; background: #f8fafc; border-radius: 12px; width: max-content; margin-inline: auto;">
+                <button type="button" class="btn-cropper-tool" onclick="cropper.zoom(0.1)" title="Zoom In" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:magnifer-zoom-in-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                </button>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.zoom(-0.1)" title="Zoom Out" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:magnifer-zoom-out-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                </button>
+                <div style="width: 1px; background: #e2e8f0; margin: 0 4px;"></div>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.rotate(-90)" title="Rotate Left" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:undo-left-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                </button>
+                <button type="button" class="btn-cropper-tool" onclick="cropper.rotate(90)" title="Rotate Right" style="width: 36px; height: 36px; border-radius: 50%; border: none; background: white; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <iconify-icon icon="solar:undo-right-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                </button>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center; height: 48px; border-radius: 12px; font-weight: 600;" onclick="closeCropperModal()">Batal</button>
+                <button type="button" id="btnApplyCrop" class="btn-action" style="flex: 1.5; justify-content: center; height: 48px; border-radius: 12px; font-weight: 600; background: var(--primary-blue);" onclick="applyCrop()">
+                    <iconify-icon id="iconApplyCrop" icon="solar:check-circle-bold-duotone" style="margin-right: 8px; font-size: 20px;"></iconify-icon>
+                    <span id="textApplyCrop">Terapkan Potongan</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
