@@ -264,7 +264,7 @@
     <div class="container" id=
     "mainContainer">
         <main class="main-content anim-fade-up" id="homePage">
-            <div class="promo-banner float-hover">
+            <div class="promo-banner float-hover" style="background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('{{ $outlet->image_url ?: asset('images/toko-bahan.jpg') }}');">
                 <span class="badge" style="margin-bottom: 10px;">Outlet TWINS</span>
                 <h1>{{ $outlet->nama }}</h1>
                 <p>📍 {{ $outlet->alamat }}</p>

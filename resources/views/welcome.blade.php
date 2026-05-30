@@ -172,7 +172,7 @@
                 
                 @foreach($heroOutlets as $index => $heroOutlet)
                 <div class="nft-card">
-                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" alt="Store Image">
+                    <img src="{{ $heroOutlet->image_url ?: asset('images/toko'.(($index % 5) + 1).'.jpg') }}" alt="Store Image" style="width:100%; height:100%; object-fit:cover;">
                 </div>
                 @endforeach
             </div>
@@ -280,7 +280,7 @@
                     </div>
                 </div>
                 <div class="nft-item-img" data-parallax-wrap>
-                    <img src="{{ asset('images/toko'.(($index % 5) + 1).'.jpg') }}" data-parallax>
+                    <img src="{{ $outlet->image_url ?: asset('images/toko'.(($index % 5) + 1).'.jpg') }}" data-parallax style="width:100%; height:100%; object-fit:cover;">
                 </div>
                 <h4 style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $outlet->nama }}</h4>
                 <div class="bid-box">
