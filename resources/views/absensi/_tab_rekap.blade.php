@@ -1,25 +1,5 @@
 <!-- TAB: REKAP ABSENSI (DB Aggregation) -->
 <div id="view-rekap" style="display: none;">
-    <form method="GET" action="{{ route('absensi.index') }}" class="filter-bar">
-        <input type="hidden" name="active_tab" value="rekap">
-        @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
-            <select name="store_id" class="inline-select" style="min-width:150px; height:42px;">
-                @if(Auth::user()->role === 'owner')
-                    <option value="all" {{ $store_id === 'all' ? 'selected' : '' }}>Semua Outlet</option>
-                @endif
-                @foreach($outlets as $o)
-                    <option value="{{ $o->uuid }}" {{ $store_id == $o->uuid ? 'selected' : '' }}>{{ $o->nama }}</option>
-                @endforeach
-            </select>
-        @else
-            <input type="hidden" name="store_id" value="{{ $store_id }}">
-        @endif
-        <label style="font-weight:600;font-size:14px;color:#333;">Periode:</label>
-        <input type="month" name="rekap_bulan" value="{{ $rekapBulan }}" style="min-width:160px;">
-        <button type="submit" class="btn-action" style="padding:8px 16px;font-size:13px;">
-            <iconify-icon icon="solar:magnifer-linear"></iconify-icon> Tampilkan
-        </button>
-    </form>
 
     @php
         $totH = $rekap->sum('total_hadir');

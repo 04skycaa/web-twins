@@ -63,6 +63,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!isValid) {
                 e.preventDefault(); // Stop submission
+            } else {
+                // If form is valid and being submitted, update the submit button
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn && !submitBtn.dataset.loading) {
+                    submitBtn.dataset.loading = 'true';
+                    submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+                    
+                    const isUpdate = submitBtn.innerText.toLowerCase().includes('update') || submitBtn.innerText.toLowerCase().includes('perbarui') || submitBtn.innerText.toLowerCase().includes('simpan perubahan');
+                    const btnText = isUpdate ? 'Memperbarui...' : 'Menyimpan...';
+
+                    submitBtn.innerHTML = `<iconify-icon icon="eos-icons:loading" style="font-size: 1.2em; vertical-align: middle; margin-right: 5px;"></iconify-icon> <span>${btnText}</span>`;
+                    submitBtn.style.opacity = '0.7';
+                    submitBtn.style.pointerEvents = 'none';
+                }
             }
         });
     });

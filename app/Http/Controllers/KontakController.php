@@ -143,7 +143,7 @@ class KontakController extends Controller
             'tipe' => $request->tipe,
         ]);
 
-        return redirect()->route('kontak.index')->with('success', 'Kontak berhasil ditambahkan');
+        return redirect()->route('kontak.index', ['tab' => $request->tipe])->with('success', 'Kontak berhasil ditambahkan');
     }
 
     public function update(Request $request, $id)
@@ -159,20 +159,21 @@ class KontakController extends Controller
             'no_hp' => $request->no_hp,
         ]);
 
-        return redirect()->route('kontak.index')->with('success', 'Kontak berhasil diperbarui');
+        return redirect()->route('kontak.index', ['tab' => $contact->tipe])->with('success', 'Kontak berhasil diperbarui');
     }
 
     public function destroy($id)
     {
         $contact = Contact::findOrFail($id);
         try {
+            $tipe = $contact->tipe;
             $contact->delete();
-            return redirect()->route('kontak.index')->with('success', 'Kontak berhasil dihapus');
+            return redirect()->route('kontak.index', ['tab' => $tipe])->with('success', 'Kontak berhasil dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             if ($e->getCode() == 23503 || $e->getCode() == 1451) {
-                return redirect()->route('kontak.index')->with('error', 'Gagal menghapus! Kontak ini tidak bisa dihapus karena masih terhubung dengan data lain (misalnya memiliki riwayat Piutang/Utang).');
+                return redirect()->route('kontak.index', ['tab' => $contact->tipe])->with('error', 'Gagal menghapus! Kontak ini tidak bisa dihapus karena masih terhubung dengan data lain (misalnya memiliki riwayat Piutang/Utang).');
             }
-            return redirect()->route('kontak.index')->with('error', 'Terjadi kesalahan sistem saat mencoba menghapus kontak.');
+            return redirect()->route('kontak.index', ['tab' => $contact->tipe])->with('error', 'Terjadi kesalahan sistem saat mencoba menghapus kontak.');
         }
     }
 

@@ -127,18 +127,50 @@
         }
 
         function applyGlobalFilter(type, value) {
-            document.getElementById('filterActiveTab').value = currentTab;
-            if (type === 'store') document.getElementById('filterStoreId').value = value;
-            if (type === 'sort') document.getElementById('filterSort').value = value;
-            document.getElementById('globalFilterForm').submit();
+            if (type === 'store') {
+                currentStoreId = value;
+                document.getElementById('filterStoreId').value = value;
+                // Update dropdown visual
+                document.querySelectorAll('a[onclick^="applyGlobalFilter(\'store\'"]').forEach(a => a.classList.remove('active-dropdown-item'));
+                const active = document.querySelector(`a[onclick="applyGlobalFilter('store', '${value}')"]`);
+                if(active) active.classList.add('active-dropdown-item');
+                
+                const icon = document.querySelector('button[title="Filter Toko"] iconify-icon');
+                if(icon) icon.className = (value && value !== 'all') ? 'text-primary-blue' : '';
+            }
+            if (type === 'sort') {
+                currentSort = value;
+                document.getElementById('filterSort').value = value;
+                document.querySelectorAll('a[onclick^="applyGlobalFilter(\'sort\'"]').forEach(a => a.classList.remove('active-dropdown-item'));
+                const active = document.querySelector(`a[onclick="applyGlobalFilter('sort', '${value}')"]`);
+                if(active) active.classList.add('active-dropdown-item');
+                
+                const icon = document.querySelector('button[title="Urutkan"] iconify-icon');
+                if(icon) icon.className = (value) ? 'text-primary-blue' : '';
+            }
+            
+            // Close dropdowns
+            document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+            
+            // Load data without reload
+            loadData();
         }
 
         function applyDateFilter() {
-            document.getElementById('filterActiveTab').value = currentTab;
-            document.getElementById('filterYear').value = document.getElementById('year-selector').value;
+            currentYear = document.getElementById('year-selector').value;
             const monthSelect = document.getElementById('month-selector');
-            document.getElementById('filterMonth').value = monthSelect ? monthSelect.value : '';
-            document.getElementById('globalFilterForm').submit();
+            currentMonth = monthSelect ? monthSelect.value : '';
+            
+            document.getElementById('filterYear').value = currentYear;
+            document.getElementById('filterMonth').value = currentMonth;
+            
+            const icon = document.querySelector('button[title="Filter Waktu"] iconify-icon');
+            if(icon) icon.className = (currentYear || currentMonth) ? 'text-primary-blue' : '';
+            
+            // Close dropdowns
+            document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+            
+            loadData();
         }
 
         // ═══════════════════════════════════════

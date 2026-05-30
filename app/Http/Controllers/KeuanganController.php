@@ -97,6 +97,16 @@ class KeuanganController extends Controller
         $pengeluaran = floatval($summaryTotals->get('pengeluaran', 0));
         $saldo_bersih = $pemasukan - $pengeluaran;
 
+        $active_tab = $request->get('tab', 'cashbox');
+        
+        if ($request->ajax()) {
+            if ($active_tab === 'cashbox') {
+                return view('keuangan.partials.table_cashbox', compact('cashboxes'));
+            } elseif ($active_tab === 'arus-uang') {
+                return view('keuangan.partials.table_arus_uang', compact('history', 'pemasukan', 'pengeluaran', 'saldo_bersih'));
+            }
+        }
+
         return view('keuangan.cashbox', compact(
             'cashboxes', 'cashFlowTotals', 'history', 'pemasukan', 'pengeluaran', 'saldo_bersih', 'start_date', 'end_date', 'outlets', 'store_id'
         ));

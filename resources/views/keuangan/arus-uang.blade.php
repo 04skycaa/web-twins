@@ -30,7 +30,10 @@
                                 <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
                                 <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                             </div>
-                            <button type="submit" class="btn-action" style="width: 100%; justify-content: center;">Terapkan</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="location.href='{{ route('keuangan.arus-uang', array_merge(request()->except(['start_date', 'end_date']))) }}'">Reset</button>
+                                <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Terapkan</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -42,9 +45,9 @@
                         <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"></iconify-icon>
                     </button>
                     <div class="dropdown-content">
-                        <a href="{{ route('keuangan.arus-uang', array_merge(request()->except('store_id'))) }}">Semua Outlet</a>
+                        <a href="{{ route('keuangan.arus-uang', array_merge(request()->except('store_id'))) }}" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
                         @foreach($outlets as $outlet)
-                            <a href="{{ route('keuangan.arus-uang', array_merge(request()->all(), ['store_id' => $outlet->uuid])) }}">
+                            <a href="{{ route('keuangan.arus-uang', array_merge(request()->all(), ['store_id' => $outlet->uuid])) }}" class="{{ $store_id == $outlet->uuid ? 'active-dropdown-item' : '' }}">
                                 {{ $outlet->nama }}
                             </a>
                         @endforeach

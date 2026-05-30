@@ -185,11 +185,11 @@
             <div class="dropdown">
                 <button type="button" class="btn-filter" style="width: auto; padding: 0 16px; border-radius: 50px; background: white; border: 2px solid var(--border-blue); color: var(--primary-blue); gap: 8px;" onclick="toggleDropdown(event)">
                     <iconify-icon icon="solar:sort-from-top-to-bottom-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                    <span style="font-weight: 600; font-size: 14px;">Urutkan: {{ $sort == 'terbaru' ? 'Terbaru' : 'Terlama' }}</span>
+                    <span id="sort-text-label" style="font-weight: 600; font-size: 14px;">Urutkan: {{ $sort == 'terbaru' ? 'Terbaru' : 'Terlama' }}</span>
                 </button>
                 <div class="dropdown-content">
-                    <a href="{{ request()->fullUrlWithQuery(['sort' => 'terbaru']) }}" class="{{ $sort == 'terbaru' ? 'active-dropdown-item' : '' }}">Terbaru</a>
-                    <a href="{{ request()->fullUrlWithQuery(['sort' => 'terlama']) }}" class="{{ $sort == 'terlama' ? 'active-dropdown-item' : '' }}">Terlama</a>
+                    <a href="javascript:void(0)" onclick="sortContacts('terbaru', this)" class="{{ $sort == 'terbaru' ? 'active-dropdown-item' : '' }}">Terbaru</a>
+                    <a href="javascript:void(0)" onclick="sortContacts('terlama', this)" class="{{ $sort == 'terlama' ? 'active-dropdown-item' : '' }}">Terlama</a>
                 </div>
             </div>
             <button onclick="openAddModal()" class="btn-action" style="background: var(--primary-blue); color: white;">
@@ -235,7 +235,7 @@
                     </thead>
                     <tbody>
                         @forelse($pelanggan as $p)
-                        <tr class="contact-row" data-search="{{ strtolower(($p->matching_username ?? $p->nama) . ' ' . $p->no_hp) }}">
+                        <tr class="contact-row" data-search="{{ strtolower(($p->matching_username ?? $p->nama) . ' ' . $p->no_hp) }}" data-time="{{ $p->created_at ? $p->created_at->timestamp : 0 }}">
                             <td style="text-align: center;">
                                 <input type="checkbox" class="customer-checkbox" value="{{ $p->uuid }}" style="width: 18px; height: 18px; cursor: pointer;" aria-label="Pilih pelanggan {{ $p->nama }}">
                             </td>
@@ -319,7 +319,7 @@
                     </thead>
                     <tbody>
                         @forelse($supplier as $s)
-                        <tr class="contact-row" data-search="{{ strtolower($s->nama . ' ' . $s->no_hp) }}">
+                        <tr class="contact-row" data-search="{{ strtolower($s->nama . ' ' . $s->no_hp) }}" data-time="{{ $s->created_at ? $s->created_at->timestamp : 0 }}">
                             <td style="font-weight: 600; color: var(--text-dark);">{{ $s->nama }}</td>
                             <td style="color: var(--text-muted);">{{ $s->no_hp }}</td>
                             <td>
@@ -579,6 +579,37 @@
             url.searchParams.set('tab', tab);
             window.history.pushState({}, '', url);
         }
+    }
+
+    function sortContacts(order, el) {
+        document.querySelectorAll('.fitur-table tbody').forEach(tbody => {
+            let rows = Array.from(tbody.querySelectorAll('.contact-row'));
+            rows.sort((a, b) => {
+                let timeA = parseInt(a.dataset.time) || 0;
+                let timeB = parseInt(b.dataset.time) || 0;
+                return order === 'terbaru' ? timeB - timeA : timeA - timeB;
+            });
+            rows.forEach(row => {
+                tbody.appendChild(row);
+                // Fix iconify-icon disappearing bug when moved in DOM
+                row.querySelectorAll('iconify-icon').forEach(icon => {
+                    let newIcon = icon.cloneNode(true);
+                    icon.parentNode.replaceChild(newIcon, icon);
+                });
+            });
+        });
+        
+        document.getElementById('sort-text-label').innerText = 'Urutkan: ' + (order === 'terbaru' ? 'Terbaru' : 'Terlama');
+        
+        const items = el.closest('.dropdown-content').querySelectorAll('a');
+        items.forEach(item => item.classList.remove('active-dropdown-item'));
+        el.classList.add('active-dropdown-item');
+        
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+        
+        const url = new URL(window.location);
+        url.searchParams.set('sort', order);
+        window.history.replaceState({}, '', url);
     }
 
     function openModal(id) {
@@ -945,14 +976,7 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Memproses Hapus...',
-                    text: 'Harap tunggu sebentar',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+
                 form.submit();
             }
         });
@@ -1048,19 +1072,6 @@
         }
     }
 
-    // Form Processing Notification
-    document.querySelectorAll('form').forEach(form => {
-        form.addEventListener('submit', function() {
-            Swal.fire({
-                title: 'Memproses Data...',
-                text: 'Harap tunggu sebentar',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading()
-                }
-            });
-        });
-    });
 
     // Close modal on click outside
     window.onclick = function(event) {

@@ -993,9 +993,9 @@
                             <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ request('store_id') && request('store_id') != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="{{ request()->fullUrlWithQuery(['store_id' => 'all', 'tab' => $tab]) }}" onclick="applyFilter('store_id', 'all', event)">Semua Toko</a>
+                            <a href="{{ request()->fullUrlWithQuery(['store_id' => 'all', 'tab' => $tab]) }}" onclick="applyFilter('store_id', 'all', event)" class="{{ !request('store_id') || request('store_id') == 'all' ? 'active-dropdown-item' : '' }}">Semua Toko</a>
                             @foreach($stores as $s)
-                                <a href="{{ request()->fullUrlWithQuery(['store_id' => $s->uuid, 'tab' => $tab]) }}" onclick="applyFilter('store_id', '{{ $s->uuid }}', event)">{{ $s->nama }}</a>
+                                <a href="{{ request()->fullUrlWithQuery(['store_id' => $s->uuid, 'tab' => $tab]) }}" onclick="applyFilter('store_id', '{{ $s->uuid }}', event)" class="{{ request('store_id') == $s->uuid ? 'active-dropdown-item' : '' }}">{{ $s->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -2411,6 +2411,31 @@
             params.set(key, value);
         } else {
             params.delete(key);
+        }
+
+        // --- UPDATE DROPDOWN ACTIVE STATES VISUALLY ---
+        if (event && event.currentTarget) {
+            const clickedElement = event.currentTarget;
+            // Get all a tags that represent this exact filter combination across all tabs
+            const allMatchingLinks = document.querySelectorAll(`a[onclick*="applyFilter('${key}', '${value}'"]`);
+            
+            // If we find them, update them
+            if (allMatchingLinks.length > 0) {
+                allMatchingLinks.forEach(a => {
+                    const parent = a.closest('.dropdown-content');
+                    if (parent) {
+                        parent.querySelectorAll('a').forEach(sibling => sibling.classList.remove('active-dropdown-item'));
+                        a.classList.add('active-dropdown-item');
+                    }
+                });
+            } else {
+                // Fallback for just the clicked one
+                const parent = clickedElement.closest('.dropdown-content');
+                if (parent) {
+                    parent.querySelectorAll('a').forEach(sibling => sibling.classList.remove('active-dropdown-item'));
+                    clickedElement.classList.add('active-dropdown-item');
+                }
+            }
         }
 
         // Close all dropdowns for clean UI

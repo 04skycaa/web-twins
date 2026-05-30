@@ -24,44 +24,14 @@
             </div>
         </div>
 
-        <div class="main-content-box">
-            <div class="table-container">
-                <table class="fitur-table">
-                    <thead>
-                        <tr>
-                            <th>Nama Metode</th>
-                            <th style="width: 150px; text-align: center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-cashbox">
-                        @forelse($cashboxes as $cb)
-                            <tr>
-                                <td style="font-weight: 600;">{{ $cb->nama_metode }}</td>
-                                <td>
-                                    <div style="display: flex; justify-content: center; gap: 8px;">
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: var(--primary-blue);" onclick="openEditCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Edit">
-                                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                                        </button>
-                                        <button type="button" class="btn-filter" style="width: 32px; height: 32px; border-radius: 8px; color: #D9534F; border-color: #ffcccc;" onclick="deleteCashbox('{{ $cb->uuid }}', '{{ $cb->nama_metode }}')" title="Hapus">
-                                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="2" style="text-align: center; padding: 30px; color: #888;">Belum ada data Cashbox.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        @include('keuangan.partials.table_cashbox')
     </div>
 
     {{-- SECTION ARUS UANG --}}
     <div id="view-arus-uang" class="view-section {{ $active_tab === 'arus-uang' ? 'active' : '' }}">
         <div class="action-bar flex-wrap mobile-action-bar" style="margin-bottom: 20px;">
             <div class="left-actions-group flex-wrap">
-                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" class="mobile-action-bar">
+                <form action="{{ route('keuangan.index') }}" method="GET" id="filterForm" style="display: flex; gap: 8px; flex: 1;" class="mobile-action-bar" onsubmit="submitArusUangFilter(event)">
                     <input type="hidden" name="tab" value="arus-uang">
                     <div class="search-wrapper mobile-search-shrink">
                         <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
@@ -82,20 +52,23 @@
                                     <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Sampai</label>
                                     <input type="date" name="end_date" class="form-control" value="{{ $end_date }}">
                                 </div>
-                                <button type="submit" class="btn-action" style="width: 100%; justify-content: center;">Terapkan</button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="resetArusUangDateFilter()">Reset</button>
+                                    <button type="submit" class="btn-action" style="flex: 1; justify-content: center;">Terapkan</button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     @if(auth()->user()->role === 'owner')
                     <div class="dropdown">
-                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
-                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;"></iconify-icon>
+                        <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Outlet">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px;" class="{{ $store_id != 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
                         </button>
                         <div class="dropdown-content">
-                            <a href="javascript:void(0)" onclick="setStore('all')">Semua Outlet</a>
+                            <a href="javascript:void(0)" onclick="setStore('all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
                             @foreach($outlets as $outlet)
-                                <a href="javascript:void(0)" onclick="setStore('{{ $outlet->uuid }}')">{{ $outlet->nama }}</a>
+                                <a href="javascript:void(0)" onclick="setStore('{{ $outlet->uuid }}')" class="{{ $store_id == $outlet->uuid ? 'active-dropdown-item' : '' }}">{{ $outlet->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -119,73 +92,7 @@
             </div>
         </div>
 
-        <div class="main-content-box" style="background: transparent; padding: 20px; box-shadow: none;">
-            <div class="grid-dashboard" style="padding-bottom: 10px;">
-                <div class="finance-card">
-                    <div class="icon-box bg-bersih"><iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon></div>
-                    <div class="card-info">
-                        <div class="card-label">Saldo Bersih</div>
-                        <div class="card-value">Rp {{ number_format($saldo_bersih, 0, ',', '.') }}</div>
-                    </div>
-                </div>
-                <div class="finance-card">
-                    <div class="icon-box bg-masuk"><iconify-icon icon="solar:round-arrow-left-down-bold-duotone"></iconify-icon></div>
-                    <div class="card-info">
-                        <div class="card-label">Saldo Masuk</div>
-                        <div class="card-value text-masuk">Rp {{ number_format($pemasukan, 0, ',', '.') }}</div>
-                    </div>
-                </div>
-                <div class="finance-card">
-                    <div class="icon-box bg-keluar"><iconify-icon icon="solar:round-arrow-right-up-bold-duotone"></iconify-icon></div>
-                    <div class="card-info">
-                        <div class="card-label">Saldo Keluar</div>
-                        <div class="card-value text-keluar">Rp {{ number_format($pengeluaran, 0, ',', '.') }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-container" style="background: white; padding: 24px; border-radius: 24px; border: 1px solid #f1f5f9;">
-                <div class="mobile-action-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; flex-shrink: 0;">Histori Transaksi</h3>
-                    <div class="filter-pills mobile-inline-flex" style="flex-shrink: 0;">
-                        <button type="button" class="filter-pill active" onclick="filterHistoryType('semua', this)">Semua</button>
-                        <button type="button" class="filter-pill" onclick="filterHistoryType('pemasukan', this)">Masuk</button>
-                        <button type="button" class="filter-pill" onclick="filterHistoryType('pengeluaran', this)">Keluar</button>
-                    </div>
-                </div>
-
-                <table class="fitur-table" id="arusUangTable">
-                    <thead>
-                        <tr>
-                            <th>TANGGAL</th>
-                            <th>KETERANGAN</th>
-                            <th>OUTLET</th>
-                            <th>JENIS</th>
-                            <th style="text-align: right;">NOMINAL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($history as $item)
-                            <tr class="history-row" data-jenis="{{ $item->jenis }}">
-                                <td style="white-space: nowrap;">{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }} <br> <span style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($item->tanggal)->format('H:i') }}</span></td>
-                                <td>
-                                    <div style="font-weight: 600; color: #334155;">{{ $item->keterangan }}</div>
-                                    <div style="font-size: 11px; color: #64748b;">Oleh: {{ $item->user->name ?? $item->user->username ?? '-' }}</div>
-                                </td>
-                                <td>{{ $item->outlet->nama ?? '-' }}</td>
-                                <td style="white-space: nowrap; text-align: center;"><span class="status-badge {{ $item->jenis == 'pemasukan' ? 'badge-masuk' : 'badge-keluar' }}" style="white-space: nowrap;">{{ $item->jenis }}</span></td>
-                                <td style="text-align: right; font-weight: 700; white-space: nowrap; color: {{ $item->jenis == 'pemasukan' ? '#16a34a' : '#dc2626' }};">
-                                    {{ $item->jenis == 'pemasukan' ? '+' : '-' }} Rp {{ number_format($item->nominal, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="5" style="text-align: center; padding: 40px; color: #94a3b8;">Belum ada riwayat transaksi.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                <div class="twins-pagination-container" id="historyPagination" style="margin-top: 24px;"></div>
-            </div>
-        </div>
+        @include('keuangan.partials.table_arus_uang')
     </div>
 </div>
 
@@ -376,7 +283,74 @@
 
     function setStore(id) {
         document.getElementById('filter_store_id').value = id;
-        document.getElementById('filterForm').submit();
+        
+        // Update visually instantly
+        document.querySelectorAll('#filterForm .dropdown-content a').forEach(a => a.classList.remove('active-dropdown-item'));
+        const activeLink = document.querySelector(`#filterForm .dropdown-content a[onclick="setStore('${id}')"]`);
+        if (activeLink) activeLink.classList.add('active-dropdown-item');
+        
+        const icon = document.querySelector('#filterForm .btn-filter iconify-icon[icon="solar:shop-bold-duotone"]');
+        if (icon) {
+            if (id !== 'all') icon.classList.add('text-primary-blue');
+            else icon.classList.remove('text-primary-blue');
+        }
+
+        submitArusUangFilter();
+    }
+
+    function resetArusUangDateFilter() {
+        const form = document.getElementById('filterForm');
+        if(form) {
+            form.querySelector('input[name="start_date"]').value = '';
+            form.querySelector('input[name="end_date"]').value = '';
+            submitArusUangFilter();
+        }
+    }
+
+    async function submitArusUangFilter(event) {
+        if (event) event.preventDefault();
+        
+        const form = document.getElementById('filterForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData.entries()) {
+            if (value) params.set(key, value);
+        }
+        
+        // Search input is not part of formData
+        const searchVal = document.getElementById('searchInput').value;
+        if (searchVal) params.set('search', searchVal);
+
+        const url = `${form.action}?${params.toString()}`;
+        
+        // Update URL
+        window.history.pushState({ tab: 'arus-uang' }, '', url);
+        
+        // Show loading state
+        const targetContainer = document.getElementById('view-arus-uang').querySelector('.main-content-box');
+        
+        // Close dropdowns
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+
+        try {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await response.text();
+            
+            if (targetContainer) {
+                targetContainer.innerHTML = html;
+                
+                // Re-apply history filters for the JS-based search/pemasukan/pengeluaran sub-filters
+                if (typeof applyHistoryFilters === 'function') {
+                    applyHistoryFilters();
+                }
+            }
+        } catch (error) {
+            console.error('AJAX Fetch Error:', error);
+            window.location.href = url; // Fallback
+        }
     }
 
     let historyState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
@@ -669,17 +643,12 @@
     async function submitTransferSaldo(e) {
         e.preventDefault();
         const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        const originalBtnHtml = btn.innerHTML;
         
-        Swal.fire({
-            title: 'Memproses...',
-            text: 'Mohon tunggu sebentar',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+        btn.innerHTML = `<iconify-icon icon="eos-icons:loading" style="font-size: 1.2em; vertical-align: middle; margin-right: 5px;"></iconify-icon> Memproses...`;
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
 
         try {
             const formData = new FormData(form);
@@ -709,6 +678,9 @@
                 if (data.errors) {
                     errorMessage = Object.values(data.errors).flat().join('<br>');
                 }
+                btn.innerHTML = originalBtnHtml;
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
@@ -716,6 +688,9 @@
                 });
             }
         } catch (error) {
+            btn.innerHTML = originalBtnHtml;
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
             Swal.fire({
                 icon: 'error',
                 title: 'Terjadi Kesalahan!',

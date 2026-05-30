@@ -147,7 +147,10 @@
                             <label style="font-size: 11px; color: #666;">Sampai</label>
                             <input type="date" id="filterEndDate" class="form-control" style="font-size: 12px;" value="{{ $end_date }}">
                         </div>
-                        <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 10px;" onclick="applyBukuKasRangeFilter()">Terapkan Filter</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center; padding: 10px;" onclick="location.href='{{ route('keuangan.transaksi', array_merge(request()->except(['start_date', 'end_date']))) }}'">Reset</button>
+                            <button type="button" class="btn-action" style="flex: 1; justify-content: center; padding: 10px;" onclick="applyBukuKasRangeFilter()">Terapkan Filter</button>
+                        </div>
                     </div>
                 </div>
 
@@ -165,10 +168,10 @@
                                 <input type="hidden" name="status" value="{{ $status }}">
                             </form>
                             @if(Auth::user()->role === 'owner')
-                                <a href="javascript:void(0)" onclick="document.getElementById('storeFormStoreId').value = 'all'; document.getElementById('storeForm').submit()" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                                <a href="javascript:void(0)" onclick="submitStoreFormAjax('all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
                             @endif
                             @foreach($outlets as $o)
-                                <a href="javascript:void(0)" onclick="document.getElementById('storeFormStoreId').value = '{{ $o->uuid }}'; document.getElementById('storeForm').submit()" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                                <a href="javascript:void(0)" onclick="submitStoreFormAjax('{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
                             @endforeach
                         </div>
                     </div>
@@ -569,8 +572,55 @@
     document.addEventListener('click', () => { document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); });
 
     // Filter Helpers
-    function applyBukuKasRangeFilter() { const start = document.getElementById('filterStartDate').value; const end = document.getElementById('filterEndDate').value; const url = new URL(window.location.href); url.searchParams.set('tab', currentTab); url.searchParams.set('start_date', start); url.searchParams.set('end_date', end); url.searchParams.set('period', 'harian'); window.location.href = url.toString(); }
-    function applyStatusFilter(status) { const url = new URL(window.location.href); url.searchParams.set('tab', currentTab); url.searchParams.set('status', status); window.location.href = url.toString(); }
+    function applyBukuKasRangeFilter() { const start = document.getElementById('filterStartDate').value; const end = document.getElementById('filterEndDate').value; const url = new URL(window.location.href); url.searchParams.set('tab', currentTab); url.searchParams.set('start_date', start); url.searchParams.set('end_date', end); url.searchParams.set('period', 'harian'); submitFilterAjax(url); }
+    function applyStatusFilter(status) { const url = new URL(window.location.href); url.searchParams.set('tab', currentTab); url.searchParams.set('status', status); submitFilterAjax(url); }
+
+    function submitStoreFormAjax(storeId) {
+        document.getElementById('storeFormStoreId').value = storeId;
+        
+        document.querySelectorAll('a[onclick^="submitStoreFormAjax"]').forEach(a => a.classList.remove('active-dropdown-item'));
+        const active = document.querySelector(`a[onclick="submitStoreFormAjax('${storeId}')"]`);
+        if(active) active.classList.add('active-dropdown-item');
+        
+        const icon = document.querySelector('button[title="Filter Toko"] iconify-icon');
+        if(icon) {
+            if (storeId !== 'all') icon.classList.add('text-primary-blue');
+            else icon.classList.remove('text-primary-blue');
+        }
+        
+        const form = document.getElementById('storeForm');
+        const url = new URL(form.action);
+        new FormData(form).forEach((v, k) => url.searchParams.append(k, v));
+        url.searchParams.set('tab', currentTab);
+        
+        submitFilterAjax(url);
+    }
+
+    async function submitFilterAjax(url) {
+        document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+        
+        try {
+            const res = await fetch(url.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await res.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            ['pemasukan', 'pengeluaran', 'piutang', 'hutang'].forEach(t => {
+                const view = document.getElementById('view-' + t);
+                const newView = doc.getElementById('view-' + t);
+                if (view && newView) {
+                    view.innerHTML = newView.innerHTML;
+                }
+            });
+
+            window.history.pushState({}, '', url.toString());
+        } catch(e) {
+            window.location.href = url.toString();
+        }
+    }
     function filterTable() { const search = document.getElementById('globalSearch').value.toLowerCase(); document.querySelectorAll('.view-section.active tbody tr').forEach(row => { if (row.querySelector('.empty-state')) return; row.style.display = row.innerText.toLowerCase().includes(search) ? '' : 'none'; }); }
 
     // CRUD Actions

@@ -3,6 +3,13 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 <link rel="stylesheet" href="{{ asset('css/fitur.css') }}">
+<style>
+    .modal-content { max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0 !important; }
+    .modal-content form { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .modal-body-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+    .modal-footer { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: #fff; }
+</style>
 @endpush
 
 @section('content')
@@ -59,7 +66,10 @@
                                 <label>Sampai</label>
                                 <input type="date" id="riwayatDateEnd" class="form-control">
                             </div>
-                            <button class="btn-action w-100" onclick="applyAndCloseDateDropdown('riwayatDateDropdown', filterRiwayat)">Terapkan Filter</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="resetDateDropdown('riwayatDateStart', 'riwayatDateEnd', filterRiwayat, 'riwayatDateDropdown')">Reset</button>
+                                <button type="button" class="btn-action w-100" style="flex: 1; justify-content: center;" onclick="applyAndCloseDateDropdown('riwayatDateDropdown', filterRiwayat)">Terapkan</button>
+                            </div>
                         </div>
                     </div>
                     <select id="riwayatSort" class="form-control" style="width: 110px; font-size: 12px; padding: 8px 12px;" onchange="filterRiwayat()">
@@ -93,7 +103,7 @@
                     </thead>
                     <tbody>
                         @forelse($data as $trx)
-                        <tr class="riwayat-row" data-date="{{ $trx['tanggal_raw'] }}">
+                        <tr class="riwayat-row" data-date="{{ \Carbon\Carbon::parse($trx['tanggal_raw'])->toIso8601String() }}">
                             <td style="padding-right: 20px; vertical-align: middle;">
                                 @php
                                     $parts = explode('-', $trx['id']);
@@ -197,7 +207,10 @@
                                 <label>Sampai</label>
                                 <input type="date" id="promoDateEnd" class="form-control">
                             </div>
-                            <button class="btn-action w-100" onclick="applyAndCloseDateDropdown('promoDateDropdown', filterPromo)">Terapkan Filter</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="resetDateDropdown('promoDateStart', 'promoDateEnd', filterPromo, 'promoDateDropdown')">Reset</button>
+                                <button type="button" class="btn-action w-100" style="flex: 1; justify-content: center;" onclick="applyAndCloseDateDropdown('promoDateDropdown', filterPromo)">Terapkan</button>
+                            </div>
                         </div>
                     </div>
                     <select id="promoSort" class="form-control" style="width: 110px; font-size: 12px; padding: 8px 12px;" onchange="filterPromo()">
@@ -231,7 +244,7 @@
                     </thead>
                     <tbody>
                         @forelse($diskons as $diskon)
-                        <tr class="promo-row" data-category="{{ strtolower($diskon->tipe) }}" data-date="{{ $diskon->created_at }}">
+                        <tr class="promo-row" data-category="{{ strtolower($diskon->tipe) }}" data-date="{{ \Carbon\Carbon::parse($diskon->tanggal_mulai)->toIso8601String() }}">
                             <td style="padding: 10px 16px;">
                                 <div class="promo-info-cell">
                                     <div class="promo-thumb">
@@ -326,7 +339,7 @@
         </div>
         <form action="{{ route('transaksi.diskon.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="modal-body-vertical">
+            <div class="modal-body-scroll">
                 <div class="banner-center-wrapper" id="add_banner_wrapper">
                     <label style="font-size: 11px; margin-bottom: 8px; color: #64748b;">FORMAT BANNER 4x2 (LANDSCAPE)</label>
                     <div class="banner-preview-4x2" onclick="document.getElementById('add_image_input').click()">
@@ -440,9 +453,9 @@
                 </div>
             </div>
 
-            <div class="btn-group-footer">
-                <button type="button" class="btn-action" style="background: #ef4444;" onclick="closeModal('addModalDiskon')">Batal</button>
-                <button type="submit" class="btn-action" onclick="setLoading(this)">Simpan Promo</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;" onclick="closeModal('addModalDiskon')">Batal</button>
+                <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;" onclick="setLoading(this)">Simpan Promo</button>
             </div>
         </form>
     </div>
@@ -458,7 +471,7 @@
         <form id="editDiskonForm" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            <div class="modal-body-vertical">
+            <div class="modal-body-scroll">
                 <div class="banner-center-wrapper" id="edit_banner_wrapper">
                     <div class="banner-preview-4x2" onclick="this.nextElementSibling.click()">
                         <div id="edit_banner_preview_content"></div>
@@ -561,9 +574,9 @@
                 </div>
             </div>
 
-            <div class="btn-group-footer">
-                <button type="button" class="btn-action" style="background: #ef4444;" onclick="closeModal('editModalDiskon')">Batal</button>
-                <button type="submit" class="btn-action" onclick="setLoading(this)">Update Promo</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;" onclick="closeModal('editModalDiskon')">Batal</button>
+                <button type="submit" class="btn-action" style="flex:1; justify-content:center; background:#0081C9; color:white;" onclick="setLoading(this)">Update Promo</button>
             </div>
         </form>
     </div>
@@ -571,12 +584,12 @@
 
 <!-- View Detail Modal -->
 <div id="viewModalDiskon" class="modal-overlay" onclick="if(event.target === this) closeModal('viewModalDiskon')">
-    <div class="modal-content" style="max-width: 500px; max-height: 85vh; display: flex; flex-direction: column;">
-        <div class="modal-header" style="flex-shrink: 0;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
             <h3 id="view_title">Rincian Promo</h3>
             <button class="close-modal" onclick="closeModal('viewModalDiskon')">&times;</button>
         </div>
-        <div class="modal-body" style="overflow-y: auto; flex: 1; padding-right: 5px;">
+        <div class="modal-body-scroll">
             <div id="view_banner_container" style="display: none; margin-bottom: 20px;">
                 <div class="banner-preview-4x2" style="max-width: 100%; pointer-events: none; border-style: solid;">
                     <img id="view_banner_img" src="" style="width: 100%; height: 100%; object-fit: cover;">
@@ -646,16 +659,16 @@
                 <div id="view_status" style="display: inline-block;">-</div>
             </div>
         </div>
-        <div class="btn-group-footer" style="padding-top: 15px; display: flex; justify-content: center; border-top: 1px solid #f1f5f9; margin-top: 15px; flex-shrink: 0;">
-            <button type="button" class="btn-action" style="padding: 10px 40px; justify-content: center;" onclick="closeModal('viewModalDiskon')">Tutup</button>
+        <div class="modal-footer">
+            <button type="button" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;" onclick="closeModal('viewModalDiskon')">Tutup</button>
         </div>
     </div>
 </div>
 
 <!-- Modal Detail Transaksi -->
 <div id="viewModalTransaksi" class="modal-overlay" onclick="if(event.target === this) closeModal('viewModalTransaksi')">
-    <div class="modal-content" style="max-width: 600px; padding: 25px; border-radius: 24px;">
-        <div class="modal-header" style="margin-bottom: 15px;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
             <h3 style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; color: var(--primary-blue);">
                 <iconify-icon icon="solar:document-text-bold-duotone" style="font-size: 24px;"></iconify-icon>
                 Detail Transaksi
@@ -663,7 +676,7 @@
             <button class="close-modal" onclick="closeModal('viewModalTransaksi')">&times;</button>
         </div>
 
-        <div class="modal-body" style="max-height: 480px; overflow-y: auto; padding-right: 5px;">
+        <div class="modal-body-scroll">
             <!-- Order Header Info -->
             <div style="background: #f8fafc; padding: 15px; border-radius: 16px; border: 1.5px solid #e2e8f0; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
@@ -731,8 +744,8 @@
             </div>
         </div>
 
-        <div class="btn-group-footer" style="padding-top: 15px; display: flex; justify-content: center; border-top: 1px solid #f1f5f9; margin-top: 15px;">
-            <button type="button" class="btn-action" style="padding: 10px 40px; justify-content: center;" onclick="closeModal('viewModalTransaksi')">Tutup</button>
+        <div class="modal-footer">
+            <button type="button" class="btn-action" style="flex:1; background:#f1f5f9; color:#64748b; justify-content:center;" onclick="closeModal('viewModalTransaksi')">Tutup</button>
         </div>
     </div>
 </div>
@@ -1156,6 +1169,15 @@
             filterFunction();
         }
     }
+
+    function resetDateDropdown(startId, endId, filterFunction, dropdownId) {
+        document.getElementById(startId).value = '';
+        document.getElementById(endId).value = '';
+        if (typeof filterFunction === 'function') {
+            filterFunction();
+        }
+        document.getElementById(dropdownId).classList.remove('show');
+    }
     
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.date-filter-container')) {
@@ -1218,16 +1240,7 @@
             cancelButtonColor: '#cbd5e1'
         }).then((result) => {
             if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menghapus Promo...',
-                    text: 'Harap tunggu sebentar.',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+
                 const form = document.createElement('form'); form.method = 'POST'; form.action = `/transaksi/diskon/${uuid}`;
                 form.innerHTML = `@csrf @method('DELETE')`; document.body.appendChild(form); form.submit();
             }
@@ -1295,16 +1308,7 @@
             btn.style.opacity = '0.7';
             btn.style.pointerEvents = 'none';
 
-            Swal.fire({
-                title: isUpdate ? 'Memperbarui Promo...' : 'Menyimpan Promo...',
-                text: 'Harap tunggu, data sedang dikirim ke server.',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+
         } else {
             form.reportValidity();
         }

@@ -541,14 +541,24 @@
                 <p class="kinerja-subtitle">Pantau performa finansial dan operasional secara real-time.</p>
             </div>
             <div class="kinerja-filters">
-                <select id="k_outlet_filter" class="k-input" onchange="loadKinerjaDashboard()">
-                    <option value="all">Semua Outlet</option>
-                    @foreach($outlets as $outlet)
-                        <option value="{{ $outlet->uuid }}">{{ $outlet->nama }}</option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button type="button" class="btn-filter" style="width: 240px; justify-content: space-between; border-radius: 12px; height: 42px; padding: 0 16px;" onclick="toggleDropdown(event)" title="Filter Outlet">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 20px; color: var(--primary-blue); flex-shrink: 0;"></iconify-icon>
+                            <span id="k_outlet_text" style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Semua Outlet</span>
+                        </div>
+                        <iconify-icon icon="solar:alt-arrow-down-bold" style="font-size: 14px; color: #94a3b8;"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content" style="right: auto; left: 0; top: 48px; border-radius: 16px;">
+                        <a href="javascript:void(0)" onclick="setKinerjaOutlet('all', 'Semua Outlet', this)" class="active-dropdown-item">Semua Outlet</a>
+                        @foreach($outlets as $outlet)
+                            <a href="javascript:void(0)" onclick="setKinerjaOutlet('{{ $outlet->uuid }}', '{{ $outlet->nama }}', this)">{{ $outlet->nama }}</a>
+                        @endforeach
+                    </div>
+                    <input type="hidden" id="k_outlet_filter" value="all">
+                </div>
                 <div class="dropdown" style="position: relative;">
-                    <button type="button" class="btn-filter" style="display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;" onclick="toggleDropdown(event)">
+                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 20px; color: var(--primary-blue);"></iconify-icon>
                     </button>
                     <div class="dropdown-content" style="padding: 15px; width: 300px; right: 0; left: auto; top: 48px; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
@@ -561,9 +571,14 @@
                                 <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px; font-weight: 600;">Sampai Tanggal</label>
                                 <input type="date" id="k_end_date" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; box-sizing: border-box;">
                             </div>
-                            <button type="button" class="btn-action" style="width: 100%; justify-content: center; padding: 10px; background: var(--primary-blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="loadKinerjaDashboard(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
-                                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Terapkan Filter
-                            </button>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #f1f5f9; color: #64748b;" onclick="document.getElementById('k_start_date').value=''; document.getElementById('k_end_date').value=''; loadKinerjaDashboard(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                    Reset
+                                </button>
+                                <button type="button" class="btn-action" style="flex: 1; justify-content: center;" onclick="loadKinerjaDashboard(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon> Terapkan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -922,10 +937,15 @@
                             <label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">SAMPAI TANGGAL</label>
                             <input type="date" id="stock-end-date" class="form-control" onchange="applyStockFilters()">
                         </div>
-                        <button type="button" class="btn-action" style="width: 100%; justify-content: center;" onclick="applyStockFilters()">
-                            <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                            Terapkan Filter
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #f1f5f9; color: #64748b;" onclick="document.getElementById('stock-start-date').value=''; document.getElementById('stock-end-date').value=''; applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                Reset
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; justify-content: center;" onclick="applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                                Terapkan
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1038,9 +1058,10 @@
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" class="form-control" placeholder="Contoh: TWINS Bakery Pusat" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label>Alamat Lengkap</label>
                     <textarea name="alamat" id="add_alamat" class="form-control" rows="3" placeholder="Jl. Raya No. 123..."></textarea>
+                    <div id="add_address_suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label>Nomor Telepon</label>
@@ -1093,9 +1114,10 @@
                     <label>Nama Outlet</label>
                     <input type="text" name="nama" id="edit_nama" class="form-control" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label>Alamat Lengkap</label>
                     <textarea name="alamat" id="edit_alamat" class="form-control" rows="3"></textarea>
+                    <div id="edit_address_suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label>Nomor Telepon</label>
@@ -1206,27 +1228,85 @@
         shadowSize: [41, 41]
     });
 
-    let addAddressTimeout;
-    function setupAddAddressListener() {
-        const input = document.getElementById('add_alamat');
-        if (!input || input.dataset.listenerAttached) return;
-        input.dataset.listenerAttached = 'true';
-        input.addEventListener('input', function() {
-            clearTimeout(addAddressTimeout);
-            const query = this.value.trim();
-            if (query.length < 5) return;
-            addAddressTimeout = setTimeout(() => {
-                fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`)
+    function createSuggestionDropdown(inputElement, suggestionsContainerId, mapInstance, setMarkerFunction) {
+        if (!inputElement || inputElement.dataset.listenerAttached) return;
+        inputElement.dataset.listenerAttached = 'true';
+        
+        let geocodeDebounceTimer;
+        const suggestionsDropdown = document.getElementById(suggestionsContainerId);
+        
+        const handler = function() {
+            const query = inputElement.value.trim();
+            if (query.length < 3) {
+                if(suggestionsDropdown) {
+                    suggestionsDropdown.innerHTML = '';
+                    suggestionsDropdown.style.display = 'none';
+                }
+                return;
+            }
+            if (geocodeDebounceTimer) {
+                clearTimeout(geocodeDebounceTimer);
+            }
+            geocodeDebounceTimer = setTimeout(() => {
+                fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=id&q=${encodeURIComponent(query)}`)
                     .then(res => res.ok ? res.json() : [])
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            const latlng = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                            if (adminAddMap) adminAddMap.setView([latlng.lat, latlng.lng], 16);
-                            setAdminAddMarker(latlng, false);
+                    .then(results => {
+                        if(suggestionsDropdown) {
+                            suggestionsDropdown.innerHTML = '';
+                            if (results.length === 0) {
+                                suggestionsDropdown.style.display = 'none';
+                                return;
+                            }
+                            
+                            // Move map to first result silently
+                            const firstLat = parseFloat(results[0].lat);
+                            const firstLng = parseFloat(results[0].lon);
+                            setMarkerFunction({ lat: firstLat, lng: firstLng }, false);
+                            if (mapInstance) mapInstance.setView([firstLat, firstLng], 16);
+
+                            results.forEach(item => {
+                                const div = document.createElement('div');
+                                div.style.padding = '10px 14px';
+                                div.style.cursor = 'pointer';
+                                div.style.borderBottom = '1px solid #e2e8f0';
+                                div.style.fontSize = '12px';
+                                div.style.color = '#334155';
+                                div.style.textAlign = 'left';
+                                div.style.transition = 'background 0.2s';
+                                div.innerHTML = item.display_name;
+
+                                div.addEventListener('mouseenter', () => div.style.background = '#f0f9ff');
+                                div.addEventListener('mouseleave', () => div.style.background = 'transparent');
+                                div.addEventListener('click', () => {
+                                    inputElement.value = item.display_name;
+                                    suggestionsDropdown.style.display = 'none';
+                                    const latlng = { lat: parseFloat(item.lat), lng: parseFloat(item.lon) };
+                                    if (mapInstance) mapInstance.setView([latlng.lat, latlng.lng], 16);
+                                    setMarkerFunction(latlng, false);
+                                });
+                                suggestionsDropdown.appendChild(div);
+                            });
+                            suggestionsDropdown.style.display = 'block';
                         }
                     }).catch(err => console.error(err));
-            }, 1000);
+            }, 500);
+        };
+
+        inputElement.addEventListener('input', handler);
+        inputElement.addEventListener('paste', () => setTimeout(handler, 50));
+        inputElement.addEventListener('change', handler);
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (suggestionsDropdown && !inputElement.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+                suggestionsDropdown.style.display = 'none';
+            }
         });
+    }
+
+    function setupAddAddressListener() {
+        const input = document.getElementById('add_alamat');
+        createSuggestionDropdown(input, 'add_address_suggestions', adminAddMap, (latlng, click) => setAdminAddMarker(latlng, click));
     }
 
     function initAdminAddMap() {
@@ -1283,27 +1363,9 @@
         }
     }
 
-    let editAddressTimeout;
     function setupEditAddressListener() {
         const input = document.getElementById('edit_alamat');
-        if (!input || input.dataset.listenerAttached) return;
-        input.dataset.listenerAttached = 'true';
-        input.addEventListener('input', function() {
-            clearTimeout(editAddressTimeout);
-            const query = this.value.trim();
-            if (query.length < 5) return;
-            editAddressTimeout = setTimeout(() => {
-                fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=id&q=${encodeURIComponent(query)}`)
-                    .then(res => res.ok ? res.json() : [])
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            const latlng = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                            if (adminEditMap) adminEditMap.setView([latlng.lat, latlng.lng], 16);
-                            setAdminEditMarker(latlng, false);
-                        }
-                    }).catch(err => console.error(err));
-            }, 1000);
-        });
+        createSuggestionDropdown(input, 'edit_address_suggestions', adminEditMap, (latlng, click) => setAdminEditMarker(latlng, click));
     }
 
     function initAdminEditMap() {
@@ -1582,6 +1644,21 @@
         document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
     });
 
+    function setKinerjaOutlet(uuid, nama, el) {
+        document.getElementById('k_outlet_filter').value = uuid;
+        document.getElementById('k_outlet_text').innerText = nama;
+        
+        // Update active class
+        const items = el.closest('.dropdown-content').querySelectorAll('a');
+        items.forEach(item => item.classList.remove('active-dropdown-item'));
+        el.classList.add('active-dropdown-item');
+        
+        // Close dropdown
+        el.closest('.dropdown-content').classList.remove('show');
+        
+        loadKinerjaDashboard();
+    }
+
     function setStockOutlet(uuid) {
         document.getElementById('stock-outlet-filter').value = uuid;
         
@@ -1621,10 +1698,6 @@
         if (endDate) params.append('end_date', endDate);
 
         const wrapper = document.getElementById('stock-history-wrapper');
-        
-        // Visual feedback (dimming)
-        wrapper.style.opacity = '0.5';
-        wrapper.style.pointerEvents = 'none';
 
         fetch('{{ route("outlet.index") }}?' + params.toString(), {
             headers: {
@@ -1634,13 +1707,9 @@
         .then(response => response.text())
         .then(html => {
             wrapper.innerHTML = html;
-            wrapper.style.opacity = '1';
-            wrapper.style.pointerEvents = 'auto';
         })
         .catch(err => {
             console.error('Search failed:', err);
-            wrapper.style.opacity = '1';
-            wrapper.style.pointerEvents = 'auto';
         });
     }
 
@@ -1689,9 +1758,6 @@
             e.preventDefault();
             const url = paginationLink.href;
             const wrapper = document.getElementById('stock-history-wrapper');
-            
-            wrapper.style.opacity = '0.5';
-            wrapper.style.pointerEvents = 'none';
 
             fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -1699,15 +1765,11 @@
             .then(response => response.text())
             .then(html => {
                 wrapper.innerHTML = html;
-                wrapper.style.opacity = '1';
-                wrapper.style.pointerEvents = 'auto';
                 // Scroll to top of table
                 document.querySelector('.main-content-box').scrollTop = 0;
             })
             .catch(err => {
                 console.error('Pagination load failed:', err);
-                wrapper.style.opacity = '1';
-                wrapper.style.pointerEvents = 'auto';
             });
         }
     });

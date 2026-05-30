@@ -46,13 +46,11 @@
             <!-- Actions (Filters & Extract) -->
             <div class="flex items-center gap-3 w-full md:w-auto ml-auto md:ml-auto">
                 <div class="dropdown">
-                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" onclick="toggleDropdown(event)"
-                        aria-label="Pilih Outlet Twins" title="Filter Toko">
-                        <iconify-icon icon="solar:shop-bold-duotone" class="text-xl"></iconify-icon>
+                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Toko">
+                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" id="laporan-store-icon"></iconify-icon>
                     </button>
                     <div class="dropdown-content" id="outlet-dropdown">
-                        <a href="#" data-store-id="" onclick="selectStore(event)" class="outlet-item">Semua
-                            Outlet</a>
+                        <a href="#" data-store-id="" onclick="selectStore(event)" class="outlet-item active">Semua Outlet</a>
                         @foreach ($outlets as $outlet)
                             <a href="#" data-store-id="{{ $outlet->uuid }}" onclick="selectStore(event)"
                                 class="outlet-item">
@@ -65,11 +63,10 @@
                 <input type="hidden" id="store-id-hidden" name="store_id" value="{{ $defaultStoreId ?? '' }}">
 
                 <div class="dropdown">
-                    <button type="button" class="btn-filter flex items-center justify-center w-10 h-10 md:w-auto md:h-auto rounded-xl border border-blue-200 text-blue-600 bg-white" onclick="toggleDropdown(event)"
-                        title="Filter Tanggal">
-                        <iconify-icon icon="solar:calendar-bold-duotone" class="text-xl"></iconify-icon>
+                    <button type="button" class="btn-filter" onclick="toggleDropdown(event)" title="Filter Tanggal">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" id="laporan-calendar-icon"></iconify-icon>
                     </button>
-                    <div class="dropdown-content" style="padding: 15px; width: 320px; right: auto; left: 0;">
+                    <div class="dropdown-content" style="padding: 15px; width: 320px; right: 0; left: auto;">
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <div>
                                 <label
@@ -96,9 +93,9 @@
                 </div>
 
                 <div class="dropdown ml-auto md:ml-2">
-                    <button type="button" class="btn-action flex items-center justify-center h-10 px-4 rounded-xl" onclick="toggleDropdown(event)">
+                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                        <span class="ml-2">Extract</span>
+                        <span>Extract</span>
                     </button>
                         <div class="dropdown-content" style="right: 0; left: auto;">
                             <a href="javascript:void(0)" onclick="downloadLaporanExport('excel')">

@@ -1,46 +1,5 @@
 <!-- TAB: RIWAYAT ABSENSI (Server-side paginated) -->
 <div id="view-riwayat" style="display: none;">
-    <form method="GET" action="{{ route('absensi.index') }}" class="filter-bar mobile-action-bar" style="width: 100%;">
-        <input type="hidden" name="active_tab" value="riwayat">
-        @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
-            <select name="store_id" class="inline-select" style="min-width:150px; height:42px;">
-                @if(Auth::user()->role === 'owner')
-                    <option value="all" {{ $store_id === 'all' ? 'selected' : '' }}>Semua Outlet</option>
-                @endif
-                @foreach($outlets as $o)
-                    <option value="{{ $o->uuid }}" {{ $store_id == $o->uuid ? 'selected' : '' }}>{{ $o->nama }}</option>
-                @endforeach
-            </select>
-        @else
-            <input type="hidden" name="store_id" value="{{ $store_id }}">
-        @endif
-        <input type="month" name="filter_bulan" value="{{ $filterBulan ?? '' }}" placeholder="Filter Bulan" style="min-width:160px;">
-        <input type="text" name="filter_karyawan" value="{{ $filterKaryawan ?? '' }}" placeholder="Cari nama karyawan...">
-        <button type="submit" class="btn-action" style="padding:8px 16px;font-size:13px;">
-            <iconify-icon icon="solar:magnifer-linear"></iconify-icon> Filter
-        </button>
-        @if($filterBulan || $filterKaryawan)
-            <a href="{{ route('absensi.index', ['active_tab' => 'riwayat', 'store_id' => $store_id]) }}" class="btn-action" style="padding:8px 16px;font-size:13px;background:#94a3b8;text-decoration:none;">Reset</a>
-        @endif
-        
-        <div class="dropdown" style="margin-left: auto;">
-            <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
-                <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                <span>Extract</span>
-            </button>
-            <div class="dropdown-content" style="right: 0; left: auto;">
-                <a href="javascript:void(0)" onclick="openRiwayatExport('excel')">
-                    <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                    Excel
-                </a>
-                <a href="javascript:void(0)" onclick="openRiwayatExport('pdf')">
-                    <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                    PDF
-                </a>
-            </div>
-        </div>
-    </form>
-
     <div class="table-container">
         <table class="fitur-table">
             <thead>

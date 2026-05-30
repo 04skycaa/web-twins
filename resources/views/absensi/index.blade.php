@@ -197,6 +197,117 @@
 
         <form id="formGlobalDelete" method="POST" style="display: none;">@csrf @method('DELETE')</form>
 
+        {{-- RIWAYAT ACTION BAR (Outside Table Box) --}}
+        <div id="riwayatActionBar" class="action-bar mb-4" style="display: none; background:transparent; padding:0; border:none; box-shadow:none; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; align-items: center; flex: 1; flex-wrap: wrap;">
+                <div class="search-wrapper" style="min-width: 250px;">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="filter_karyawan_riwayat" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." onkeyup="debouncePjaxRiwayat()" style="width: 100%;">
+                </div>
+                
+                <div class="dropdown">
+                    <button type="button" class="btn-filter" title="Filter Bulan" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" class="{{ request('filter_bulan', $filterBulan ?? '') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content" style="padding: 15px; width: 220px;">
+                        <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Pilih Bulan</label>
+                        <input type="month" id="filter_bulan_riwayat" value="{{ request('filter_bulan', $filterBulan ?? '') }}" class="form-control" style="width: 100%; padding: 8px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;" onchange="applyPjaxRiwayat()">
+                    </div>
+                </div>
+                
+                @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id !== 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <input type="hidden" id="store_id_riwayat" value="{{ $store_id }}">
+                            @if(Auth::user()->role === 'owner')
+                                <a href="javascript:void(0)" onclick="setStoreRiwayat('all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                            @endif
+                            @foreach($outlets as $o)
+                                <a href="javascript:void(0)" onclick="setStoreRiwayat('{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <input type="hidden" id="store_id_riwayat" value="{{ $store_id }}">
+                @endif
+
+                @php
+                    $hasRiwayatFilter = request('filter_karyawan') || request('filter_bulan') || ($store_id !== 'all' && Auth::user()->role === 'owner');
+                @endphp
+                <button id="resetRiwayatBtn" class="btn-action" style="background:#f1f5f9; color:#64748b; display: {{ $hasRiwayatFilter ? 'flex' : 'none' }};" onclick="resetPjaxRiwayat()">
+                    <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Reset
+                </button>
+            </div>
+            
+            <div class="dropdown" style="margin-left: auto;">
+                <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
+                    <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                    <span>Extract</span>
+                </button>
+                <div class="dropdown-content" style="right: 0; left: auto;">
+                    <a href="javascript:void(0)" onclick="openRiwayatExport('excel')">
+                        <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
+                        Excel
+                    </a>
+                    <a href="javascript:void(0)" onclick="openRiwayatExport('pdf')">
+                        <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
+                        PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {{-- REKAP ACTION BAR (Outside Table Box) --}}
+        <div id="rekapActionBar" class="action-bar mb-4" style="display: none; background:transparent; padding:0; border:none; box-shadow:none; flex-wrap: wrap;">
+            <div style="display: flex; gap: 12px; align-items: center; flex: 1; flex-wrap: wrap;">
+                <div class="search-wrapper" style="min-width: 250px;">
+                    <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
+                    <input type="text" id="filter_karyawan_rekap" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." onkeyup="debouncePjaxRekap()" style="width: 100%;">
+                </div>
+                
+                <div class="dropdown">
+                    <button type="button" class="btn-filter" title="Filter Bulan" onclick="toggleDropdown(event)">
+                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;" class="{{ request('rekap_bulan', $rekapBulan ?? '') ? 'text-primary-blue' : '' }}"></iconify-icon>
+                    </button>
+                    <div class="dropdown-content" style="padding: 15px; width: 220px;">
+                        <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Pilih Periode</label>
+                        <input type="month" id="filter_bulan_rekap" value="{{ request('rekap_bulan', $rekapBulan ?? '') }}" class="form-control" style="width: 100%; padding: 8px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;" onchange="applyPjaxRekap()">
+                    </div>
+                </div>
+                
+                @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Toko" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" class="{{ $store_id !== 'all' ? 'text-primary-blue' : '' }}"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <input type="hidden" id="store_id_rekap" value="{{ $store_id }}">
+                            @if(Auth::user()->role === 'owner')
+                                <a href="javascript:void(0)" onclick="setStoreRekap('all')" class="{{ $store_id === 'all' ? 'active-dropdown-item' : '' }}">Semua Outlet</a>
+                            @endif
+                            @foreach($outlets as $o)
+                                <a href="javascript:void(0)" onclick="setStoreRekap('{{ $o->uuid }}')" class="{{ $store_id == $o->uuid ? 'active-dropdown-item' : '' }}">{{ $o->nama }}</a>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <input type="hidden" id="store_id_rekap" value="{{ $store_id }}">
+                @endif
+
+                @php
+                    $currentMonth = \Carbon\Carbon::now()->format('Y-m');
+                    $isRekapBulanFiltered = request('rekap_bulan') && request('rekap_bulan') !== $currentMonth;
+                    $hasRekapFilter = request('filter_karyawan') || $isRekapBulanFiltered || ($store_id !== 'all' && Auth::user()->role === 'owner');
+                @endphp
+                <button id="resetRekapBtn" class="btn-action" style="background:#f1f5f9; color:#64748b; display: {{ $hasRekapFilter ? 'flex' : 'none' }};" onclick="resetPjaxRekap()">
+                    <iconify-icon icon="solar:refresh-bold-duotone"></iconify-icon> Reset
+                </button>
+            </div>
+        </div>
+
         {{-- MAIN BOX --}}
         <div class="main-content-box mobile-pb">
             @include('absensi._tab_shift')
@@ -211,11 +322,68 @@
     @include('absensi._modal_jadwal')
 
     <script>
-        function applyGlobalFilter(type, value) {
+        async function applyGlobalFilter(type, value) {
             document.getElementById('filterActiveTab').value = currentTab;
             if (type === 'store') document.getElementById('filterStoreId').value = value;
             if (type === 'shift') document.getElementById('filterShiftId').value = value;
-            document.getElementById('globalFilterForm').submit();
+            
+            // Close dropdowns
+            document.querySelectorAll('.dropdown-content').forEach(el => el.classList.remove('show'));
+            
+            // Update active dropdown UI immediately
+            if (type === 'store') {
+                document.querySelectorAll('a[onclick^="applyGlobalFilter(\'store\'"]').forEach(a => a.classList.remove('active-dropdown-item'));
+                const active = document.querySelector(`a[onclick="applyGlobalFilter('store', '${value}')"]`);
+                if(active) active.classList.add('active-dropdown-item');
+                
+                const icon = document.querySelector('button[title="Filter Toko"] iconify-icon');
+                if(icon) {
+                    if (value !== 'all') icon.classList.add('text-primary-blue');
+                    else icon.classList.remove('text-primary-blue');
+                }
+            }
+            if (type === 'shift') {
+                document.querySelectorAll('a[onclick^="applyGlobalFilter(\'shift\'"]').forEach(a => a.classList.remove('active-dropdown-item'));
+                const active = document.querySelector(`a[onclick="applyGlobalFilter('shift', '${value}')"]`);
+                if(active) active.classList.add('active-dropdown-item');
+                
+                const icon = document.querySelector('button[title="Filter Shift"] iconify-icon');
+                if(icon) {
+                    if (value !== 'all') icon.classList.add('text-primary-blue');
+                    else icon.classList.remove('text-primary-blue');
+                }
+            }
+
+            // AJAX PJAX fetch
+            const form = document.getElementById('globalFilterForm');
+            const url = new URL(form.action);
+            new FormData(form).forEach((v, k) => url.searchParams.append(k, v));
+
+            try {
+                const res = await fetch(url.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const html = await res.text();
+                
+                // Parse HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Replace tabs content
+                ['shift', 'jadwal', 'riwayat', 'rekap'].forEach(t => {
+                    const view = document.getElementById('view-' + t);
+                    const newView = doc.getElementById('view-' + t);
+                    if (view && newView) {
+                        view.innerHTML = newView.innerHTML;
+                    }
+                });
+
+                // Update URL without reload
+                window.history.pushState({}, '', url.toString());
+            } catch(e) {
+                console.error('Filter AJAX error, falling back to reload', e);
+                form.submit();
+            }
         }
 
         function toggleDropdown(event) {
@@ -251,15 +419,18 @@
             const searchInput = document.getElementById('globalSearch');
             const btnAdd = document.getElementById('btnAddMain');
             const txtAdd = document.getElementById('txtAddMain');
-            const actionBar = document.querySelector('.action-bar');
+            const actionBar = document.querySelector('.action-bar:not(#riwayatActionBar):not(#rekapActionBar)');
+            const riwayatActionBar = document.getElementById('riwayatActionBar');
+            const rekapActionBar = document.getElementById('rekapActionBar');
 
             const showSearch = (tab === 'shift' || tab === 'jadwal');
             const showJadwalFilters = (tab === 'jadwal');
             const showAddButton = (tab === 'shift' || tab === 'jadwal');
 
             if (leftActions) leftActions.style.display = showSearch ? 'flex' : 'none';
-            
             if (jadwalFilters) jadwalFilters.style.display = showJadwalFilters ? 'flex' : 'none';
+            if (riwayatActionBar) riwayatActionBar.style.display = (tab === 'riwayat') ? 'flex' : 'none';
+            if (rekapActionBar) rekapActionBar.style.display = (tab === 'rekap') ? 'flex' : 'none';
             
             if (searchInput) {
                 if (tab === 'shift') {
@@ -275,12 +446,12 @@
                 if (tab === 'jadwal') txtAdd.innerText = 'Tambah Jadwal';
             }
 
-            // Hide action bar entirely if nothing to show
+            // Hide main action bar entirely if nothing to show
             if (actionBar) {
                 actionBar.style.display = (showSearch || showAddButton) ? 'flex' : 'none';
             }
 
-            filterTable();
+            if (tab === 'shift' || tab === 'jadwal') filterTable();
         }
 
         function openCurrentModal() {
@@ -302,11 +473,183 @@
                 r.style.display = match ? '' : 'none';
                 if (match) vis++;
             });
-            const empty = tbl.querySelector('.empty-state')?.parentElement;
-            if (empty) empty.style.display = vis === 0 ? '' : 'none';
+            
+            const tbody = tbl.querySelector('tbody');
+            if (tbody) {
+                let emptyRow = tbody.querySelector('.js-empty-row');
+                if (!emptyRow) {
+                    const colCount = tbl.querySelectorAll('thead th').length || 1;
+                    emptyRow = document.createElement('tr');
+                    emptyRow.className = 'js-empty-row';
+                    emptyRow.innerHTML = `<td colspan="${colCount}" class="empty-state text-center py-4" style="color: #64748b;">Data tidak ditemukan.</td>`;
+                    tbody.appendChild(emptyRow);
+                }
+                
+                // Hide any server-side empty state when we are showing our JS empty state, 
+                // but if there are 0 searchable rows originally, let server-side handle it.
+                if (rows.length > 0) {
+                    emptyRow.style.display = vis === 0 ? '' : 'none';
+                    const serverEmpty = tbody.querySelector('.empty-state:not(td)'); // The server one might be in a tr>td, our querySelector might grab the td
+                    if (serverEmpty && serverEmpty.parentElement !== emptyRow) {
+                        serverEmpty.parentElement.style.display = 'none';
+                    }
+                } else {
+                     emptyRow.style.display = 'none'; // let server empty state show
+                }
+            }
         }
 
-        function globalDelete(url, label) {
+        let riwayatTimeout = null;
+        function debouncePjaxRiwayat() {
+            clearTimeout(riwayatTimeout);
+            riwayatTimeout = setTimeout(() => applyPjaxRiwayat(), 500);
+        }
+
+        async function applyPjaxRiwayat(reset = false) {
+            const searchInput = document.getElementById('filter_karyawan_riwayat');
+            const bulanInput = document.getElementById('filter_bulan_riwayat');
+            const storeInput = document.getElementById('store_id_riwayat');
+            const resetBtn = document.getElementById('resetRiwayatBtn');
+
+            if (reset) {
+                if(searchInput) searchInput.value = '';
+                if(bulanInput) bulanInput.value = '';
+                if(storeInput) storeInput.value = 'all'; 
+            }
+
+            const search = searchInput ? searchInput.value : '';
+            const bulan = bulanInput ? bulanInput.value : '';
+            const store = storeInput ? storeInput.value : '{{ $store_id }}';
+            
+            // Update UI for icon buttons
+            const bulanIcon = document.querySelector('#riwayatActionBar button[title="Filter Bulan"] iconify-icon');
+            if (bulanIcon) bulanIcon.className = bulan ? 'text-primary-blue' : '';
+            
+            const tokoIcon = document.querySelector('#riwayatActionBar button[title="Filter Toko"] iconify-icon');
+            if (tokoIcon) tokoIcon.className = (store !== 'all') ? 'text-primary-blue' : '';
+
+            // Update dropdown active state
+            document.querySelectorAll('#riwayatActionBar .dropdown-content a').forEach(a => {
+                if(a.getAttribute('onclick')?.includes('setStoreRiwayat')) a.classList.remove('active-dropdown-item');
+            });
+            const activeStore = document.querySelector(`#riwayatActionBar .dropdown-content a[onclick="setStoreRiwayat('${store}')"]`);
+            if (activeStore) activeStore.classList.add('active-dropdown-item');
+            
+            // Close dropdowns
+            document.querySelectorAll('#riwayatActionBar .dropdown-content').forEach(d => d.classList.remove('show'));
+
+            if (resetBtn) {
+                resetBtn.style.display = (search || bulan || (store !== 'all')) ? 'flex' : 'none';
+            }
+
+            const url = new URL('{{ route('absensi.index') }}');
+            url.searchParams.set('active_tab', 'riwayat');
+            url.searchParams.set('filter_karyawan', search);
+            url.searchParams.set('filter_bulan', bulan);
+            url.searchParams.set('store_id', store);
+
+            try {
+                const res = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+                const html = await res.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const view = document.getElementById('view-riwayat');
+                const newView = doc.getElementById('view-riwayat');
+                if (view && newView) view.innerHTML = newView.innerHTML;
+                
+                window.history.pushState({}, '', url.toString());
+            } catch(e) {
+                window.location.href = url.toString();
+            }
+        }
+
+        function resetPjaxRiwayat() { applyPjaxRiwayat(true); }
+        
+        function setStoreRiwayat(val) {
+            const input = document.getElementById('store_id_riwayat');
+            if (input) {
+                input.value = val;
+                applyPjaxRiwayat();
+            }
+        }
+
+        let rekapTimeout = null;
+        function debouncePjaxRekap() {
+            clearTimeout(rekapTimeout);
+            rekapTimeout = setTimeout(() => applyPjaxRekap(), 500);
+        }
+
+        async function applyPjaxRekap(reset = false) {
+            const searchInput = document.getElementById('filter_karyawan_rekap');
+            const bulanInput = document.getElementById('filter_bulan_rekap');
+            const storeInput = document.getElementById('store_id_rekap');
+            const resetBtn = document.getElementById('resetRekapBtn');
+
+            const currentMonth = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" }).slice(0, 7); // YYYY-MM
+            if (reset) {
+                if(searchInput) searchInput.value = '';
+                if(bulanInput) bulanInput.value = currentMonth;
+                if(storeInput) storeInput.value = 'all'; 
+            }
+
+            const search = searchInput ? searchInput.value : '';
+            const bulan = bulanInput ? bulanInput.value : currentMonth;
+            const store = storeInput ? storeInput.value : '{{ $store_id }}';
+            
+            // Update UI for icon buttons
+            const isBulanFiltered = bulan !== currentMonth;
+            const bulanIcon = document.querySelector('#rekapActionBar button[title="Filter Bulan"] iconify-icon');
+            if (bulanIcon) bulanIcon.className = isBulanFiltered ? 'text-primary-blue' : '';
+            
+            const tokoIcon = document.querySelector('#rekapActionBar button[title="Filter Toko"] iconify-icon');
+            if (tokoIcon) tokoIcon.className = (store !== 'all') ? 'text-primary-blue' : '';
+            
+            // Update dropdown active state
+            document.querySelectorAll('#rekapActionBar .dropdown-content a').forEach(a => {
+                if(a.getAttribute('onclick')?.includes('setStoreRekap')) a.classList.remove('active-dropdown-item');
+            });
+            const activeStore = document.querySelector(`#rekapActionBar .dropdown-content a[onclick="setStoreRekap('${store}')"]`);
+            if (activeStore) activeStore.classList.add('active-dropdown-item');
+            
+            // Close dropdowns
+            document.querySelectorAll('#rekapActionBar .dropdown-content').forEach(d => d.classList.remove('show'));
+
+            if (resetBtn) {
+                resetBtn.style.display = (search || isBulanFiltered || (store !== 'all')) ? 'flex' : 'none';
+            }
+
+            const url = new URL('{{ route('absensi.index') }}');
+            url.searchParams.set('active_tab', 'rekap');
+            url.searchParams.set('filter_karyawan', search);
+            url.searchParams.set('rekap_bulan', bulan);
+            url.searchParams.set('store_id', store);
+
+            try {
+                const res = await fetch(url.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+                const html = await res.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const view = document.getElementById('view-rekap');
+                const newView = doc.getElementById('view-rekap');
+                if (view && newView) view.innerHTML = newView.innerHTML;
+                
+                window.history.pushState({}, '', url.toString());
+            } catch(e) {
+                window.location.href = url.toString();
+            }
+        }
+
+        function resetPjaxRekap() { applyPjaxRekap(true); }
+        
+        function setStoreRekap(val) {
+            const input = document.getElementById('store_id_rekap');
+            if (input) {
+                input.value = val;
+                applyPjaxRekap();
+            }
+        }        function globalDelete(url, label) {
             Swal.fire({
                 title: `Hapus ${label}?`, text: 'Data ini akan dihapus permanen!', icon: 'warning',
                 showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#aaa',

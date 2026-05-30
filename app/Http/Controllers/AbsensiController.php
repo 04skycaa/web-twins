@@ -118,10 +118,11 @@ class AbsensiController extends Controller
             ->appends($request->except('page'));
 
         // ─── TAB 4: REKAP ABSENSI (DB-level aggregation) ───
-        $rekapBulan = $request->input('rekap_bulan', Carbon::now()->format('Y-m'));
+        $rekapBulan = $request->input('rekap_bulan') ?: \Carbon\Carbon::now()->format('Y-m');
         $rekapStoreId = ($store_id !== 'all') ? $store_id : null;
+        $rekapKaryawan = $request->input('filter_karyawan');
 
-        $rekap = $this->getRekapAbsensi($rekapBulan, $rekapStoreId);
+        $rekap = $this->getRekapAbsensi($rekapBulan, $rekapStoreId, $rekapKaryawan);
 
         return view('absensi.index', [
             'title'         => 'Kelola Jadwal & Absensi',
@@ -155,9 +156,9 @@ class AbsensiController extends Controller
     /**
      * Get rekap absensi with DB-level aggregation + caching
      */
-    private function getRekapAbsensi(string $bulan, ?string $store_id)
+    private function getRekapAbsensi(string $bulan, ?string $store_id, ?string $filter_karyawan = null)
     {
-        $cacheKey = "rekap_absensi_{$bulan}_{$store_id}";
+        $cacheKey = "rekap_absensi_{$bulan}_{$store_id}_{$filter_karyawan}";
 
         // Cache for past months (1 hour), skip cache for current month
         $isCurrentMonth = ($bulan === Carbon::now()->format('Y-m'));
@@ -184,6 +185,10 @@ class AbsensiController extends Controller
 
         if ($store_id) {
             $query->where('u.store_id', $store_id);
+        }
+
+        if ($filter_karyawan) {
+            $query->where('u.username', 'ilike', '%' . $filter_karyawan . '%');
         }
 
         if ($shift_id = request('shift_id', 'all')) {

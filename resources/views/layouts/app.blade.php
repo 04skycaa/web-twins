@@ -17,6 +17,12 @@
     <style>
         /* Mencegah konten tertutup oleh navigasi bawah di mobile */
         .fitur-container { padding-bottom: 100px !important; }
+
+        /* Force height to prevent sidebar cut-off when SweetAlert opens */
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            height: 100vh !important;
+            overflow-y: hidden !important;
+        }
     </style>
 </head>
 
@@ -227,6 +233,10 @@
         document.addEventListener('DOMContentLoaded', updateDateTime);
         
         document.addEventListener('DOMContentLoaded', function() {
+            window.Swal = Swal.mixin({
+                heightAuto: false
+            });
+
             @if (session('success'))
                 Swal.fire({
                     title: 'Berhasil!',

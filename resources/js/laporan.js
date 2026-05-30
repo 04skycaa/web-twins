@@ -999,6 +999,12 @@ function renderAnnualMonthly(monthly) {
 }
 
 function updateStoreLabel(storeId) {
+    const icon = document.getElementById("laporan-store-icon");
+    if (icon) {
+        if (storeId) icon.classList.add("text-primary-blue");
+        else icon.classList.remove("text-primary-blue");
+    }
+
     const label = document.getElementById("store-label");
     if (!label) return;
 
@@ -1076,6 +1082,9 @@ function downloadLaporanExport(format) {
 }
 
 function applyCalendarFilter() {
+    const icon = document.getElementById("laporan-calendar-icon");
+    if (icon) icon.classList.add("text-primary-blue");
+
     document
         .querySelectorAll(".dropdown-content")
         .forEach((dropdown) => dropdown.classList.remove("show"));

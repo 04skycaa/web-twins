@@ -21,7 +21,7 @@
                 <div class="form-group">
                     <label>Karyawan *</label>
                     <select name="user_id" id="jadwalUserId" class="form-control" required onchange="onKaryawanChange()">
-                        <option value="" disabled selected>-- Pilih Toko Dulu --</option>
+                        <option value="" disabled selected>-- Pilih Karyawan --</option>
                         @foreach($karyawanList as $k)
                             <option value="{{ $k->uuid }}" data-store="{{ $k->store_id }}">{{ $k->name }} - {{ $k->operator->nama ?? 'Karyawan' }}</option>
                         @endforeach
@@ -123,6 +123,12 @@ function onKaryawanChange() {
     });
 
     if (!userId) return;
+
+    // Auto-select store based on selected user's data-store
+    const selectedOption = document.getElementById('jadwalUserId').options[document.getElementById('jadwalUserId').selectedIndex];
+    if (selectedOption && selectedOption.dataset.store) {
+        document.getElementById('jadwalStoreId').value = selectedOption.dataset.store;
+    }
 
     // Filter schedules for this user (optionally also by store if needed, 
     // but usually an employee shouldn't work 2 shifts on same day even in different stores)

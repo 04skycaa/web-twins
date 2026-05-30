@@ -856,7 +856,7 @@ function openAddressPopup(event) {
 
             const suggestionsDropdown = popup.querySelector('#addressSuggestionsDropdown');
 
-            manualAddressInput.addEventListener('input', () => {
+            const handleAddressInput = () => {
                 const query = manualAddressInput.value.trim();
                 if (query.length < 3) {
                     suggestionsDropdown.innerHTML = '';
@@ -914,7 +914,11 @@ function openAddressPopup(event) {
                             suggestionsDropdown.style.display = 'none';
                         });
                 }, 500);
-            });
+            };
+
+            manualAddressInput.addEventListener('input', handleAddressInput);
+            manualAddressInput.addEventListener('paste', () => setTimeout(handleAddressInput, 50));
+            manualAddressInput.addEventListener('change', handleAddressInput);
 
             popup.addEventListener('click', (e) => {
                 if (!manualAddressInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
