@@ -1026,89 +1026,13 @@ class LaporanController extends Controller
      */
     public function performaToko(Request $request)
     {
-        $year        = (int) $request->query('year', date('Y'));
-        $user        = Auth::user();
-        $isOwner     = $user->isOwner();
-        $userStoreId = $isOwner ? null : ($user->store_id ?? null);
-
         try {
-            // Single RPC — returns all active stores × 12 months
-            $rawRows = DB::select(
-                'SELECT * FROM get_store_performance_yearly(?)',
-                [$year]
-            );
+            $data = $this->resolvePerformaTokoData((int) $request->query('year', date('Y')));
         } catch (\Exception $e) {
             return response()->json(['error' => 'Gagal memuat data: ' . $e->getMessage()], 500);
         }
 
-        $rows = collect($rawRows);
-
-        // Non-owner: filter to own store only
-        if (!$isOwner && $userStoreId) {
-            $rows = $rows->filter(fn($r) => (string)$r->store_id === (string)$userStoreId);
-        }
-
-        if ($rows->isEmpty()) {
-            return response()->json(['stores' => [], 'chart_data' => []]);
-        }
-
-        $stores = [];
-        foreach ($rows->groupBy('store_id') as $storeId => $storeRows) {
-            $first = $storeRows->first();
-            $store = [
-                'store_id'          => (string) $storeId,
-                'nama'              => $first->nama_toko,
-                'total_omset'       => 0.0,
-                'total_hpp'         => 0.0,
-                'total_pemasukan'   => 0.0,
-                'total_pengeluaran' => 0.0,
-                'total_rugi'        => 0.0,
-                'total_laba_kotor'  => 0.0,
-                'total_laba_bersih' => 0.0,
-                'months'            => [],
-            ];
-
-            foreach ($storeRows->sortBy('bulan') as $row) {
-                $omset       = (float) $row->omset;
-                $hpp         = (float) $row->hpp;
-                $pemasukan   = (float) $row->pemasukan;
-                $pengeluaran = (float) $row->pengeluaran;
-                $rugi        = (float) $row->rugi;
-
-                $labaKotor  = $omset - $hpp;
-                $labaBersih = ($labaKotor + $pemasukan) - ($pengeluaran + $rugi);
-
-                $store['total_omset']       += $omset;
-                $store['total_hpp']         += $hpp;
-                $store['total_pemasukan']   += $pemasukan;
-                $store['total_pengeluaran'] += $pengeluaran;
-                $store['total_rugi']        += $rugi;
-                $store['total_laba_kotor']  += $labaKotor;
-                $store['total_laba_bersih'] += $labaBersih;
-
-                $store['months'][] = [
-                    'bulan' => (int) $row->bulan,
-                    'omset' => $omset,
-                    'laba'  => $labaKotor,
-                    'rugi'  => $rugi,
-                ];
-            }
-
-            $stores[] = $store;
-        }
-
-        // Sort by laba_bersih DESC
-        usort($stores, fn($a, $b) => $b['total_laba_bersih'] <=> $a['total_laba_bersih']);
-
-        return response()->json([
-            'stores'     => $stores,
-            'chart_data' => array_values(array_map(fn($s) => [
-                'nama'        => $s['nama'],
-                'laba_bersih' => $s['total_laba_bersih'],
-                'laba_kotor'  => $s['total_laba_kotor'],
-                'omset'       => $s['total_omset'],
-            ], $stores)),
-        ]);
+        return response()->json($data);
     }
 
     public function exportExcel(Request $request)
@@ -1159,10 +1083,62 @@ class LaporanController extends Controller
             'title' => $title,
             'rows' => $rows,
             'meta' => $meta,
-            'generatedAt' => now()->format('d F Y H:i'),
+            'generatedAt' => now()->locale('id')->translatedFormat('d F Y H:i'),
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('Laporan_' . ucfirst($tab) . '_' . date('Ymd_His') . '.pdf');
+    }
+
+    public function exportPerformaExcel(Request $request)
+    {
+        $year = (int) $request->query('year', date('Y'));
+
+        [$title, $rows] = $this->buildPerformaExport($request, $year);
+        $filename = 'Laporan_Performa_Toko_' . date('Ymd_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        return response()->streamDownload(function () use ($title, $rows) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fputcsv($output, [$title]);
+            fputcsv($output, []);
+
+            foreach ($rows as $section) {
+                fputcsv($output, [$section['title']]);
+                fputcsv($output, $section['headers']);
+
+                foreach ($section['rows'] as $row) {
+                    fputcsv($output, $row);
+                }
+
+                fputcsv($output, []);
+            }
+
+            fclose($output);
+        }, $filename, $headers);
+    }
+
+    public function exportPerformaPdf(Request $request)
+    {
+        $year = (int) $request->query('year', date('Y'));
+
+        [$title, $rows, $meta] = $this->buildPerformaExport($request, $year);
+
+        $pdf = Pdf::loadView('laporan.export_pdf', [
+            'title' => $title,
+            'rows' => $rows,
+            'meta' => $meta,
+            'generatedAt' => now()->locale('id')->translatedFormat('d F Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('Laporan_Performa_Toko_' . date('Ymd_His') . '.pdf');
     }
 
     private function buildExportRows(Request $request, string $tab, ?string $store): array
@@ -1191,6 +1167,84 @@ class LaporanController extends Controller
         }
 
         return $this->buildDailyExport($request, $store);
+    }
+
+    private function buildPerformaExport(Request $request, int $year): array
+    {
+        $title = 'Laporan Performa Toko';
+        $storeLabel = 'Semua Outlet';
+
+        $data = $this->resolvePerformaTokoData($year);
+        $stores = $data['stores'] ?? [];
+
+        $summaryRows = array_map(function (array $store) {
+            return [
+                $store['nama'],
+                $this->formatExportCurrency($store['total_omset']),
+                $this->formatExportCurrency($store['total_hpp']),
+                $this->formatExportCurrency($store['total_laba_kotor']),
+                $this->formatExportCurrency($store['total_pemasukan']),
+                $this->formatExportCurrency($store['total_pengeluaran']),
+                $this->formatExportCurrency($store['total_rugi']),
+                $this->formatExportCurrency($store['total_laba_bersih']),
+            ];
+        }, $stores);
+
+        $monthlyRows = [];
+        foreach ($stores as $store) {
+            foreach ($store['months'] as $month) {
+                $monthlyRows[] = [
+                    $store['nama'],
+                    $this->resolveMonthName((int) $month['bulan']),
+                    $this->formatExportCurrency($month['omset']),
+                    $this->formatExportCurrency($month['hpp']),
+                    $this->formatExportCurrency($month['pemasukan']),
+                    $this->formatExportCurrency($month['pengeluaran']),
+                    $this->formatExportCurrency($month['rugi']),
+                    $this->formatExportCurrency($month['laba_kotor']),
+                    $this->formatExportCurrency($month['laba_bersih']),
+                ];
+            }
+        }
+
+        return [
+            $title,
+            [
+                [
+                    'title' => 'Ringkasan Per Toko',
+                    'headers' => [
+                        'Toko',
+                        'Omset',
+                        'HPP',
+                        'Laba Kotor',
+                        'Pemasukan',
+                        'Pengeluaran',
+                        'Rugi',
+                        'Laba Bersih',
+                    ],
+                    'rows' => $summaryRows,
+                ],
+                [
+                    'title' => 'Rincian Bulanan Per Toko',
+                    'headers' => [
+                        'Toko',
+                        'Bulan',
+                        'Omset',
+                        'HPP',
+                        'Pemasukan',
+                        'Pengeluaran',
+                        'Rugi',
+                        'Laba Kotor',
+                        'Laba Bersih',
+                    ],
+                    'rows' => $monthlyRows,
+                ],
+            ],
+            [
+                'store' => $storeLabel,
+                'period' => (string) $year,
+            ],
+        ];
     }
 
     private function buildDailyExport(Request $request, ?string $store): array
@@ -1273,16 +1327,32 @@ class LaporanController extends Controller
             [
                 [
                     'title' => 'Ringkasan',
-                    'headers' => ['Periode', 'Outlet', 'Omset', 'HPP', 'Laba Kotor', 'Pemasukan', 'Pengeluaran'],
+                    'headers' => [
+                        'Periode',
+                        'Outlet',
+                        'Omset Offline',
+                        'Omset Online',
+                        'Total Omset',
+                        'HPP',
+                        'Laba Kotor',
+                        'Laba Bersih',
+                        'Pemasukan',
+                        'Pengeluaran',
+                        'Rugi',
+                    ],
                     'rows' => [
                         [
                             $month . '/' . $year,
                             $storeLabel,
                             $this->formatExportCurrency($summary['omset']),
+                            $this->formatExportCurrency($summary['penjualan_online'] ?? 0),
+                            $this->formatExportCurrency((float) ($summary['omset'] ?? 0) + (float) ($summary['penjualan_online'] ?? 0)),
                             $this->formatExportCurrency($summary['hpp']),
                             $this->formatExportCurrency($summary['laba_kotor']),
+                            $this->formatExportCurrency($summary['laba_bersih'] ?? 0),
                             $this->formatExportCurrency($summary['pemasukan']),
                             $this->formatExportCurrency($summary['pengeluaran']),
+                            $this->formatExportCurrency($summary['rugi'] ?? 0),
                         ]
                     ],
                 ],
@@ -1334,16 +1404,32 @@ class LaporanController extends Controller
             [
                 [
                     'title' => 'Ringkasan',
-                    'headers' => ['Tahun', 'Outlet', 'Omset', 'HPP', 'Laba Kotor', 'Pemasukan', 'Pengeluaran'],
+                    'headers' => [
+                        'Tahun',
+                        'Outlet',
+                        'Omset Offline',
+                        'Omset Online',
+                        'Total Omset',
+                        'HPP',
+                        'Laba Kotor',
+                        'Laba Bersih',
+                        'Pemasukan',
+                        'Pengeluaran',
+                        'Rugi',
+                    ],
                     'rows' => [
                         [
                             (string) $year,
                             $storeLabel,
                             $this->formatExportCurrency($summary['omset']),
+                            $this->formatExportCurrency($summary['penjualan_online'] ?? 0),
+                            $this->formatExportCurrency((float) ($summary['omset'] ?? 0) + (float) ($summary['penjualan_online'] ?? 0)),
                             $this->formatExportCurrency($summary['hpp']),
                             $this->formatExportCurrency($summary['laba_kotor']),
+                            $this->formatExportCurrency($summary['laba_bersih'] ?? 0),
                             $this->formatExportCurrency($summary['pemasukan']),
                             $this->formatExportCurrency($summary['pengeluaran']),
+                            $this->formatExportCurrency($summary['rugi'] ?? 0),
                         ]
                     ],
                 ],
@@ -1363,7 +1449,7 @@ class LaporanController extends Controller
                     'headers' => ['Bulan', 'Jenis', 'Total', 'Laba', 'Frekuensi'],
                     'rows' => array_map(function ($row) {
                         return [
-                            $row['bulan'],
+                            $this->resolveMonthName((int) $row['bulan']),
                             $row['jenis'],
                             $this->formatExportCurrency($row['total']),
                             $this->formatExportCurrency($row['laba']),
@@ -1429,6 +1515,112 @@ class LaporanController extends Controller
     private function formatExportCurrency(float|int $value): string
     {
         return 'Rp ' . number_format((float) $value, 0, ',', '.');
+    }
+
+    private function resolvePerformaTokoData(int $year): array
+    {
+        $user = Auth::user();
+        $isOwner = $user->isOwner();
+        $userStoreId = $isOwner ? null : ($user->store_id ?? null);
+
+        // Single RPC — returns all active stores × 12 months
+        $rawRows = DB::select(
+            'SELECT * FROM get_store_performance_yearly(?)',
+            [$year]
+        );
+
+        $rows = collect($rawRows);
+
+        // Non-owner: filter to own store only
+        if (!$isOwner && $userStoreId) {
+            $rows = $rows->filter(fn($r) => (string) $r->store_id === (string) $userStoreId);
+        }
+
+        if ($rows->isEmpty()) {
+            return ['stores' => [], 'chart_data' => []];
+        }
+
+        $stores = [];
+        foreach ($rows->groupBy('store_id') as $storeId => $storeRows) {
+            $first = $storeRows->first();
+            $store = [
+                'store_id' => (string) $storeId,
+                'nama' => $first->nama_toko,
+                'total_omset' => 0.0,
+                'total_hpp' => 0.0,
+                'total_pemasukan' => 0.0,
+                'total_pengeluaran' => 0.0,
+                'total_rugi' => 0.0,
+                'total_laba_kotor' => 0.0,
+                'total_laba_bersih' => 0.0,
+                'months' => [],
+            ];
+
+            foreach ($storeRows->sortBy('bulan') as $row) {
+                $omset = (float) $row->omset;
+                $hpp = (float) $row->hpp;
+                $pemasukan = (float) $row->pemasukan;
+                $pengeluaran = (float) $row->pengeluaran;
+                $rugi = (float) $row->rugi;
+
+                $labaKotor = $omset - $hpp;
+                $labaBersih = ($labaKotor + $pemasukan) - ($pengeluaran + $rugi);
+
+                $store['total_omset'] += $omset;
+                $store['total_hpp'] += $hpp;
+                $store['total_pemasukan'] += $pemasukan;
+                $store['total_pengeluaran'] += $pengeluaran;
+                $store['total_rugi'] += $rugi;
+                $store['total_laba_kotor'] += $labaKotor;
+                $store['total_laba_bersih'] += $labaBersih;
+
+                $store['months'][] = [
+                    'bulan' => (int) $row->bulan,
+                    'omset' => $omset,
+                    'hpp' => $hpp,
+                    'pemasukan' => $pemasukan,
+                    'pengeluaran' => $pengeluaran,
+                    'rugi' => $rugi,
+                    'laba_kotor' => $labaKotor,
+                    'laba_bersih' => $labaBersih,
+                ];
+            }
+
+            $stores[] = $store;
+        }
+
+        // Sort by laba_bersih DESC
+        usort($stores, fn($a, $b) => $b['total_laba_bersih'] <=> $a['total_laba_bersih']);
+
+        return [
+            'stores' => $stores,
+            'chart_data' => array_values(array_map(fn($s) => [
+                'nama' => $s['nama'],
+                'laba_bersih' => $s['total_laba_bersih'],
+                'laba_kotor' => $s['total_laba_kotor'],
+                'omset' => $s['total_omset'],
+            ], $stores)),
+        ];
+    }
+
+    private function resolveMonthName(int $month): string
+    {
+        $monthNames = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        return $monthNames[$month] ?? (string) $month;
     }
 
     private function resolveDailySummary(string $date, ?string $store): array

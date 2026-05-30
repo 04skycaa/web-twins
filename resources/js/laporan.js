@@ -533,7 +533,7 @@ async function fetchMonthlyData() {
         setValue("monthly-laba-bersih-badge", labaBersih, labaBersih < 0);
         setValue("monthly-pemasukan-value", pemasukan);
         setValue("monthly-pengeluaran-value", pengeluaran);
-        
+
         // Manual handle for rugi to keep it red without negative sign
         const rugiEl = document.getElementById("monthly-rugi-value");
         if (rugiEl) {
@@ -545,12 +545,18 @@ async function fetchMonthlyData() {
         // Toggle Surplus / Defisit badge
         const mSurplus = document.getElementById("monthly-surplus-badge");
         const mDefisit = document.getElementById("monthly-defisit-badge");
-        const mBadge   = document.getElementById("monthly-laba-bersih-badge");
+        const mBadge = document.getElementById("monthly-laba-bersih-badge");
         if (mSurplus && mDefisit && mBadge) {
             mSurplus.classList.toggle("hidden", labaBersih < 0);
             mDefisit.classList.toggle("hidden", labaBersih >= 0);
-            mBadge.classList.remove("text-gray-900", "text-emerald-600", "text-rose-600");
-            mBadge.classList.add(labaBersih >= 0 ? "text-emerald-600" : "text-rose-600");
+            mBadge.classList.remove(
+                "text-gray-900",
+                "text-emerald-600",
+                "text-rose-600",
+            );
+            mBadge.classList.add(
+                labaBersih >= 0 ? "text-emerald-600" : "text-rose-600",
+            );
         }
 
         const renderIfCurrent = (renderFn) => (payload) => {
@@ -688,28 +694,58 @@ async function fetchAnnualData() {
         const totalOmset = offlineOmset + onlineOmset;
         const annualLabaBersih = Number(summaryData.laba_bersih || 0);
 
-        setTextIfExists("annual-offline-omset-value", formatCurrency(offlineOmset));
-        setTextIfExists("annual-online-omset-value", formatCurrency(onlineOmset));
+        setTextIfExists(
+            "annual-offline-omset-value",
+            formatCurrency(offlineOmset),
+        );
+        setTextIfExists(
+            "annual-online-omset-value",
+            formatCurrency(onlineOmset),
+        );
         setTextIfExists("annual-total-omset-value", formatCurrency(totalOmset));
-        setTextIfExists("annual-laba-kotor-value", formatCurrency(summaryData.laba_kotor || 0));
-        setTextIfExists("annual-hpp-value", formatCurrency(summaryData.hpp || 0));
-        setTextIfExists("annual-rugi-value", formatCurrency(summaryData.rugi || 0));
-        setTextIfExists("annual-pemasukan-value", formatCurrency(summaryData.pemasukan || 0));
-        setTextIfExists("annual-pengeluaran-value", formatCurrency(summaryData.pengeluaran || 0));
+        setTextIfExists(
+            "annual-laba-kotor-value",
+            formatCurrency(summaryData.laba_kotor || 0),
+        );
+        setTextIfExists(
+            "annual-hpp-value",
+            formatCurrency(summaryData.hpp || 0),
+        );
+        setTextIfExists(
+            "annual-rugi-value",
+            formatCurrency(summaryData.rugi || 0),
+        );
+        setTextIfExists(
+            "annual-pemasukan-value",
+            formatCurrency(summaryData.pemasukan || 0),
+        );
+        setTextIfExists(
+            "annual-pengeluaran-value",
+            formatCurrency(summaryData.pengeluaran || 0),
+        );
 
         // Laba Bersih with color
         const annualLBEl = document.getElementById("annual-laba-bersih-value");
         if (annualLBEl) {
-            annualLBEl.textContent = (annualLabaBersih < 0 ? "-" : "") + formatCurrency(Math.abs(annualLabaBersih));
-            annualLBEl.classList.remove("text-gray-900", "text-emerald-600", "text-rose-600");
-            annualLBEl.classList.add(annualLabaBersih >= 0 ? "text-emerald-600" : "text-rose-600");
+            annualLBEl.textContent =
+                (annualLabaBersih < 0 ? "-" : "") +
+                formatCurrency(Math.abs(annualLabaBersih));
+            annualLBEl.classList.remove(
+                "text-gray-900",
+                "text-emerald-600",
+                "text-rose-600",
+            );
+            annualLBEl.classList.add(
+                annualLabaBersih >= 0 ? "text-emerald-600" : "text-rose-600",
+            );
         }
 
         // Toggle Surplus / Defisit badge
         const aSurplus = document.getElementById("annual-surplus-badge");
         const aDefisit = document.getElementById("annual-defisit-badge");
         if (aSurplus) aSurplus.classList.toggle("hidden", annualLabaBersih < 0);
-        if (aDefisit) aDefisit.classList.toggle("hidden", annualLabaBersih >= 0);
+        if (aDefisit)
+            aDefisit.classList.toggle("hidden", annualLabaBersih >= 0);
 
         const operatorsResponse = await fetch(
             `/laporan/api/annual/operators?store_id=${storeId}&year=${year}`,
@@ -1055,14 +1091,26 @@ function downloadLaporanExport(format) {
     const exportExcelUrl =
         (window.laporanConfig && window.laporanConfig.exportExcelUrl) ||
         "/laporan/export/excel";
+    const performaExportPdfUrl =
+        (window.laporanConfig && window.laporanConfig.performaExportPdfUrl) ||
+        "/laporan/export/performa/pdf";
+    const performaExportExcelUrl =
+        (window.laporanConfig && window.laporanConfig.performaExportExcelUrl) ||
+        "/laporan/export/performa/excel";
     const url = new URL(
-        format === "pdf" ? exportPdfUrl : exportExcelUrl,
+        activeTab === "performa"
+            ? format === "pdf"
+                ? performaExportPdfUrl
+                : performaExportExcelUrl
+            : format === "pdf"
+              ? exportPdfUrl
+              : exportExcelUrl,
         window.location.origin,
     );
 
     url.searchParams.set("active_tab", activeTab);
 
-    if (storeId) {
+    if (storeId && activeTab !== "performa") {
         url.searchParams.set("store_id", storeId);
     }
 
@@ -1070,11 +1118,13 @@ function downloadLaporanExport(format) {
         if (date) url.searchParams.set("date", date);
     } else if (activeTab === "bulanan") {
         if (monthValue) {
-            const [month, yearValue] = monthValue.split("-");
+            const [yearValue, month] = monthValue.split("-");
             url.searchParams.set("month", month);
             url.searchParams.set("year", yearValue);
         }
     } else if (activeTab === "tahunan" && year) {
+        url.searchParams.set("year", year);
+    } else if (activeTab === "performa" && year) {
         url.searchParams.set("year", year);
     }
 
@@ -1367,8 +1417,8 @@ function renderTransactionLineChart(canvasId, rawData, isYearly) {
     if (!canvas) return;
     const { labels, totals, freqs } = rawData;
     const maxTotal = Math.max(...totals, 1);
-    const maxFreq  = Math.max(...freqs, 1);
-    const normFreqs = freqs.map(f => (f / maxFreq) * maxTotal);
+    const maxFreq = Math.max(...freqs, 1);
+    const normFreqs = freqs.map((f) => (f / maxFreq) * maxTotal);
     const ctx = canvas.getContext("2d");
     _laporanChartInstances[canvasId] = new Chart(ctx, {
         type: "line",
@@ -1405,7 +1455,9 @@ function renderTransactionLineChart(canvasId, rawData, isYearly) {
                             if (ctx.datasetIndex === 0) {
                                 return "Omset: " + formatCurrency(ctx.raw);
                             }
-                            const actual = Math.round((ctx.raw / maxTotal) * maxFreq);
+                            const actual = Math.round(
+                                (ctx.raw / maxTotal) * maxFreq,
+                            );
                             return "Frekuensi: " + actual + " trx";
                         },
                     },
@@ -1417,15 +1469,35 @@ function renderTransactionLineChart(canvasId, rawData, isYearly) {
 }
 
 function buildTransactionChartData(rows, isYearly) {
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-    const labels = [], totals = [], freqs = [];
+    const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+    ];
+    const labels = [],
+        totals = [],
+        freqs = [];
     if (isYearly) {
         const currentYear = new Date().getFullYear();
         const yearSelector = document.getElementById("year-selector");
-        const selYear = yearSelector ? parseInt(yearSelector.value) : currentYear;
-        const maxMonth = selYear === currentYear ? new Date().getMonth() + 1 : 12;
+        const selYear = yearSelector
+            ? parseInt(yearSelector.value)
+            : currentYear;
+        const maxMonth =
+            selYear === currentYear ? new Date().getMonth() + 1 : 12;
         const dataMap = {};
-        rows.forEach(r => { dataMap[r.bulan] = r; });
+        rows.forEach((r) => {
+            dataMap[r.bulan] = r;
+        });
         for (let m = 1; m <= maxMonth; m++) {
             labels.push(monthNames[m - 1]);
             totals.push(Number(dataMap[m]?.total || 0));
@@ -1439,8 +1511,10 @@ function buildTransactionChartData(rows, isYearly) {
             maxDay = new Date(y, m, 0).getDate();
         }
         const dataMap = {};
-        rows.forEach(r => {
-            const day = r.tanggal ? String(new Date(r.tanggal).getDate()).padStart(2, "0") : null;
+        rows.forEach((r) => {
+            const day = r.tanggal
+                ? String(new Date(r.tanggal).getDate()).padStart(2, "0")
+                : null;
             if (day) dataMap[day] = r;
         });
         for (let d = 1; d <= maxDay; d++) {
@@ -1509,7 +1583,9 @@ function renderMonthlyTransactions(daily) {
             const negative = isMonthlyTransactionNegative(jenis);
 
             const chartId = `monthly-chart-${jenis}`;
-            const chartData = showLaba ? buildTransactionChartData(rows, false) : null;
+            const chartData = showLaba
+                ? buildTransactionChartData(rows, false)
+                : null;
 
             return `
                         <details class="group overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm mb-4" ${showLaba ? "open" : ""}>
@@ -1539,12 +1615,28 @@ function renderMonthlyTransactions(daily) {
                                             ${rows
                                                 .map((row) => {
                                                     const tanggal = row.tanggal
-                                                        ? new Date(row.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+                                                        ? new Date(
+                                                              row.tanggal,
+                                                          ).toLocaleDateString(
+                                                              "id-ID",
+                                                              {
+                                                                  day: "2-digit",
+                                                                  month: "short",
+                                                              },
+                                                          )
                                                         : "-";
-                                                    const rowTotal = Number(row.total || 0);
-                                                    const rowLaba = Number(row.laba || 0);
-                                                    const rowFreq = Number(row.frekuensi || 0);
-                                                    const totalClass = negative ? "text-rose-600" : "text-gray-900";
+                                                    const rowTotal = Number(
+                                                        row.total || 0,
+                                                    );
+                                                    const rowLaba = Number(
+                                                        row.laba || 0,
+                                                    );
+                                                    const rowFreq = Number(
+                                                        row.frekuensi || 0,
+                                                    );
+                                                    const totalClass = negative
+                                                        ? "text-rose-600"
+                                                        : "text-gray-900";
                                                     const labaCell = showLaba
                                                         ? `<td class="py-3 pr-4 font-semibold text-emerald-600">${formatCurrency(rowLaba)}</td>`
                                                         : "";
@@ -1554,7 +1646,9 @@ function renderMonthlyTransactions(daily) {
                                         </tbody>
                                     </table>
                                 </div>
-                                ${showLaba ? `
+                                ${
+                                    showLaba
+                                        ? `
                                 <div class="mt-4 border-t border-gray-100 pt-4">
                                     <button onclick="toggleMonthlyChart('${chartId}')" class="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition">
                                         <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
@@ -1563,7 +1657,9 @@ function renderMonthlyTransactions(daily) {
                                     <div id="${chartId}" class="hidden mt-4" style="max-height:280px">
                                         <canvas id="canvas-${chartId}"></canvas>
                                     </div>
-                                </div>` : ""}
+                                </div>`
+                                        : ""
+                                }
                             </div>
                         </details>
                     `;
@@ -1572,12 +1668,16 @@ function renderMonthlyTransactions(daily) {
         .join("");
 
     // After rendering, attach chart data to window for lazy init
-    if (typeof window._monthlyChartData === 'undefined') window._monthlyChartData = {};
-    ['penjualan', 'penjualan_online'].forEach(jenis => {
+    if (typeof window._monthlyChartData === "undefined")
+        window._monthlyChartData = {};
+    ["penjualan", "penjualan_online"].forEach((jenis) => {
         const rows = grouped[jenis] || [];
         if (rows.length) {
             const cid = `monthly-chart-${jenis}`;
-            window._monthlyChartData[cid] = buildTransactionChartData(rows, false);
+            window._monthlyChartData[cid] = buildTransactionChartData(
+                rows,
+                false,
+            );
         }
     });
 }
@@ -1587,8 +1687,16 @@ function toggleMonthlyChart(chartId) {
     if (!wrapper) return;
     const wasHidden = wrapper.classList.contains("hidden");
     wrapper.classList.toggle("hidden", !wasHidden);
-    if (wasHidden && window._monthlyChartData && window._monthlyChartData[chartId]) {
-        renderTransactionLineChart(`canvas-${chartId}`, window._monthlyChartData[chartId], false);
+    if (
+        wasHidden &&
+        window._monthlyChartData &&
+        window._monthlyChartData[chartId]
+    ) {
+        renderTransactionLineChart(
+            `canvas-${chartId}`,
+            window._monthlyChartData[chartId],
+            false,
+        );
     }
 }
 
@@ -1749,37 +1857,57 @@ window.selectStore = selectStore;
 window.applyCalendarFilter = applyCalendarFilter;
 window.downloadLaporanExport = downloadLaporanExport;
 window.resolveMonthlyFinancialValues = resolveMonthlyFinancialValues;
-window.toggleMonthlyChart = typeof toggleMonthlyChart !== 'undefined' ? toggleMonthlyChart : () => {};
+window.toggleMonthlyChart =
+    typeof toggleMonthlyChart !== "undefined" ? toggleMonthlyChart : () => {};
 
 // ─── Performa Toko Module ────────────────────────────────────────────────────
 
 let _performaChartInstance = null;
 let _performaStores = [];
-let _performaCurrentMetric = 'laba_bersih';
+let _performaCurrentMetric = "laba_bersih";
 
 const PERFORMA_COLORS = [
-    '#6366F1', '#8B5CF6', '#3B82F6', '#06B6D4', '#10B981',
-    '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#F97316',
+    "#6366F1",
+    "#8B5CF6",
+    "#3B82F6",
+    "#06B6D4",
+    "#10B981",
+    "#F59E0B",
+    "#EF4444",
+    "#EC4899",
+    "#14B8A6",
+    "#F97316",
 ];
 
 async function fetchPerformaToko() {
-    const yearEl = document.getElementById('year-selector');
-    const year   = yearEl ? yearEl.value || new Date().getFullYear() : new Date().getFullYear();
-    const url    = (window.laporanConfig && window.laporanConfig.performaTokoUrl)
-        ? `${window.laporanConfig.performaTokoUrl}?year=${year}`
-        : `/laporan/api/performa-toko?year=${year}`;
+    const yearEl = document.getElementById("year-selector");
+    const year = yearEl
+        ? yearEl.value || new Date().getFullYear()
+        : new Date().getFullYear();
+    const url =
+        window.laporanConfig && window.laporanConfig.performaTokoUrl
+            ? `${window.laporanConfig.performaTokoUrl}?year=${year}`
+            : `/laporan/api/performa-toko?year=${year}`;
 
     // Show loading state
-    const loading  = document.getElementById('performa-chart-loading');
-    const content  = document.getElementById('performa-chart-content');
-    const empty    = document.getElementById('performa-chart-empty');
-    const storeList = document.getElementById('performa-store-list');
+    const loading = document.getElementById("performa-chart-loading");
+    const content = document.getElementById("performa-chart-content");
+    const empty = document.getElementById("performa-chart-empty");
+    const storeList = document.getElementById("performa-store-list");
 
-    if (loading)  { loading.classList.remove('hidden');  }
-    if (content)  { content.classList.add('hidden');     }
-    if (empty)    { empty.classList.add('hidden');       }
+    if (loading) {
+        loading.classList.remove("hidden");
+    }
+    if (content) {
+        content.classList.add("hidden");
+    }
+    if (empty) {
+        empty.classList.add("hidden");
+    }
     if (storeList) {
-        storeList.innerHTML = Array.from({length: 3}, () => `
+        storeList.innerHTML = Array.from(
+            { length: 3 },
+            () => `
             <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 animate-pulse">
                 <div class="flex items-center gap-4">
                     <div class="h-10 w-10 rounded-xl bg-gray-200 flex-shrink-0"></div>
@@ -1790,62 +1918,65 @@ async function fetchPerformaToko() {
                     <div class="h-4 w-24 rounded bg-gray-200"></div>
                 </div>
             </div>
-        `).join('');
+        `,
+        ).join("");
     }
 
     try {
         const resp = await fetch(url);
-        if (!resp.ok) throw new Error('Gagal fetch performa toko');
+        if (!resp.ok) throw new Error("Gagal fetch performa toko");
         const data = await resp.json();
 
         _performaStores = data.stores || [];
         const chartData = data.chart_data || [];
 
         if (!chartData.length) {
-            if (loading) loading.classList.add('hidden');
-            if (empty)   empty.classList.remove('hidden');
-            if (storeList) storeList.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko untuk tahun ini</div>';
+            if (loading) loading.classList.add("hidden");
+            if (empty) empty.classList.remove("hidden");
+            if (storeList)
+                storeList.innerHTML =
+                    '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko untuk tahun ini</div>';
             return;
         }
 
         renderPerformaChart(chartData, _performaCurrentMetric);
         renderPerformaStoreList(_performaStores);
 
-        const countEl = document.getElementById('performa-store-count');
+        const countEl = document.getElementById("performa-store-count");
         if (countEl) countEl.textContent = `${_performaStores.length} Toko`;
-
     } catch (err) {
-        console.error('Error performa toko:', err);
-        if (loading) loading.classList.add('hidden');
-        if (storeList) storeList.innerHTML = `<div class="rounded-2xl border border-rose-100 bg-rose-50 p-6 text-sm text-rose-700 text-center">Gagal memuat data: ${err.message}</div>`;
+        console.error("Error performa toko:", err);
+        if (loading) loading.classList.add("hidden");
+        if (storeList)
+            storeList.innerHTML = `<div class="rounded-2xl border border-rose-100 bg-rose-50 p-6 text-sm text-rose-700 text-center">Gagal memuat data: ${err.message}</div>`;
     }
 }
 
 function renderPerformaChart(chartData, metric) {
-    const loading = document.getElementById('performa-chart-loading');
-    const content = document.getElementById('performa-chart-content');
-    const empty   = document.getElementById('performa-chart-empty');
+    const loading = document.getElementById("performa-chart-loading");
+    const content = document.getElementById("performa-chart-content");
+    const empty = document.getElementById("performa-chart-empty");
 
-    const labels = chartData.map(d => d.nama);
-    const values = chartData.map(d => Number(d[metric] || 0));
-    const positiveCount = values.filter(v => v > 0).length;
+    const labels = chartData.map((d) => d.nama);
+    const values = chartData.map((d) => Number(d[metric] || 0));
+    const positiveCount = values.filter((v) => v > 0).length;
 
-    if (loading) loading.classList.add('hidden');
+    if (loading) loading.classList.add("hidden");
 
     if (positiveCount === 0) {
-        if (empty) empty.classList.remove('hidden');
-        if (content) content.classList.add('hidden');
+        if (empty) empty.classList.remove("hidden");
+        if (content) content.classList.add("hidden");
         return;
     }
 
-    if (empty) empty.classList.add('hidden');
-    if (content) content.classList.remove('hidden');
+    if (empty) empty.classList.add("hidden");
+    if (content) content.classList.remove("hidden");
 
     const total = values.reduce((s, v) => s + Math.max(v, 0), 0);
-    const totalEl = document.getElementById('performa-chart-total');
+    const totalEl = document.getElementById("performa-chart-total");
     if (totalEl) totalEl.textContent = formatCurrency(total);
 
-    const canvas = document.getElementById('performa-doughnut-chart');
+    const canvas = document.getElementById("performa-doughnut-chart");
     if (!canvas) return;
 
     if (_performaChartInstance) {
@@ -1853,29 +1984,34 @@ function renderPerformaChart(chartData, metric) {
         _performaChartInstance = null;
     }
 
-    const bgColors = labels.map((_, i) => PERFORMA_COLORS[i % PERFORMA_COLORS.length]);
+    const bgColors = labels.map(
+        (_, i) => PERFORMA_COLORS[i % PERFORMA_COLORS.length],
+    );
 
-    _performaChartInstance = new Chart(canvas.getContext('2d'), {
-        type: 'doughnut',
+    _performaChartInstance = new Chart(canvas.getContext("2d"), {
+        type: "doughnut",
         data: {
             labels,
-            datasets: [{
-                data: values.map(v => Math.max(v, 0)),
-                backgroundColor: bgColors,
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 8,
-            }],
+            datasets: [
+                {
+                    data: values.map((v) => Math.max(v, 0)),
+                    backgroundColor: bgColors,
+                    borderWidth: 2,
+                    borderColor: "#fff",
+                    hoverOffset: 8,
+                },
+            ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            cutout: '68%',
+            cutout: "68%",
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.raw)}`,
+                        label: (ctx) =>
+                            `${ctx.label}: ${formatCurrency(ctx.raw)}`,
                     },
                 },
             },
@@ -1883,23 +2019,25 @@ function renderPerformaChart(chartData, metric) {
                 if (!elements.length) return;
                 const idx = elements[0].index;
                 const name = labels[idx];
-                const val  = values[idx];
-                const infoBox  = document.getElementById('performa-info-box');
-                const infoName = document.getElementById('performa-info-name');
-                const infoVal  = document.getElementById('performa-info-val');
+                const val = values[idx];
+                const infoBox = document.getElementById("performa-info-box");
+                const infoName = document.getElementById("performa-info-name");
+                const infoVal = document.getElementById("performa-info-val");
                 if (infoBox && infoName && infoVal) {
                     infoName.textContent = name;
-                    infoVal.textContent  = formatCurrency(val);
-                    infoBox.classList.remove('hidden');
+                    infoVal.textContent = formatCurrency(val);
+                    infoBox.classList.remove("hidden");
                 }
             },
         },
     });
 
     // Render legend
-    const legendEl = document.getElementById('performa-chart-legend');
+    const legendEl = document.getElementById("performa-chart-legend");
     if (legendEl) {
-        legendEl.innerHTML = labels.map((label, i) => `
+        legendEl.innerHTML = labels
+            .map(
+                (label, i) => `
             <div class="flex items-center justify-between gap-3 rounded-xl px-3 py-2 hover:bg-gray-50 transition cursor-pointer"
                  onclick="highlightPerformaSegment(${i})">
                 <div class="flex items-center gap-2 min-w-0">
@@ -1908,7 +2046,9 @@ function renderPerformaChart(chartData, metric) {
                 </div>
                 <span class="text-sm font-bold text-gray-900 whitespace-nowrap">${formatCurrency(values[i])}</span>
             </div>
-        `).join('');
+        `,
+            )
+            .join("");
     }
 }
 
@@ -1916,59 +2056,78 @@ function highlightPerformaSegment(index) {
     if (!_performaChartInstance) return;
     _performaChartInstance.setDatasetVisibility(0, true);
     _performaChartInstance.update();
-    const infoBox  = document.getElementById('performa-info-box');
-    const infoName = document.getElementById('performa-info-name');
-    const infoVal  = document.getElementById('performa-info-val');
+    const infoBox = document.getElementById("performa-info-box");
+    const infoName = document.getElementById("performa-info-name");
+    const infoVal = document.getElementById("performa-info-val");
     if (infoBox && infoName && infoVal && _performaStores[index]) {
-        const store  = _performaStores[index];
+        const store = _performaStores[index];
         const metric = _performaCurrentMetric;
         infoName.textContent = store.nama;
-        infoVal.textContent  = formatCurrency(store[`total_${metric}`] || 0);
-        infoBox.classList.remove('hidden');
+        infoVal.textContent = formatCurrency(store[`total_${metric}`] || 0);
+        infoBox.classList.remove("hidden");
     }
 }
 
 function updatePerformaChart(metric) {
     _performaCurrentMetric = metric;
     if (!_performaStores.length) return;
-    const chartData = _performaStores.map(s => ({
-        nama:        s.nama,
+    const chartData = _performaStores.map((s) => ({
+        nama: s.nama,
         laba_bersih: s.total_laba_bersih,
-        laba_kotor:  s.total_laba_kotor,
-        omset:       s.total_omset,
+        laba_kotor: s.total_laba_kotor,
+        omset: s.total_omset,
     }));
     renderPerformaChart(chartData, metric);
 }
 
 function renderPerformaStoreList(stores) {
-    const list = document.getElementById('performa-store-list');
+    const list = document.getElementById("performa-store-list");
     if (!list) return;
 
     if (!stores.length) {
-        list.innerHTML = '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko</div>';
+        list.innerHTML =
+            '<div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500 text-center">Tidak ada data toko</div>';
         return;
     }
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "Mei",
+        "Jun",
+        "Jul",
+        "Agu",
+        "Sep",
+        "Okt",
+        "Nov",
+        "Des",
+    ];
 
-    list.innerHTML = stores.map((store, i) => {
-        const color = PERFORMA_COLORS[i % PERFORMA_COLORS.length];
-        const rank  = i + 1;
-        const isPositive = store.total_laba_bersih >= 0;
-        const badge = isPositive
-            ? `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700">Surplus</span>`
-            : `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-rose-100 text-rose-700">Defisit</span>`;
+    list.innerHTML = stores
+        .map((store, i) => {
+            const color = PERFORMA_COLORS[i % PERFORMA_COLORS.length];
+            const rank = i + 1;
+            const isPositive = store.total_laba_bersih >= 0;
+            const badge = isPositive
+                ? `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700">Surplus</span>`
+                : `<span class="text-xs font-bold rounded-full px-2 py-0.5 bg-rose-100 text-rose-700">Defisit</span>`;
 
-        const monthRows = (store.months || []).map(m => `
+            const monthRows = (store.months || [])
+                .map(
+                    (m) => `
             <tr class="hover:bg-gray-50/70 transition">
                 <td class="px-4 py-3 font-medium text-gray-700">${monthNames[(m.bulan || 1) - 1]}</td>
                 <td class="px-4 py-3 font-semibold text-gray-900">${formatCurrency(m.omset || 0)}</td>
-                <td class="px-4 py-3 font-semibold ${m.laba >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(m.laba || 0)}</td>
+                <td class="px-4 py-3 font-semibold ${m.laba >= 0 ? "text-emerald-600" : "text-rose-600"}">${formatCurrency(m.laba || 0)}</td>
                 <td class="px-4 py-3 text-right font-semibold text-rose-500">${formatCurrency(m.rugi || 0)}</td>
             </tr>
-        `).join('');
+        `,
+                )
+                .join("");
 
-        return `
+            return `
             <details class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden group">
                 <summary class="flex cursor-pointer list-none items-center gap-4 px-5 py-4 hover:bg-gray-50/60 transition">
                     <div class="flex h-10 w-10 items-center justify-center rounded-xl font-bold text-white text-sm flex-shrink-0"
@@ -1981,7 +2140,7 @@ function renderPerformaStoreList(stores) {
                         <div class="mt-0.5 text-xs text-gray-500">Omset: ${formatCurrency(store.total_omset)}</div>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <div class="text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(store.total_laba_bersih)}</div>
+                        <div class="text-sm font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}">${formatCurrency(store.total_laba_bersih)}</div>
                         <div class="text-xs text-gray-500">Laba Bersih</div>
                     </div>
                     <iconify-icon icon="solar:alt-arrow-down-bold" class="text-gray-400 flex-shrink-0 group-open:rotate-180 transition-transform"></iconify-icon>
@@ -2007,7 +2166,9 @@ function renderPerformaStoreList(stores) {
                         </div>
                     </div>
 
-                    ${monthRows ? `
+                    ${
+                        monthRows
+                            ? `
                     <div class="overflow-x-auto rounded-xl border border-gray-100">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -2020,14 +2181,18 @@ function renderPerformaStoreList(stores) {
                             </thead>
                             <tbody class="divide-y divide-gray-100">${monthRows}</tbody>
                         </table>
-                    </div>` : ''}
+                    </div>`
+                            : ""
+                    }
                 </div>
             </details>
         `;
-    }).join('');
+        })
+        .join("");
 }
 
 window.fetchPerformaToko = fetchPerformaToko;
 window.updatePerformaChart = updatePerformaChart;
 window.highlightPerformaSegment = highlightPerformaSegment;
-window.toggleMonthlyChart = typeof toggleMonthlyChart !== 'undefined' ? toggleMonthlyChart : () => {};
+window.toggleMonthlyChart =
+    typeof toggleMonthlyChart !== "undefined" ? toggleMonthlyChart : () => {};

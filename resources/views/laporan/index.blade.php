@@ -39,7 +39,8 @@
                         class="px-5 py-2 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap">Tahunan</button>
                     <button @click="tab = 'performa'; window.laporanActiveTab = 'performa'; fetchPerformaToko()"
                         :class="tab === 'performa' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
-                        class="px-5 py-2 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap">Performa Toko</button>
+                        class="px-5 py-2 text-sm font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 whitespace-nowrap">Performa
+                        Toko</button>
                 </nav>
             </div>
 
@@ -71,14 +72,14 @@
                             <div>
                                 <label
                                     style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Tanggal</label>
-                                <input id="date-selector" type="date" aria-label="Filter Tanggal"
-                                    class="form-control" value="{{ date('Y-m-d') }}">
+                                <input id="date-selector" type="date" aria-label="Filter Tanggal" class="form-control"
+                                    value="{{ date('Y-m-d') }}">
                             </div>
                             <div>
                                 <label
                                     style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">Bulan</label>
-                                <input id="month-selector" type="month" aria-label="Filter Bulan"
-                                    class="form-control" value="{{ date('Y-m') }}">
+                                <input id="month-selector" type="month" aria-label="Filter Bulan" class="form-control"
+                                    value="{{ date('Y-m') }}">
                             </div>
                             <div>
                                 <label
@@ -97,18 +98,18 @@
                         <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
                         <span>Extract</span>
                     </button>
-                        <div class="dropdown-content" style="right: 0; left: auto;">
-                            <a href="javascript:void(0)" onclick="downloadLaporanExport('excel')">
-                                <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                                Excel
-                            </a>
-                            <a href="javascript:void(0)" onclick="downloadLaporanExport('pdf')">
-                                <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                                PDF
-                            </a>
-                        </div>
+                    <div class="dropdown-content" style="right: 0; left: auto;">
+                        <a href="javascript:void(0)" onclick="downloadLaporanExport('excel')">
+                            <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
+                            Excel
+                        </a>
+                        <a href="javascript:void(0)" onclick="downloadLaporanExport('pdf')">
+                            <iconify-icon icon="vscode-icons:file-type-pdf2" style="margin-right: 8px;"></iconify-icon>
+                            PDF
+                        </a>
                     </div>
                 </div>
+            </div>
         </header>
 
         @include('laporan.partials.daily')
@@ -123,6 +124,8 @@
         window.laporanConfig = {
             exportPdfUrl: @json(route('laporan.export.pdf')),
             exportExcelUrl: @json(route('laporan.export.excel')),
+            performaExportPdfUrl: @json(route('laporan.export.performa.pdf')),
+            performaExportExcelUrl: @json(route('laporan.export.performa.excel')),
             performaTokoUrl: @json(route('laporan.api.performa-toko')),
         };
     </script>
