@@ -636,13 +636,13 @@
                 </div>
             </div>
 
-            <div style="margin-top: 24px; display: flex; gap: 12px; padding: 20px;">
-                <button type="button" class="btn-action" style="flex: 1; background: #f1f5f9; color: #64748b;" onclick="closeModal('addOpnameModal')">Batal</button>
-                <button type="submit" name="action" value="save" class="btn-action" style="flex: 1; justify-content: center; background: #64748b; color: white;" onclick="this.form.dataset.submitAction = 'save'">
+            <div style="margin-top: 24px; display: flex; gap: 12px; padding: 20px; flex-wrap: wrap;">
+                <button type="button" class="btn-action" style="flex: 1; min-width: 100px; background: #f1f5f9; color: #64748b; justify-content: center;" onclick="closeModal('addOpnameModal')">Batal</button>
+                <button type="submit" name="action" value="save" class="btn-action" style="flex: 1.5; min-width: 180px; justify-content: center; background: #64748b; color: white; white-space: nowrap;" onclick="this.form.dataset.submitAction = 'save'">
                     <iconify-icon icon="solar:diskette-bold-duotone" style="margin-right: 8px;"></iconify-icon>
                     Simpan Sesi Opname
                 </button>
-                <button type="submit" name="action" value="finalize" class="btn-action" style="flex: 1.5; justify-content: center; background: #2E7D32; color: white;" onclick="this.form.dataset.submitAction = 'finalize'">
+                <button type="submit" name="action" value="finalize" class="btn-action" style="flex: 1.5; min-width: 180px; justify-content: center; background: #2E7D32; color: white; white-space: nowrap;" onclick="this.form.dataset.submitAction = 'finalize'">
                     <iconify-icon icon="solar:check-read-bold-duotone" style="margin-right: 8px;"></iconify-icon>
                     Finalisasi Opname
                 </button>
@@ -1518,6 +1518,7 @@
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
+                showLoading('Sedang Memfinalisasi Opname...');
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `/products/opname/${uuid}/finalize`;
@@ -2591,9 +2592,12 @@
         openModal('addOpnameModal');
     }
 
+    window.currentStoreProducts = [];
+
     async function loadProductsByStore(storeId) {
         if (!storeId) {
             document.getElementById('opnameItemsTable').innerHTML = '';
+            window.currentStoreProducts = [];
             addOpnameRow();
             return;
         }
@@ -2601,46 +2605,13 @@
         showLoading('Memuat Produk Outlet...');
         try {
             const res = await fetch(`/products/by-store/${storeId}`);
-            const products = await res.json();
+            window.currentStoreProducts = await res.json();
             hideLoading();
 
             const tbody = document.getElementById('opnameItemsTable');
             tbody.innerHTML = '';
             
-            if (products.length === 0) {
-                addOpnameRow();
-                return;
-            }
-
-            products.forEach((p, i) => {
-                const row = document.createElement('tr');
-                row.id = `opname_row_${i}`;
-                row.innerHTML = `
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div>
-                                <div style="font-weight: 600;">${p.nama_produk}</div>
-                                <div style="font-size: 11px; color: #888;">${p.barcode || '-'}</div>
-                            </div>
-                            <span id="status_icon_${i}"></span>
-                        </div>
-                        <input type="hidden" name="items[${i}][product_id]" value="${p.uuid}">
-                    </td>
-                    <td>
-                        <input type="number" name="items[${i}][stok_sistem]" id="sistem_${i}" class="form-control" value="${p.current_stok}" readonly style="background: #f8f9fa; text-align: center; padding: 8px 4px;">
-                    </td>
-                    <td>
-                        <input type="number" name="items[${i}][stok_fisik]" class="form-control" placeholder="0" required style="text-align: center; padding: 8px 4px;" oninput="updateOpnameRowStatus(this, ${i})">
-                    </td>
-                    <td style="text-align: center; font-weight: 700;" id="selisih_cell_${i}">-</td>
-                    <td><input type="text" name="items[${i}][alasan_selisih]" class="form-control" placeholder="Keterangan..."></td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-filter" style="color: #D9534F;" onclick="this.closest('tr').remove()">
-                            <iconify-icon icon="solar:trash-bin-trash-bold"></iconify-icon>
-                        </button>
-                    </td>`;
-                tbody.appendChild(row);
-            });
+            addOpnameRow();
         } catch (e) {
             hideLoading();
             console.error(e);
@@ -2763,9 +2734,12 @@
         const row = document.createElement('tr');
         row.id = `opname_row_${i}`;
         
-        const list = productsList;
+        const list = (window.currentStoreProducts && window.currentStoreProducts.length > 0) ? window.currentStoreProducts : productsList;
         let opts = '<option value="">-- Pilih Produk --</option>';
-        list.forEach(p => opts += `<option value="${p.uuid}" data-stok="${p.current_stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`);
+        list.forEach(p => {
+            const stok = p.stok !== undefined ? p.stok : (p.current_stok || 0);
+            opts += `<option value="${p.uuid}" data-stok="${stok}">${p.nama_produk} (${p.barcode || 'N/A'})</option>`;
+        });
         
         row.innerHTML = `
             <td>
@@ -3875,7 +3849,13 @@
             if (formId === 'editForm') msg = 'Sedang Memperbarui Produk...';
             if (formId === 'restokForm') msg = 'Sedang Menyimpan Data Restok...';
             if (formId === 'transferForm') msg = 'Sedang Memproses Transfer Stok...';
-            if (formId === 'opnameForm') msg = 'Sedang Menyimpan Data Opname...';
+            if (formId === 'opnameForm') {
+                if (form.dataset.submitAction === 'finalize') {
+                    msg = 'Sedang Memfinalisasi Opname...';
+                } else {
+                    msg = 'Sedang Menyimpan Data Opname...';
+                }
+            }
             showLoading(msg);
             return true;
         } else {
