@@ -3043,17 +3043,50 @@ body:not([data-theme='light']) .promo-content h4 {
 }
 
 .login-prompt-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 15px;
-    padding: 20px;
+    background: linear-gradient(145deg, var(--card-bg), rgba(255, 255, 255, 0.02));
+    border: 1px dashed var(--accent-purple);
+    border-radius: 20px;
+    padding: 40px 20px;
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.login-prompt-card:hover {
+    border-color: var(--accent-pink);
+    background: linear-gradient(145deg, var(--card-bg), rgba(255, 255, 255, 0.05));
+    transform: translateY(-3px);
+}
+
+.login-prompt-card p {
+    font-size: 1.05rem;
+    color: var(--sub-text);
+    margin: 0 0 5px 0;
 }
 
 .login-prompt-card a {
-    color: var(--orange-brand);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--btn-grad);
+    color: white !important;
+    padding: 10px 25px;
+    border-radius: 50px;
     font-weight: 700;
+    text-decoration: none;
+    font-size: 0.95rem;
+    box-shadow: var(--glow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-prompt-card a:hover {
+    transform: translateY(-2px) scale(1.03);
+    filter: brightness(1.1);
 }
 
 .reviews-list {
@@ -4145,7 +4178,7 @@ body.show-content {
 }
 
 .btn-available {
-    background: #0ea5e9 !important;
+    background: var(--btn-grad) !important;
 }
 
 .product-new-price-discount {
@@ -4165,12 +4198,12 @@ body.show-content {
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .discount-add-btn:not(.out-of-stock):hover {
-    background: #0284c7 !important;
-    transform: scale(1.05);
+    filter: brightness(1.2);
+    transform: scale(1.1);
 }
 
 .main-content:not(.hidden),

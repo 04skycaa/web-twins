@@ -484,7 +484,15 @@
                     </div>
                 @else
                     <div class="login-prompt-card">
-                        <p>Silakan <a href="{{ route('login') }}">Login</a> untuk memberikan ulasan.</p>
+                        <div class="login-prompt-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-purple); opacity: 0.8;">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                <line x1="9" y1="10" x2="15" y2="10"></line>
+                                <line x1="12" y1="7" x2="12" y2="13"></line>
+                            </svg>
+                        </div>
+                        <p>Bagikan pengalaman Anda tentang toko ini!</p>
+                        <a href="{{ route('login') }}">Login untuk Mengulas</a>
                     </div>
                 @endauth
 
