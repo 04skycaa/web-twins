@@ -95,6 +95,9 @@
     .action-bar .search-input {
         height: 42px !important;
     }
+    .tab-navigation {
+        justify-content: center !important;
+    }
 }
 </style>
 
@@ -180,7 +183,7 @@
         <div class="left-actions-group mobile-action-bar" style="width: 100%;">
             <div class="search-wrapper mobile-search-shrink">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                <input type="text" id="searchInput" class="search-input" placeholder="Cari nama atau nomor HP..." aria-label="Cari nama atau nomor HP">
+                <input type="text" id="searchInput" class="search-input" oninput="debounceSearch()" placeholder="Cari nama atau nomor HP..." aria-label="Cari nama atau nomor HP">
             </div>
             <div class="dropdown">
                 <button type="button" class="btn-filter" style="width: auto; padding: 0 16px; border-radius: 50px; background: white; border: 2px solid var(--border-blue); color: var(--primary-blue); gap: 8px;" onclick="toggleDropdown(event)">
@@ -192,9 +195,9 @@
                     <a href="javascript:void(0)" onclick="sortContacts('terlama', this)" class="{{ $sort == 'terlama' ? 'active-dropdown-item' : '' }}">Terlama</a>
                 </div>
             </div>
-            <button onclick="openAddModal()" class="btn-action" style="background: var(--primary-blue); color: white;">
+            <button id="addContactBtn" onclick="openAddModal()" class="btn-action" style="background: var(--primary-blue); color: white; margin-left: auto; display: none;">
                 <iconify-icon icon="solar:add-circle-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                <span id="addBtnText">Tambah Pelanggan</span>
+                <span id="addBtnText">Tambah Supplier</span>
             </button>
         </div>
     </div>
@@ -297,11 +300,9 @@
                 </table>
             </div>
             
-            @if($pelanggan instanceof \Illuminate\Pagination\LengthAwarePaginator && $pelanggan->hasPages())
-                <div style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
-                    {{ $pelanggan->appends(request()->except('pelanggan_page'))->links('vendor.pagination.twins') }}
-                </div>
-            @endif
+            <div id="pelanggan-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="pelanggan-pagination" class="k-pagination" style="justify-content: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -355,11 +356,9 @@
                 </table>
             </div>
 
-            @if($supplier instanceof \Illuminate\Pagination\LengthAwarePaginator && $supplier->hasPages())
-                <div style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
-                    {{ $supplier->appends(request()->except('supplier_page'))->links('vendor.pagination.twins') }}
-                </div>
-            @endif
+            <div id="supplier-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="supplier-pagination" class="k-pagination" style="justify-content: center;"></div>
+            </div>
         </div>
 
     </div>
@@ -404,7 +403,7 @@
             <h3 id="modalTitle">Tambah Pelanggan</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
-        <form action="{{ route('kontak.store') }}" method="POST">
+        <form action="{{ route('kontak.store') }}" method="POST" onsubmit="showLoading()">
             @csrf
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <input type="hidden" name="tipe" id="add_tipe" value="customer">
@@ -442,7 +441,7 @@
             <h3>Edit Kontak</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" onsubmit="showLoading()">
             @csrf
             @method('PUT')
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
@@ -562,7 +561,10 @@
             document.querySelector('.action-bar').style.display = 'none';
         } else {
             document.querySelector('.action-bar').style.display = 'flex';
-            document.getElementById('addBtnText').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
+            const addBtn = document.getElementById('addContactBtn');
+            if (addBtn) {
+                addBtn.style.display = tab === 'supplier' ? 'flex' : 'none';
+            }
             document.getElementById('add_tipe').value = tab;
             document.getElementById('modalTitle').innerText = 'Tambah ' + (tab === 'customer' ? 'Pelanggan' : 'Supplier');
         }
@@ -1072,6 +1074,147 @@
         }
     }
 
+
+    // --- CLIENT-SIDE PAGINATION & SEARCH LOGIC ---
+    const contactState = {
+        customer: {
+            currentPage: 1,
+            itemsPerPage: 10,
+            filteredItems: [],
+            allRows: []
+        },
+        supplier: {
+            currentPage: 1,
+            itemsPerPage: 10,
+            filteredItems: [],
+            allRows: []
+        }
+    };
+
+    let searchTimeout = null;
+
+    function debounceSearch() {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            contactState.customer.currentPage = 1;
+            contactState.supplier.currentPage = 1;
+            applyContactFilters();
+        }, 300);
+    }
+
+    function applyContactFilters() {
+        const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+
+        ['customer', 'supplier'].forEach(type => {
+            const tableId = type === 'customer' ? 'tab-customer' : 'tab-supplier';
+            const tbody = document.querySelector(`#${tableId} .fitur-table tbody`);
+            if (!tbody) return;
+
+            if (contactState[type].allRows.length === 0) {
+                contactState[type].allRows = Array.from(tbody.querySelectorAll('tr.contact-row'));
+            }
+
+            const state = contactState[type];
+            state.filteredItems = [];
+
+            state.allRows.forEach(row => {
+                const searchData = (row.dataset.search || '').toLowerCase();
+                if (query === '' || searchData.includes(query)) {
+                    state.filteredItems.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Calculate pagination
+            const totalItems = state.filteredItems.length;
+            const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+            
+            if (state.currentPage > totalPages) {
+                state.currentPage = totalPages;
+            }
+
+            const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+            const endIndex = startIndex + state.itemsPerPage;
+
+            state.filteredItems.forEach((row, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            renderContactPagination(type, totalPages);
+        });
+    }
+
+    function renderContactPagination(type, totalPages) {
+        const containerId = type === 'customer' ? 'pelanggan-pagination' : 'supplier-pagination';
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const state = contactState[type];
+        let html = '';
+
+        if (totalPages > 1) {
+            html += `<button type="button" class="k-page-btn" ${state.currentPage === 1 ? 'disabled' : ''} onclick="changeContactPage('${type}', ${state.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>`;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (
+                    i === 1 || i === totalPages || 
+                    (i >= state.currentPage - 1 && i <= state.currentPage + 1)
+                ) {
+                    html += `<button type="button" class="k-page-btn ${i === state.currentPage ? 'active' : ''}" onclick="changeContactPage('${type}', ${i})">${i}</button>`;
+                } else if (i === state.currentPage - 2 || i === state.currentPage + 2) {
+                    html += `<span class="k-page-dots">...</span>`;
+                }
+            }
+
+            html += `<button type="button" class="k-page-btn" ${state.currentPage === totalPages ? 'disabled' : ''} onclick="changeContactPage('${type}', ${state.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function changeContactPage(type, page) {
+        contactState[type].currentPage = page;
+        applyContactFilters();
+    }
+
+    function showLoading() {
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    function confirmDelete(form) {
+        Swal.fire({
+            title: 'Apakah Anda yakin?',
+            text: "Data kontak yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading();
+                form.submit();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        applyContactFilters();
+    });
 
     // Close modal on click outside
     window.onclick = function(event) {

@@ -85,12 +85,12 @@ class KontakController extends Controller
             $query->with(['user']);
         }
         
-        $pelanggan = $query->orderBy($sortBy, $order)->paginate(10, ['*'], 'pelanggan_page');
+        $pelanggan = $query->orderBy($sortBy, $order)->get();
         $supplier = Contact::where('tipe', 'supplier');
         if (Schema::hasColumn('contacts', 'user_id')) {
             $supplier->with(['user']);
         }
-        $supplier = $supplier->orderBy($sortBy, $order)->paginate(10, ['*'], 'supplier_page');
+        $supplier = $supplier->orderBy($sortBy, $order)->get();
         $users = \App\Models\User::orderBy('username')->get();
         
         // Removed heavy all orders query (unused in view index)
