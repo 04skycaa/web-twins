@@ -36,9 +36,11 @@
                     <div class="relative w-64 h-64 flex-shrink-0 mx-auto">
                         <canvas id="performa-doughnut-chart"></canvas>
                         {{-- Center label --}}
-                        <div id="performa-chart-center" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <div id="performa-chart-center"
+                            class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <div class="text-xs text-gray-500 font-bold uppercase tracking-wider">Total</div>
-                            <div id="performa-chart-total" class="text-sm font-bold text-gray-900 text-center px-2">Rp 0</div>
+                            <div id="performa-chart-total" class="text-sm font-bold text-gray-900 text-center px-2">Rp 0
+                            </div>
                         </div>
                     </div>
 
@@ -66,21 +68,22 @@
     <div>
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-gray-800">Rincian Per Toko</h2>
-            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600" id="performa-store-count"></span>
+            <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600"
+                id="performa-store-count"></span>
         </div>
         <div id="performa-store-list" class="space-y-4">
             {{-- Loading skeleton --}}
-            @for($i = 0; $i < 3; $i++)
-            <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 animate-pulse">
-                <div class="flex items-center gap-4">
-                    <div class="h-10 w-10 rounded-xl bg-gray-200 flex-shrink-0"></div>
-                    <div class="flex-1 min-w-0">
-                        <div class="h-4 w-32 rounded bg-gray-200"></div>
-                        <div class="mt-2 h-3 w-48 rounded bg-gray-100"></div>
+            @for ($i = 0; $i < 3; $i++)
+                <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 animate-pulse">
+                    <div class="flex items-center gap-4">
+                        <div class="h-10 w-10 rounded-xl bg-gray-200 flex-shrink-0"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="h-4 w-32 rounded bg-gray-200"></div>
+                            <div class="mt-2 h-3 w-48 rounded bg-gray-100"></div>
+                        </div>
+                        <div class="h-4 w-24 rounded bg-gray-200"></div>
                     </div>
-                    <div class="h-4 w-24 rounded bg-gray-200"></div>
                 </div>
-            </div>
             @endfor
         </div>
     </div>

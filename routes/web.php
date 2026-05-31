@@ -171,6 +171,11 @@ Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('lapor
     Route::get('/pdf', [LaporanController::class, 'exportPdf'])->name('laporan.export.pdf');
 });
 
+Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/export/performa')->group(function () {
+    Route::get('/excel', [LaporanController::class, 'exportPerformaExcel'])->name('laporan.export.performa.excel');
+    Route::get('/pdf', [LaporanController::class, 'exportPerformaPdf'])->name('laporan.export.performa.pdf');
+});
+
 Route::middleware(['auth', 'verified', 'role:owner,kepala_toko'])->prefix('laporan/api')->group(function () {
     Route::get('/daily/summary', [LaporanController::class, 'dailySummary'])->name('laporan.api.daily.summary');
     Route::get('/daily/operators', [LaporanController::class, 'dailyOperators'])->name('laporan.api.daily.operators');
