@@ -7,7 +7,7 @@
     <meta name="session-error" content="{{ session('error') ?? '' }}">
     <meta name="session-error-role" content="{{ session('error_role') ?? '' }}">
     <title>TWINS - ahlinya belanja sembako</title>
-    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/logo2.png') }}" type="image/png">
 
     <link rel="stylesheet" href="{{ asset('css/home.css') }}?v={{ time() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>

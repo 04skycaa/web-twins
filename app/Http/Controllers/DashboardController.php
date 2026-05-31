@@ -61,8 +61,8 @@ class DashboardController extends Controller
             $chartBulanan = ['labels' => [], 'offline' => [], 'online' => []];
             $chartTahunan = ['labels' => [], 'offline' => [], 'online' => []];
 
-            // 2. CASHFLOW DATA PRESETS (All lazy loaded - fetched via AJAX on demand)
-            $cfHarian = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
+            // 2. CASHFLOW DATA PRESETS (Lazy load non-active presets)
+            $cfHarian = $this->getCashFlowPresetData('harian', $storeId);
             $cfMingguan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
             $cfBulanan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
             $cfTahunan = ['total_pemasukan' => 0, 'total_pengeluaran' => 0, 'p_series' => [0], 'e_series' => [0]];
@@ -375,20 +375,20 @@ class DashboardController extends Controller
     private function getMainChartPresetData($preset, $storeId, $today, $yearFrom = null, $yearTo = null)
     {
         if ($preset === 'harian') {
-            $hTrxData = Transaction::whereBetween('tanggal', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
+            $hTrxRaw = Transaction::whereBetween('tanggal', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
                 ->when($storeId, fn($q) => $q->where('store_id', $storeId))
                 ->select(DB::raw('EXTRACT(HOUR FROM tanggal) as hour'), DB::raw('SUM(total) as total'))
-                ->groupBy('hour')
-                ->pluck('total', 'hour')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(HOUR FROM tanggal)'))
+                ->get();
+            $hTrxData = []; foreach($hTrxRaw as $r) $hTrxData[(int)$r->hour] = $r->total;
 
-            $hPOData = PaymentOrder::whereBetween('paid_at', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
+            $hPORaw = PaymentOrder::whereBetween('paid_at', [$today->copy()->startOfDay(), $today->copy()->endOfDay()])
                 ->whereNotNull('paid_at')
                 ->when($storeId, fn($q) => $q->where('outlet_id', $storeId))
                 ->select(DB::raw('EXTRACT(HOUR FROM paid_at) as hour'), DB::raw('SUM(total_amount) as total'))
-                ->groupBy('hour')
-                ->pluck('total', 'hour')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(HOUR FROM paid_at)'))
+                ->get();
+            $hPOData = []; foreach($hPORaw as $r) $hPOData[(int)$r->hour] = $r->total;
 
             $chartHarian = ['labels' => [], 'offline' => [], 'online' => []];
             for ($i = 0; $i < 24; $i++) {
@@ -400,50 +400,62 @@ class DashboardController extends Controller
         }
 
         if ($preset === 'mingguan') {
-            $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-            $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
-            $wTrxData = Transaction::whereBetween('tanggal', [$startOfWeek->copy()->startOfDay(), $endOfWeek->copy()->endOfDay()])
+            $endOfWeek = Carbon::today();
+            $startOfWeek = Carbon::today()->subDays(6);
+            
+            $wTrxRaw = Transaction::whereBetween('tanggal', [$startOfWeek->copy()->startOfDay(), $endOfWeek->copy()->endOfDay()])
                 ->when($storeId, fn($q) => $q->where('store_id', $storeId))
-                ->select(DB::raw('EXTRACT(DOW FROM tanggal) as dow'), DB::raw('SUM(total) as total'))
-                ->groupBy('dow')
-                ->pluck('total', 'dow')
-                ->all();
+                ->select('tanggal', 'total')
+                ->get();
+            $wTrxData = []; 
+            foreach($wTrxRaw as $r) {
+                $dateKey = Carbon::parse($r->tanggal)->format('Y-m-d');
+                $wTrxData[$dateKey] = ($wTrxData[$dateKey] ?? 0) + $r->total;
+            }
 
-            $wPOData = PaymentOrder::whereBetween('paid_at', [$startOfWeek->copy()->startOfDay(), $endOfWeek->copy()->endOfDay()])
+            $wPORaw = PaymentOrder::whereBetween('paid_at', [$startOfWeek->copy()->startOfDay(), $endOfWeek->copy()->endOfDay()])
                 ->whereNotNull('paid_at')
                 ->when($storeId, fn($q) => $q->where('outlet_id', $storeId))
-                ->select(DB::raw('EXTRACT(DOW FROM paid_at) as dow'), DB::raw('SUM(total_amount) as total'))
-                ->groupBy('dow')
-                ->pluck('total', 'dow')
-                ->all();
+                ->select('paid_at', 'total_amount')
+                ->get();
+            $wPOData = []; 
+            foreach($wPORaw as $r) {
+                $dateKey = Carbon::parse($r->paid_at)->format('Y-m-d');
+                $wPOData[$dateKey] = ($wPOData[$dateKey] ?? 0) + $r->total_amount;
+            }
 
-            $days = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 0 => 'Minggu'];
+            $daysMap = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 0 => 'Minggu'];
             $chartMingguan = ['labels' => [], 'offline' => [], 'online' => []];
-            foreach ($days as $dow => $name) {
-                $chartMingguan['labels'][] = $name;
-                $chartMingguan['offline'][] = (float)($wTrxData[$dow] ?? 0);
-                $chartMingguan['online'][] = (float)($wPOData[$dow] ?? 0);
+            
+            for ($i = 0; $i < 7; $i++) {
+                $currentDate = $startOfWeek->copy()->addDays($i);
+                $dateKey = $currentDate->format('Y-m-d');
+                $dow = $currentDate->dayOfWeek;
+                
+                $chartMingguan['labels'][] = $daysMap[$dow];
+                $chartMingguan['offline'][] = (float)($wTrxData[$dateKey] ?? 0);
+                $chartMingguan['online'][] = (float)($wPOData[$dateKey] ?? 0);
             }
             return $chartMingguan;
         }
 
         if ($preset === 'bulanan') {
-            $startOfYear = Carbon::now()->startOfYear();
-            $endOfYear = Carbon::now()->endOfYear();
-            $mTrxData = Transaction::whereBetween('tanggal', [$startOfYear->copy()->startOfDay(), $endOfYear->copy()->endOfDay()])
+            $startOfYear = Carbon::today()->startOfYear();
+            $endOfYear = Carbon::today()->endOfYear();
+            $mTrxRaw = Transaction::whereBetween('tanggal', [$startOfYear->copy()->startOfDay(), $endOfYear->copy()->endOfDay()])
                 ->when($storeId, fn($q) => $q->where('store_id', $storeId))
                 ->select(DB::raw('EXTRACT(MONTH FROM tanggal) as month'), DB::raw('SUM(total) as total'))
-                ->groupBy('month')
-                ->pluck('total', 'month')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(MONTH FROM tanggal)'))
+                ->get();
+            $mTrxData = []; foreach($mTrxRaw as $r) $mTrxData[(int)$r->month] = $r->total;
 
-            $mPOData = PaymentOrder::whereBetween('paid_at', [$startOfYear->copy()->startOfDay(), $endOfYear->copy()->endOfDay()])
+            $mPORaw = PaymentOrder::whereBetween('paid_at', [$startOfYear->copy()->startOfDay(), $endOfYear->copy()->endOfDay()])
                 ->whereNotNull('paid_at')
                 ->when($storeId, fn($q) => $q->where('outlet_id', $storeId))
                 ->select(DB::raw('EXTRACT(MONTH FROM paid_at) as month'), DB::raw('SUM(total_amount) as total'))
-                ->groupBy('month')
-                ->pluck('total', 'month')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(MONTH FROM paid_at)'))
+                ->get();
+            $mPOData = []; foreach($mPORaw as $r) $mPOData[(int)$r->month] = $r->total;
 
             $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
             $chartBulanan = ['labels' => [], 'offline' => [], 'online' => []];
@@ -456,22 +468,22 @@ class DashboardController extends Controller
         }
 
         if ($preset === 'tahunan') {
-            if (!$yearFrom) { $yearFrom = Carbon::now()->year - 4; }
-            if (!$yearTo) { $yearTo = Carbon::now()->year; }
-            $yTrxData = Transaction::whereBetween('tanggal', [Carbon::create($yearFrom, 1, 1)->startOfDay(), Carbon::create($yearTo, 12, 31)->endOfDay()])
+            if (!$yearFrom) { $yearFrom = Carbon::today()->year - 4; }
+            if (!$yearTo) { $yearTo = Carbon::today()->year; }
+            $yTrxRaw = Transaction::whereBetween('tanggal', [Carbon::create($yearFrom, 1, 1)->startOfDay(), Carbon::create($yearTo, 12, 31)->endOfDay()])
                 ->when($storeId, fn($q) => $q->where('store_id', $storeId))
                 ->select(DB::raw('EXTRACT(YEAR FROM tanggal) as year'), DB::raw('SUM(total) as total'))
-                ->groupBy('year')
-                ->pluck('total', 'year')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(YEAR FROM tanggal)'))
+                ->get();
+            $yTrxData = []; foreach($yTrxRaw as $r) $yTrxData[(int)$r->year] = $r->total;
 
-            $yPOData = PaymentOrder::whereBetween('paid_at', [Carbon::create($yearFrom, 1, 1)->startOfDay(), Carbon::create($yearTo, 12, 31)->endOfDay()])
+            $yPORaw = PaymentOrder::whereBetween('paid_at', [Carbon::create($yearFrom, 1, 1)->startOfDay(), Carbon::create($yearTo, 12, 31)->endOfDay()])
                 ->whereNotNull('paid_at')
                 ->when($storeId, fn($q) => $q->where('outlet_id', $storeId))
                 ->select(DB::raw('EXTRACT(YEAR FROM paid_at) as year'), DB::raw('SUM(total_amount) as total'))
-                ->groupBy('year')
-                ->pluck('total', 'year')
-                ->all();
+                ->groupBy(DB::raw('EXTRACT(YEAR FROM paid_at)'))
+                ->get();
+            $yPOData = []; foreach($yPORaw as $r) $yPOData[(int)$r->year] = $r->total;
 
             $chartTahunan = ['labels' => [], 'offline' => [], 'online' => []];
             for ($y = $yearFrom; $y <= $yearTo; $y++) {
@@ -494,14 +506,14 @@ class DashboardController extends Controller
             $start = Carbon::today()->startOfDay();
             $end = Carbon::today()->endOfDay();
         } elseif ($preset === 'mingguan') {
-            $start = Carbon::now()->startOfWeek(Carbon::MONDAY)->startOfDay();
-            $end = Carbon::now()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+            $start = Carbon::today()->startOfWeek(Carbon::MONDAY)->startOfDay();
+            $end = Carbon::today()->endOfWeek(Carbon::SUNDAY)->endOfDay();
         } elseif ($preset === 'bulanan') {
-            $start = Carbon::now()->startOfYear()->startOfDay();
-            $end = Carbon::now()->endOfYear()->endOfDay();
+            $start = Carbon::today()->startOfMonth()->startOfDay();
+            $end = Carbon::today()->endOfMonth()->endOfDay();
         } elseif ($preset === 'tahunan') {
-            $start = Carbon::now()->subYears(4)->startOfYear()->startOfDay();
-            $end = Carbon::now()->endOfYear()->endOfDay();
+            $start = Carbon::today()->subYears(4)->startOfYear()->startOfDay();
+            $end = Carbon::today()->endOfYear()->endOfDay();
         }
 
         if ($start && $end) {

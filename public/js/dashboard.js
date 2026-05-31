@@ -91,8 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const pElement = document.querySelector("#pemasukanChart");
     const eElement = document.querySelector("#pengeluaranChart");
     if (pElement && eElement) {
-        window.pChart = new ApexCharts(pElement, miniChartOpts('#10b981', cfData.bulanan.p_series));
-        window.eChart = new ApexCharts(eElement, miniChartOpts('#f43f5e', cfData.bulanan.e_series));
+        window.pChart = new ApexCharts(pElement, miniChartOpts('#10b981', cfData.harian.p_series));
+        window.eChart = new ApexCharts(eElement, miniChartOpts('#f43f5e', cfData.harian.e_series));
         window.pChart.render();
         window.eChart.render();
     }

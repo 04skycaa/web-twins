@@ -122,7 +122,7 @@
         <!-- Main Sales Chart -->
         <div class="col-span-12 lg:col-span-8 card" style="background: #f0f7ff; border-color: rgba(59, 130, 246, 0.15);">
             <div class="card-header">
-                <h3 class="card-title">Penjualan Hari Ini</h3>
+                <h3 class="card-title">Penjualan</h3>
                 <div class="flex items-center gap-2">
                     <div id="year-range-picker" class="hidden flex items-center gap-2 mr-2">
                         <input type="number" id="year-from" class="chart-select w-20" value="{{ date('Y') - 4 }}" placeholder="Dari">
@@ -160,9 +160,9 @@
                 <div class="card-header">
                     <h3 class="card-title" style="font-size: 0.95rem;">Pemasukan & Pengeluaran</h3>
                     <select class="chart-select" onchange="updateCashFlow(this.value)">
-                        <option value="harian">Hari Ini</option>
+                        <option value="harian" selected>Hari Ini</option>
                         <option value="mingguan">Minggu Ini</option>
-                        <option value="bulanan" selected>Bulan Ini</option>
+                        <option value="bulanan">Bulan Ini</option>
                         <option value="tahunan">Tahun Ini</option>
                     </select>
                 </div>
@@ -174,7 +174,7 @@
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase">Pemasukan</span>
                         </div>
-                        <p class="font-extrabold text-green-600 text-sm" id="cf-total-pemasukan">Rp {{ number_format($cfBulanan['total_pemasukan'] / 1000, 0) }}k</p>
+                        <p class="font-extrabold text-green-600 text-sm" id="cf-total-pemasukan">Rp {{ number_format($cfHarian['total_pemasukan'] / 1000, 0) }}k</p>
                         <div id="pemasukanChart" style="height: 60px;"></div>
                     </div>
                     <div>
@@ -184,7 +184,7 @@
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase">Pengeluaran</span>
                         </div>
-                        <p class="font-extrabold text-red-600 text-sm" id="cf-total-pengeluaran">Rp {{ number_format($cfBulanan['total_pengeluaran'] / 1000, 0) }}k</p>
+                        <p class="font-extrabold text-red-600 text-sm" id="cf-total-pengeluaran">Rp {{ number_format($cfHarian['total_pengeluaran'] / 1000, 0) }}k</p>
                         <div id="pengeluaranChart" style="height: 60px;"></div>
                     </div>
                 </div>
