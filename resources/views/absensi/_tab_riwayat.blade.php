@@ -60,9 +60,7 @@
         </table>
     </div>
 
-    @if($riwayat->hasPages())
-        <div class="pagination-container">
-            {{ $riwayat->onEachSide(1)->appends(request()->except('page'))->appends(['active_tab' => 'riwayat'])->links('vendor.pagination.twins') }}
-        </div>
-    @endif
+    <div id="riwayat-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+        <div id="riwayat-pagination" class="k-pagination" style="justify-content: center;"></div>
+    </div>
 </div>

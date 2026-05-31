@@ -42,7 +42,7 @@
             <tbody>
                 @forelse($rekap as $idx => $r)
                     <tr class="searchable-row">
-                        <td>{{ $rekap->firstItem() + $idx }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td style="font-weight: 600;">{{ $r->username }}</td>
                         <td class="text-center">
                             <span class="status-badge status-hadir">{{ $r->total_hadir }}</span>
@@ -62,9 +62,7 @@
         </table>
     </div>
 
-    @if($rekap->hasPages())
-        <div class="pagination-container">
-            {{ $rekap->onEachSide(1)->appends(request()->except('page'))->appends(['active_tab' => 'rekap'])->links('vendor.pagination.twins') }}
-        </div>
-    @endif
+    <div id="rekap-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+        <div id="rekap-pagination" class="k-pagination" style="justify-content: center;"></div>
+    </div>
 </div>

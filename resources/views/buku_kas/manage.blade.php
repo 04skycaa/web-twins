@@ -130,7 +130,7 @@
         <div class="left-actions-group bk-action-bar-mobile" style="flex: 1;">
             <div class="search-wrapper bk-search-mobile">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="globalSearch" class="search-input" placeholder="Cari data..." onkeyup="filterTable()">
+                    <input type="text" id="globalSearch" class="search-input" placeholder="Cari data..." oninput="debounceSearch()">
                 </div>
                 
                 <div class="dropdown">
@@ -273,6 +273,9 @@
                 </table>
             </div>
             
+            <div id="pengeluaran-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="pengeluaran-pagination" class="k-pagination" style="justify-content: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -328,6 +331,9 @@
                 </table>
             </div>
             
+            <div id="pemasukan-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="pemasukan-pagination" class="k-pagination" style="justify-content: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -417,6 +423,10 @@
                 <div class="empty-state" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 13px;">Belum ada data hutang supplier.</div>
                 @endforelse
             </div>
+            
+            <div id="hutang-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="hutang-pagination" class="k-pagination" style="justify-content: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -505,6 +515,10 @@
                 @empty
                 <div class="empty-state" style="padding: 20px; text-align: center; color: #94a3b8; font-size: 13px;">Belum ada data piutang customer.</div>
                 @endforelse
+            </div>
+            
+            <div id="piutang-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9;">
+                <div id="piutang-pagination" class="k-pagination" style="justify-content: center;"></div>
             </div>
         </div>
     </div>
@@ -621,7 +635,105 @@
             window.location.href = url.toString();
         }
     }
-    function filterTable() { const search = document.getElementById('globalSearch').value.toLowerCase(); document.querySelectorAll('.view-section.active tbody tr').forEach(row => { if (row.querySelector('.empty-state')) return; row.style.display = row.innerText.toLowerCase().includes(search) ? '' : 'none'; }); }
+    // --- CLIENT-SIDE PAGINATION & SEARCH LOGIC ---
+    const bkState = {
+        pengeluaran: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+        pemasukan: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+        hutang: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+        piutang: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] }
+    };
+    
+    let searchTimeout = null;
+    function debounceSearch() {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            bkState[currentTab].currentPage = 1;
+            applyBkFilters();
+        }, 300);
+    }
+    
+    function applyBkFilters() {
+        const query = (document.getElementById('globalSearch').value || '').toLowerCase().trim();
+        const tabs = ['pengeluaran', 'pemasukan', 'hutang', 'piutang'];
+        
+        tabs.forEach(tab => {
+            const section = document.getElementById('view-' + tab);
+            if (!section) return;
+            
+            if (bkState[tab].allRows.length === 0) {
+                const rows = Array.from(section.querySelectorAll('.row-' + tab));
+                const cards = Array.from(section.querySelectorAll('.buku-kas-card'));
+                let items = [];
+                for(let i=0; i<Math.max(rows.length, cards.length); i++) {
+                    items.push({
+                        row: rows[i] || null,
+                        card: cards[i] || null
+                    });
+                }
+                bkState[tab].allRows = items;
+            }
+            
+            const state = bkState[tab];
+            state.filteredItems = [];
+            
+            state.allRows.forEach(item => {
+                const text = ((item.row ? item.row.innerText : '') + (item.card ? item.card.innerText : '')).toLowerCase();
+                if (query === '' || text.includes(query)) {
+                    state.filteredItems.push(item);
+                } else {
+                    if (item.row) item.row.style.display = 'none';
+                    if (item.card) item.card.style.display = 'none';
+                }
+            });
+            
+            const totalItems = state.filteredItems.length;
+            const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+            
+            const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+            const endIndex = startIndex + state.itemsPerPage;
+            
+            state.filteredItems.forEach((item, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    if (item.row) item.row.style.display = '';
+                    if (item.card) item.card.style.display = '';
+                } else {
+                    if (item.row) item.row.style.display = 'none';
+                    if (item.card) item.card.style.display = 'none';
+                }
+            });
+            
+            renderBkPagination(tab, totalPages);
+        });
+    }
+
+    function renderBkPagination(tab, totalPages) {
+        const container = document.getElementById(tab + '-pagination');
+        if (!container) return;
+        const state = bkState[tab];
+        let html = '';
+        if (totalPages > 1) {
+            html += `<button type="button" class="k-page-btn" ${state.currentPage === 1 ? 'disabled' : ''} onclick="changeBkPage('${tab}', ${state.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= state.currentPage - 1 && i <= state.currentPage + 1)) {
+                    html += `<button type="button" class="k-page-btn ${i === state.currentPage ? 'active' : ''}" onclick="changeBkPage('${tab}', ${i})">${i}</button>`;
+                } else if (i === state.currentPage - 2 || i === state.currentPage + 2) {
+                    html += `<span class="k-page-dots">...</span>`;
+                }
+            }
+            html += `<button type="button" class="k-page-btn" ${state.currentPage === totalPages ? 'disabled' : ''} onclick="changeBkPage('${tab}', ${state.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function changeBkPage(tab, page) {
+        bkState[tab].currentPage = page;
+        applyBkFilters();
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        applyBkFilters();
+    });
 
     // CRUD Actions
     function deleteCf(uuid, jenis) { Swal.fire({ title: 'Hapus Data?', text: `Hapus data ${jenis} ini?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((result) => { if (result.isConfirmed) { const form = document.getElementById('formGlobalDeleteCf'); form.action = `/buku-kas/cashflow/${uuid}`; form.submit(); } }); }

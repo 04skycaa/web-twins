@@ -113,6 +113,63 @@
         let currentKanal = 'semua';
         let searchTimeout = null;
 
+        let perilakuState = {
+            customer: { allItems: [], filtered: [], page: 1, perPage: 10 },
+            produk: { allItems: [], filtered: [], page: 1, perPage: 10 }
+        };
+
+        function renderPaginationUI(tab, totalPages) {
+            const container = document.getElementById(tab + '-pagination');
+            const wrapper = document.getElementById(tab + '-pagination-container');
+            if (!container || !wrapper) return;
+            
+            if (totalPages <= 1) {
+                wrapper.style.display = 'none';
+                return;
+            }
+            wrapper.style.display = 'block';
+            
+            const state = perilakuState[tab];
+            let html = '';
+            
+            html += `<button type="button" class="k-page-btn" ${state.page === 1 ? 'disabled' : ''} onclick="changePerilakuPage('${tab}', ${state.page - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= state.page - 1 && i <= state.page + 1)) {
+                    html += `<button type="button" class="k-page-btn ${i === state.page ? 'active' : ''}" onclick="changePerilakuPage('${tab}', ${i})">${i}</button>`;
+                } else if (i === state.page - 2 || i === state.page + 2) {
+                    html += `<span class="k-page-dots">...</span>`;
+                }
+            }
+            html += `<button type="button" class="k-page-btn" ${state.page === totalPages ? 'disabled' : ''} onclick="changePerilakuPage('${tab}', ${state.page + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>`;
+            
+            container.innerHTML = html;
+        }
+
+        function changePerilakuPage(tab, page) {
+            perilakuState[tab].page = page;
+            if (tab === 'customer') renderCustomerList();
+            else renderProductList();
+        }
+        
+        function applyClientSearch() {
+            const search = (document.getElementById('globalSearch')?.value || '').toLowerCase();
+            const tab = currentTab;
+            const state = perilakuState[tab];
+            
+            state.filtered = state.allItems.filter(item => {
+                if (tab === 'customer') {
+                    return item.nama_customer.toLowerCase().includes(search);
+                } else {
+                    return item.nama_produk.toLowerCase().includes(search) || (item.barcode && item.barcode.toLowerCase().includes(search));
+                }
+            });
+            
+            state.page = 1;
+            
+            if (tab === 'customer') renderCustomerList();
+            else renderProductList();
+        }
+
         const monthNames = [
             'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
@@ -217,7 +274,7 @@
 
         function handleSearch() {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => loadData(), 400);
+            searchTimeout = setTimeout(() => applyClientSearch(), 300);
         }
 
         function toggleDropdown(event) {
@@ -253,15 +310,14 @@
             const summaryCount = document.getElementById('cust-total-count');
 
             container.innerHTML = renderSkeleton(5);
-
-            const search = document.getElementById('globalSearch')?.value || '';
+            document.getElementById('customer-pagination-container').style.display = 'none';
 
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
             try {
                 const res = await fetch(
-                    `/perilaku/api/customer/yearly?store_id=${currentStoreId}&year=${currentYear}&kanal=${currentKanal}&search=${encodeURIComponent(search)}`,
+                    `/perilaku/api/customer/yearly?store_id=${currentStoreId}&year=${currentYear}&kanal=${currentKanal}`,
                     { signal: controller.signal }
                 );
                 clearTimeout(timeout);
@@ -277,12 +333,9 @@
                 summaryOmset.textContent = formatCurrency(data.total_omset);
                 summaryCount.textContent = data.total_customers + ' Customer';
 
-                if (!data.customers || data.customers.length === 0) {
-                    container.innerHTML = renderEmpty('Belum ada data customer');
-                    return;
-                }
-
-                container.innerHTML = data.customers.map((c, i) => renderCustomerCard(c, i + 1)).join('');
+                perilakuState.customer.allItems = data.customers || [];
+                applyClientSearch();
+                
             } catch (err) {
                 clearTimeout(timeout);
                 console.error(err);
@@ -291,6 +344,26 @@
                     isTimeout ? 'Koneksi terlalu lama. Periksa jaringan atau coba lagi.' : 'Terjadi kesalahan saat memuat data'
                 );
             }
+        }
+        
+        function renderCustomerList() {
+            const container = document.getElementById('customer-list');
+            const state = perilakuState.customer;
+            
+            if (state.filtered.length === 0) {
+                container.innerHTML = renderEmpty('Belum ada data customer');
+                document.getElementById('customer-pagination-container').style.display = 'none';
+                return;
+            }
+            
+            const totalPages = Math.ceil(state.filtered.length / state.perPage) || 1;
+            if (state.page > totalPages) state.page = totalPages;
+            
+            const start = (state.page - 1) * state.perPage;
+            const paginated = state.filtered.slice(start, start + state.perPage);
+            
+            container.innerHTML = paginated.map((c, i) => renderCustomerCard(c, start + i + 1)).join('');
+            renderPaginationUI('customer', totalPages);
         }
 
         function renderCustomerCard(customer, rank) {
@@ -334,15 +407,14 @@
             const summaryFreq = document.getElementById('prod-total-freq');
 
             container.innerHTML = renderSkeleton(5);
-
-            const search = document.getElementById('globalSearch')?.value || '';
+            document.getElementById('produk-pagination-container').style.display = 'none';
 
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
             try {
                 let url =
-                    `/perilaku/api/product/yearly?store_id=${currentStoreId}&year=${currentYear}&sort=${currentSort}&search=${encodeURIComponent(search)}`;
+                    `/perilaku/api/product/yearly?store_id=${currentStoreId}&year=${currentYear}&sort=${currentSort}`;
                 if (currentMonth) url += `&month=${currentMonth}`;
 
                 const res = await fetch(url, { signal: controller.signal });
@@ -360,16 +432,10 @@
                 summaryLaba.textContent = formatCurrency(data.total_laba);
                 summaryFreq.textContent = (data.total_freq || 0) + ' item';
 
-                if (!data.products || data.products.length === 0) {
-                    container.innerHTML = renderEmpty('Belum ada data produk');
-                    return;
-                }
-
-                if (data.mode === 'monthly') {
-                    container.innerHTML = data.products.map((p, i) => renderProductCardMonthly(p, i + 1)).join('');
-                } else {
-                    container.innerHTML = data.products.map((p, i) => renderProductCard(p, i + 1)).join('');
-                }
+                perilakuState.produk.allItems = data.products || [];
+                perilakuState.produk.mode = data.mode;
+                applyClientSearch();
+                
             } catch (err) {
                 clearTimeout(timeout);
                 console.error(err);
@@ -378,6 +444,30 @@
                     isTimeout ? 'Koneksi terlalu lama. Periksa jaringan atau coba lagi.' : 'Terjadi kesalahan saat memuat data'
                 );
             }
+        }
+        
+        function renderProductList() {
+            const container = document.getElementById('product-list');
+            const state = perilakuState.produk;
+            
+            if (state.filtered.length === 0) {
+                container.innerHTML = renderEmpty('Belum ada data produk');
+                document.getElementById('produk-pagination-container').style.display = 'none';
+                return;
+            }
+            
+            const totalPages = Math.ceil(state.filtered.length / state.perPage) || 1;
+            if (state.page > totalPages) state.page = totalPages;
+            
+            const start = (state.page - 1) * state.perPage;
+            const paginated = state.filtered.slice(start, start + state.perPage);
+            
+            if (state.mode === 'monthly') {
+                container.innerHTML = paginated.map((p, i) => renderProductCardMonthly(p, start + i + 1)).join('');
+            } else {
+                container.innerHTML = paginated.map((p, i) => renderProductCard(p, start + i + 1)).join('');
+            }
+            renderPaginationUI('produk', totalPages);
         }
 
         function renderProductCard(product, rank) {

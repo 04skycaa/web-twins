@@ -146,7 +146,7 @@
                 {{-- 1. Search Bar --}}
                 <div class="search-wrapper" style="min-width: 250px;">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="globalSearch" class="search-input" placeholder="masukan nama/hari" onkeyup="filterTable()" style="width: 100%;">
+                    <input type="text" id="globalSearch" class="search-input" placeholder="masukan nama/hari" oninput="debounceSearch()" style="width: 100%;">
                 </div>
 
                 @if(Auth::user()->role === 'owner' || (Auth::user()->role === 'kepala_toko' && $outlets->count() > 1))
@@ -202,7 +202,7 @@
             <div style="display: flex; gap: 12px; align-items: center; flex: 1; flex-wrap: wrap;">
                 <div class="search-wrapper" style="min-width: 250px;">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="filter_karyawan_riwayat" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." onkeyup="debouncePjaxRiwayat()" style="width: 100%;">
+                    <input type="text" id="filter_karyawan_riwayat" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." oninput="debounceSearch()" style="width: 100%;">
                 </div>
                 
                 <div class="dropdown">
@@ -265,7 +265,7 @@
             <div style="display: flex; gap: 12px; align-items: center; flex: 1; flex-wrap: wrap;">
                 <div class="search-wrapper" style="min-width: 250px;">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                    <input type="text" id="filter_karyawan_rekap" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." onkeyup="debouncePjaxRekap()" style="width: 100%;">
+                    <input type="text" id="filter_karyawan_rekap" class="search-input" value="{{ request('filter_karyawan', $filterKaryawan ?? '') }}" placeholder="Cari nama karyawan..." oninput="debounceSearch()" style="width: 100%;">
                 </div>
                 
                 <div class="dropdown">
@@ -462,42 +462,138 @@
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        function filterTable() {
-            const text = document.getElementById('globalSearch').value.toLowerCase();
-            const tbl = document.querySelector(`#view-${currentTab} table`);
-            if (!tbl) return;
-            const rows = tbl.querySelectorAll('tbody tr.searchable-row');
-            let vis = 0;
-            rows.forEach(r => {
-                const match = r.innerText.toLowerCase().includes(text);
-                r.style.display = match ? '' : 'none';
-                if (match) vis++;
-            });
+        // --- CLIENT-SIDE PAGINATION & SEARCH LOGIC ---
+        const absensiState = {
+            shift: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+            jadwal: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+            riwayat: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] },
+            rekap: { currentPage: 1, itemsPerPage: 10, filteredItems: [], allRows: [] }
+        };
+        
+        let searchTimeout = null;
+        function debounceSearch() {
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                absensiState[currentTab].currentPage = 1;
+                applyAbsensiFilters();
+            }, 300);
+        }
+        
+        function initAbsensiRows(tab) {
+            const section = document.getElementById('view-' + tab);
+            if (!section) return;
+            const rows = Array.from(section.querySelectorAll('tbody tr.searchable-row'));
+            absensiState[tab].allRows = rows;
+            absensiState[tab].currentPage = 1;
+        }
+
+        function applyAbsensiFilters() {
+            const tabs = ['shift', 'jadwal', 'riwayat', 'rekap'];
             
-            const tbody = tbl.querySelector('tbody');
-            if (tbody) {
-                let emptyRow = tbody.querySelector('.js-empty-row');
-                if (!emptyRow) {
-                    const colCount = tbl.querySelectorAll('thead th').length || 1;
-                    emptyRow = document.createElement('tr');
-                    emptyRow.className = 'js-empty-row';
-                    emptyRow.innerHTML = `<td colspan="${colCount}" class="empty-state text-center py-4" style="color: #64748b;">Data tidak ditemukan.</td>`;
-                    tbody.appendChild(emptyRow);
+            tabs.forEach(tab => {
+                const section = document.getElementById('view-' + tab);
+                if (!section) return;
+                
+                if (absensiState[tab].allRows.length === 0 && section.querySelectorAll('tbody tr.searchable-row').length > 0) {
+                    initAbsensiRows(tab);
                 }
                 
-                // Hide any server-side empty state when we are showing our JS empty state, 
-                // but if there are 0 searchable rows originally, let server-side handle it.
-                if (rows.length > 0) {
-                    emptyRow.style.display = vis === 0 ? '' : 'none';
-                    const serverEmpty = tbody.querySelector('.empty-state:not(td)'); // The server one might be in a tr>td, our querySelector might grab the td
-                    if (serverEmpty && serverEmpty.parentElement !== emptyRow) {
-                        serverEmpty.parentElement.style.display = 'none';
-                    }
-                } else {
-                     emptyRow.style.display = 'none'; // let server empty state show
+                let query = '';
+                if (tab === 'shift' || tab === 'jadwal') {
+                    query = (document.getElementById('globalSearch')?.value || '').toLowerCase().trim();
+                } else if (tab === 'riwayat') {
+                    query = (document.getElementById('filter_karyawan_riwayat')?.value || '').toLowerCase().trim();
+                } else if (tab === 'rekap') {
+                    query = (document.getElementById('filter_karyawan_rekap')?.value || '').toLowerCase().trim();
                 }
-            }
+                
+                const state = absensiState[tab];
+                state.filteredItems = [];
+                
+                state.allRows.forEach(row => {
+                    const text = row.innerText.toLowerCase();
+                    if (query === '' || text.includes(query)) {
+                        state.filteredItems.push(row);
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                const tbody = section.querySelector('tbody');
+                if (tbody) {
+                    let emptyRow = tbody.querySelector('.js-empty-row');
+                    if (!emptyRow) {
+                        const colCount = section.querySelectorAll('thead th').length || 1;
+                        emptyRow = document.createElement('tr');
+                        emptyRow.className = 'js-empty-row';
+                        emptyRow.innerHTML = `<td colspan="${colCount}" class="empty-state text-center py-4" style="color: #64748b;">Data tidak ditemukan.</td>`;
+                        tbody.appendChild(emptyRow);
+                    }
+                    
+                    if (state.allRows.length > 0) {
+                        emptyRow.style.display = state.filteredItems.length === 0 ? '' : 'none';
+                        const serverEmpty = tbody.querySelector('.empty-state:not(.js-empty-row > td)');
+                        if (serverEmpty) {
+                            const tr = serverEmpty.closest('tr');
+                            if (tr && tr !== emptyRow) tr.style.display = 'none';
+                        }
+                    } else {
+                        emptyRow.style.display = 'none';
+                    }
+                }
+                
+                const container = document.getElementById(tab + '-pagination');
+                if (!container) {
+                    state.filteredItems.forEach(row => row.style.display = '');
+                    return;
+                }
+                
+                const totalItems = state.filteredItems.length;
+                const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+                if (state.currentPage > totalPages) state.currentPage = totalPages;
+                
+                const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+                const endIndex = startIndex + state.itemsPerPage;
+                
+                state.filteredItems.forEach((row, index) => {
+                    if (index >= startIndex && index < endIndex) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                renderAbsensiPagination(tab, totalPages);
+            });
         }
+
+        function renderAbsensiPagination(tab, totalPages) {
+            const container = document.getElementById(tab + '-pagination');
+            if (!container) return;
+            const state = absensiState[tab];
+            let html = '';
+            if (totalPages > 1) {
+                html += `<button type="button" class="k-page-btn" ${state.currentPage === 1 ? 'disabled' : ''} onclick="changeAbsensiPage('${tab}', ${state.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>`;
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === 1 || i === totalPages || (i >= state.currentPage - 1 && i <= state.currentPage + 1)) {
+                        html += `<button type="button" class="k-page-btn ${i === state.currentPage ? 'active' : ''}" onclick="changeAbsensiPage('${tab}', ${i})">${i}</button>`;
+                    } else if (i === state.currentPage - 2 || i === state.currentPage + 2) {
+                        html += `<span class="k-page-dots">...</span>`;
+                    }
+                }
+                html += `<button type="button" class="k-page-btn" ${state.currentPage === totalPages ? 'disabled' : ''} onclick="changeAbsensiPage('${tab}', ${state.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function changeAbsensiPage(tab, page) {
+            absensiState[tab].currentPage = page;
+            applyAbsensiFilters();
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            applyAbsensiFilters();
+        });
 
         let riwayatTimeout = null;
         function debouncePjaxRiwayat() {
@@ -556,7 +652,11 @@
                 
                 const view = document.getElementById('view-riwayat');
                 const newView = doc.getElementById('view-riwayat');
-                if (view && newView) view.innerHTML = newView.innerHTML;
+                if (view && newView) {
+                    view.innerHTML = newView.innerHTML;
+                    initAbsensiRows('riwayat');
+                    applyAbsensiFilters();
+                }
                 
                 window.history.pushState({}, '', url.toString());
             } catch(e) {
@@ -633,7 +733,11 @@
                 
                 const view = document.getElementById('view-rekap');
                 const newView = doc.getElementById('view-rekap');
-                if (view && newView) view.innerHTML = newView.innerHTML;
+                if (view && newView) {
+                    view.innerHTML = newView.innerHTML;
+                    initAbsensiRows('rekap');
+                    applyAbsensiFilters();
+                }
                 
                 window.history.pushState({}, '', url.toString());
             } catch(e) {

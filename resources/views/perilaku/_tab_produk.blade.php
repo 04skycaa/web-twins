@@ -38,4 +38,8 @@
             <p>Pilih toko dan tahun untuk memuat data produk</p>
         </div>
     </div>
+    
+    <div id="produk-pagination-container" style="padding: 20px 0; border-top: 1px solid #f1f5f9; display: none;">
+        <div id="produk-pagination" class="k-pagination" style="justify-content: center;"></div>
+    </div>
 </div>

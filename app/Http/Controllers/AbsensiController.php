@@ -114,8 +114,7 @@ class AbsensiController extends Controller
 
         $riwayat = $riwayatQuery->orderBy('tanggal_absensi', 'desc')
             ->orderBy('waktu_check_in', 'desc')
-            ->paginate(10)
-            ->appends($request->except('page'));
+            ->get();
 
         // ─── TAB 4: REKAP ABSENSI (DB-level aggregation) ───
         $rekapBulan = $request->input('rekap_bulan') ?: \Carbon\Carbon::now()->format('Y-m');
@@ -208,7 +207,7 @@ class AbsensiController extends Controller
         )
             ->groupBy('u.uuid', 'u.username', 'u.store_id')
             ->orderBy('u.username', 'asc')
-            ->paginate(10);
+            ->get();
 
         if (!$isCurrentMonth) {
             Cache::put($cacheKey, $rekap, $cacheDuration);
