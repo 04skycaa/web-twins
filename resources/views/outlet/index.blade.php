@@ -298,11 +298,13 @@
     <div id="view-data" class="tab-view mobile-pb" style="{{ $active_tab == 'data' ? '' : 'display: none;' }}">
         {{-- ACTION BAR --}}
         <div class="action-bar mobile-action-bar">
-            <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+            <div class="left-actions-group mobile-action-bar">
                 <div class="search-wrapper mobile-search-shrink">
                     <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
                     <input type="text" id="outletSearch" class="search-input" placeholder="Cari nama atau alamat..." oninput="filterOutlets()">
                 </div>
+            </div>
+            <div class="right-actions">
                 <button class="btn-action" onclick="openModal('addModal')">
                     <iconify-icon icon="solar:shop-bold-duotone"></iconify-icon>
                     <span>Tambah Outlet</span>
@@ -910,67 +912,69 @@
                     <input type="text" id="stock-search" class="search-input" oninput="debounceSearch()" placeholder="Cari produk atau barcode...">
                 </div>
 
-                <!-- Outlet Filter -->
-                <div class="dropdown">
-                    <button type="button" class="btn-filter" title="Filter Outlet" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                    </button>
-                    <div class="dropdown-content">
-                        <a href="javascript:void(0)" onclick="setStockOutlet('all')" class="active-dropdown-item">Semua Outlet</a>
-                        @foreach($outlets as $outlet)
-                            <a href="javascript:void(0)" onclick="setStockOutlet('{{ $outlet->uuid }}')">{{ $outlet->nama }}</a>
-                        @endforeach
+                <div class="mobile-filter-container">
+                    <!-- Outlet Filter -->
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Outlet" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="javascript:void(0)" onclick="setStockOutlet('all')" class="active-dropdown-item">Semua Outlet</a>
+                            @foreach($outlets as $outlet)
+                                <a href="javascript:void(0)" onclick="setStockOutlet('{{ $outlet->uuid }}')">{{ $outlet->nama }}</a>
+                            @endforeach
+                        </div>
+                        <input type="hidden" id="stock-outlet-filter" value="all">
                     </div>
-                    <input type="hidden" id="stock-outlet-filter" value="all">
-                </div>
 
-                <!-- Date Range Filter -->
-                <div class="dropdown">
-                    <button type="button" class="btn-filter" title="Filter Rentang Waktu" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                    </button>
-                    <div class="dropdown-content" style="padding: 20px; width: 300px; left: 0; right: auto;">
-                        <div style="font-size: 12px; font-weight: 800; color: var(--primary-blue); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Rentang Waktu</div>
-                        <div class="form-group" style="margin-bottom: 15px;">
-                            <label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">DARI TANGGAL</label>
-                            <input type="date" id="stock-start-date" class="form-control" onchange="applyStockFilters()">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 20px;">
-                            <label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">SAMPAI TANGGAL</label>
-                            <input type="date" id="stock-end-date" class="form-control" onchange="applyStockFilters()">
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #f1f5f9; color: #64748b;" onclick="document.getElementById('stock-start-date').value=''; document.getElementById('stock-end-date').value=''; applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
-                                Reset
-                            </button>
-                            <button type="button" class="btn-action" style="flex: 1; justify-content: center;" onclick="applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
-                                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-                                Terapkan
-                            </button>
+                    <!-- Date Range Filter -->
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" title="Filter Rentang Waktu" onclick="toggleDropdown(event)">
+                            <iconify-icon icon="solar:calendar-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content" style="padding: 20px; width: 300px; left: 0; right: auto;">
+                            <div style="font-size: 12px; font-weight: 800; color: var(--primary-blue); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">Rentang Waktu</div>
+                            <div class="form-group" style="margin-bottom: 15px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">DARI TANGGAL</label>
+                                <input type="date" id="stock-start-date" class="form-control" onchange="applyStockFilters()">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 20px;">
+                                <label style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block;">SAMPAI TANGGAL</label>
+                                <input type="date" id="stock-end-date" class="form-control" onchange="applyStockFilters()">
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-action" style="flex: 1; justify-content: center; background: #f1f5f9; color: #64748b;" onclick="document.getElementById('stock-start-date').value=''; document.getElementById('stock-end-date').value=''; applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                    Reset
+                                </button>
+                                <button type="button" class="btn-action" style="flex: 1; justify-content: center;" onclick="applyStockFilters(); document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));">
+                                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                                    Terapkan
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Reset -->
-                <button onclick="resetStockFilters()" class="btn-filter" title="Reset Filter">
-                    <iconify-icon icon="solar:restart-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                </button>
-                
-                <!-- Extract moved here -->
-                <div class="dropdown" style="margin-left: auto;">
-                    <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)">
-                        <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
-                        <span>Extract</span>
+                    <!-- Reset -->
+                    <button onclick="resetStockFilters()" class="btn-filter" title="Reset Filter">
+                        <iconify-icon icon="solar:restart-bold-duotone" style="font-size: 24px;"></iconify-icon>
                     </button>
-                    <div class="dropdown-content" style="right: 0; left: auto;">
-                        <a href="javascript:void(0)" onclick="exportStock('excel')">
-                            <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
-                            Excel 
-                        </a>
-                        <a href="javascript:void(0)" onclick="exportStock('pdf')">
-                            <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
-                            PDF 
-                        </a>
+                    
+                    <!-- Extract moved here -->
+                    <div class="dropdown" style="margin-left: auto;">
+                        <button type="button" class="btn-action dropdown-toggle" onclick="toggleDropdown(event)" style="width: auto !important; padding: 0 16px; height: 44px; min-height: 44px;">
+                            <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                            <span class="mobile-hide-text">Extract</span>
+                        </button>
+                        <div class="dropdown-content" style="right: 0; left: auto;">
+                            <a href="javascript:void(0)" onclick="exportStock('excel')">
+                                <iconify-icon icon="vscode-icons:file-type-excel" style="margin-right: 8px;"></iconify-icon>
+                                Excel 
+                            </a>
+                            <a href="javascript:void(0)" onclick="exportStock('pdf')">
+                                <iconify-icon icon="vscode-icons:file-type-pdf" style="margin-right: 8px;"></iconify-icon>
+                                PDF 
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -979,7 +983,6 @@
         <!-- Main Content (Standard Layout) -->
         <div class="main-content-box">
             <div id="stock-history-wrapper">
-                @fragment('stock-history-table')
                 <div class="table-container">
                     <table class="fitur-table" style="white-space: nowrap;">
                         <thead>
@@ -993,7 +996,7 @@
                         </thead>
                         <tbody id="stock-history-table-body">
                         @foreach($stockHistory as $item)
-                        <tr class="stock-row" data-outlet="{{ $item->store_id }}" data-date="{{ $item->created_at->format('Y-m-d') }}">
+                        <tr class="stock-row" data-outlet="{{ $item->store_id }}" data-date="{{ $item->created_at->format('Y-m-d') }}" data-search="{{ strtolower(($item->product->nama_produk ?? '') . ' ' . ($item->product->barcode ?? '') . ' ' . ($item->keterangan ?? '')) }}">
                             <td data-label="WAKTU" style="color: #64748b; font-size: 12px; white-space: nowrap;">
                                 {{ $item->created_at->format('d/m/Y') }}
                                 <div style="font-size: 10px; opacity: 0.7;">{{ $item->created_at->format('H:i:s') }}</div>
@@ -1035,10 +1038,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="twins-pagination-container" style="margin-top: 24px; padding-bottom: 24px;">
-                    {{ $stockHistory->onEachSide(1)->appends(request()->query())->links('vendor.pagination.twins') }}
-                </div>
-                @endfragment
+                <div id="stockPagination" class="twins-pagination-container" style="margin-top: 24px; padding-bottom: 24px;"></div>
             </div>
         </div>
     </div>
@@ -1745,42 +1745,112 @@
         applyStockFilters();
     }
 
-    let searchTimeout;
+    let stockState = { currentPage: 1, rowsPerPage: 10, filtered: [] };
+
     function debounceSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            applyStockFilters();
-        }, 500);
+        stockState.currentPage = 1;
+        applyStockFilters();
     }
 
     function applyStockFilters() {
-        const search = document.getElementById('stock-search').value;
+        const search = document.getElementById('stock-search').value.toLowerCase();
         const outlet = document.getElementById('stock-outlet-filter').value;
         const startDate = document.getElementById('stock-start-date').value;
         const endDate = document.getElementById('stock-end-date').value;
 
-        // Build query params
-        const params = new URLSearchParams();
-        params.append('active_tab', 'riwayat');
-        if (search) params.append('search', search);
-        if (outlet && outlet !== 'all') params.append('store_id', outlet);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
+        const allRows = Array.from(document.querySelectorAll('#stock-history-table-body .stock-row'));
+        stockState.filtered = [];
 
-        const wrapper = document.getElementById('stock-history-wrapper');
+        allRows.forEach(row => {
+            const rowSearch = row.dataset.search || '';
+            const rowOutlet = row.dataset.outlet || '';
+            const rowDate = row.dataset.date || '';
 
-        fetch('{{ route("outlet.index") }}?' + params.toString(), {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+            const matchesSearch = rowSearch.includes(search);
+            const matchesOutlet = outlet === 'all' || rowOutlet === outlet;
+            
+            let matchesDate = true;
+            if (startDate && rowDate < startDate) matchesDate = false;
+            if (endDate && rowDate > endDate) matchesDate = false;
+
+            if (matchesSearch && matchesOutlet && matchesDate) {
+                stockState.filtered.push(row);
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
             }
-        })
-        .then(response => response.text())
-        .then(html => {
-            wrapper.innerHTML = html;
-        })
-        .catch(err => {
-            console.error('Search failed:', err);
         });
+
+        renderStockPagination();
+    }
+
+    function renderStockPagination() {
+        const totalRows = stockState.filtered.length;
+        const totalPages = Math.ceil(totalRows / stockState.rowsPerPage) || 1;
+        
+        if (stockState.currentPage > totalPages) stockState.currentPage = totalPages;
+        if (stockState.currentPage < 1) stockState.currentPage = 1;
+
+        const startIndex = (stockState.currentPage - 1) * stockState.rowsPerPage;
+        const endIndex = startIndex + stockState.rowsPerPage;
+
+        stockState.filtered.forEach(row => row.style.display = 'none');
+
+        for (let i = startIndex; i < endIndex && i < totalRows; i++) {
+            stockState.filtered[i].style.display = '';
+        }
+
+        const paginationContainer = document.getElementById('stockPagination');
+        if (!paginationContainer) return;
+
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = '<ul class="twins-pagination">';
+        
+        if (stockState.currentPage > 1) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToStockPage(${stockState.currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></a></li>`;
+        } else {
+            html += `<li class="twins-page-item disabled"><span class="twins-page-link"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></span></li>`;
+        }
+
+        let startPage = Math.max(1, stockState.currentPage - 2);
+        let endPage = Math.min(totalPages, stockState.currentPage + 2);
+        
+        if (startPage > 1) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToStockPage(1)">1</a></li>`;
+            if (startPage > 2) html += `<li class="twins-page-item disabled"><span class="twins-page-link">...</span></li>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === stockState.currentPage) {
+                html += `<li class="twins-page-item active"><span class="twins-page-link">${i}</span></li>`;
+            } else {
+                html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToStockPage(${i})">${i}</a></li>`;
+            }
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<li class="twins-page-item disabled"><span class="twins-page-link">...</span></li>`;
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToStockPage(${totalPages})">${totalPages}</a></li>`;
+        }
+
+        if (stockState.currentPage < totalPages) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToStockPage(${stockState.currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></a></li>`;
+        } else {
+            html += `<li class="twins-page-item disabled"><span class="twins-page-link"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></span></li>`;
+        }
+        
+        html += '</ul>';
+        paginationContainer.innerHTML = html;
+    }
+
+    function goToStockPage(page) {
+        stockState.currentPage = page;
+        renderStockPagination();
+        document.querySelector('.main-content-box').scrollTop = 0;
     }
 
     function resetStockFilters() {
@@ -1789,7 +1859,6 @@
         document.getElementById('stock-start-date').value = '';
         document.getElementById('stock-end-date').value = '';
         
-        // Reset active state in outlet dropdown
         const items = document.querySelectorAll('#view-riwayat .dropdown-content a');
         items.forEach(item => {
             if (item.getAttribute('onclick') && item.getAttribute('onclick').includes('all')) {
@@ -1810,7 +1879,6 @@
 
         let url = format === 'excel' ? '{{ route("products.export.excel") }}' : '{{ route("products.export.pdf") }}';
         
-        // Build query params
         const params = new URLSearchParams();
         params.append('active_tab', 'riwayat');
         if (search) params.append('search', search);
@@ -1821,34 +1889,13 @@
         window.open(url + '?' + params.toString(), '_blank');
     }
 
-    // AJAX Pagination handler
-    document.addEventListener('click', function(e) {
-        const paginationLink = e.target.closest('#stock-history-wrapper .twins-pagination a');
-        if (paginationLink) {
-            e.preventDefault();
-            const url = paginationLink.href;
-            const wrapper = document.getElementById('stock-history-wrapper');
-
-            fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(response => response.text())
-            .then(html => {
-                wrapper.innerHTML = html;
-                // Scroll to top of table
-                document.querySelector('.main-content-box').scrollTop = 0;
-            })
-            .catch(err => {
-                console.error('Pagination load failed:', err);
-            });
-        }
-    });
-
     // Initial kinerja data load if starting on kinerja tab
     // Removed because we already call it on DOMContentLoaded above
 
     // Initial data outlet load
     document.addEventListener('DOMContentLoaded', () => {
+        applyStockFilters(); // Initialize client-side pagination on load
+
         if ('{{ $active_tab }}' === 'data' || '{{ $active_tab }}' === '') {
             const firstRow = document.querySelector('.outlet-row.active-row') || document.querySelector('.outlet-row');
             if (firstRow) {

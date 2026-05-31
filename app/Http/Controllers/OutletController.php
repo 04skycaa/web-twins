@@ -215,7 +215,7 @@ class OutletController extends Controller
             $stockHistoryQuery->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $stockHistory = $stockHistoryQuery->paginate(10)->withQueryString();
+        $stockHistory = $stockHistoryQuery->get();
 
         if ($request->ajax()) {
             return view('outlet.index', [
