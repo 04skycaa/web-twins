@@ -9,39 +9,43 @@
 
     {{-- ACTION BAR --}}
     <div class="action-bar mobile-action-bar">
-        <div class="left-actions-group mobile-action-bar" style="width: 100%;">
+        <div class="left-actions-group mobile-action-bar">
             <div class="search-wrapper mobile-search-shrink">
                 <iconify-icon icon="solar:magnifer-linear" class="search-icon"></iconify-icon>
-                <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." oninput="filterUsers()">
+                <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." oninput="currentPage = 1; filterUsers()">
             </div>
 
-            <!-- Role Filter Dropdown -->
-            <div class="dropdown">
-                <button class="btn-filter" onclick="toggleFilterDropdown('roleDropdown', this)" title="Filter Role">
-                    <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                </button>
-                <div id="roleDropdown" class="dropdown-content">
-                    <a href="javascript:void(0)" onclick="setFilter('role', '', 'Semua Role', this)" class="active-dropdown-item">Semua Role</a>
-                    @foreach($operators as $op)
-                        <a href="javascript:void(0)" onclick="setFilter('role', '{{ $op->nama }}', '{{ $op->nama }}', this)">{{ $op->nama }}</a>
-                    @endforeach
+            <div class="mobile-filter-container">
+                <!-- Role Filter Dropdown -->
+                <div class="dropdown">
+                    <button class="btn-filter" onclick="toggleFilterDropdown('roleDropdown', this)" title="Filter Role">
+                        <iconify-icon icon="solar:users-group-two-rounded-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                    </button>
+                    <div id="roleDropdown" class="dropdown-content">
+                        <a href="javascript:void(0)" onclick="setFilter('role', '', 'Semua Role', this)" class="active-dropdown-item">Semua Role</a>
+                        @foreach($operators as $op)
+                            <a href="javascript:void(0)" onclick="setFilter('role', '{{ $op->nama }}', '{{ $op->nama }}', this)">{{ $op->nama }}</a>
+                        @endforeach
+                    </div>
+                </div>
+
+                <!-- Outlet Filter Dropdown -->
+                <div class="dropdown">
+                    <button class="btn-filter" onclick="toggleFilterDropdown('outletDropdown', this)" title="Filter Outlet">
+                        <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"></iconify-icon>
+                    </button>
+                    <div id="outletDropdown" class="dropdown-content">
+                        <a href="javascript:void(0)" onclick="setFilter('outlet', '', 'Semua Outlet', this)" class="active-dropdown-item">Semua Outlet</a>
+                        <a href="javascript:void(0)" onclick="setFilter('outlet', '-', 'Pusat', this)">Pusat</a>
+                        @foreach($outlets as $out)
+                            <a href="javascript:void(0)" onclick="setFilter('outlet', '{{ $out->nama }}', '{{ $out->nama }}', this)">{{ $out->nama }}</a>
+                        @endforeach
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Outlet Filter Dropdown -->
-            <div class="dropdown">
-                <button class="btn-filter" onclick="toggleFilterDropdown('outletDropdown', this)" title="Filter Outlet">
-                    <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;"></iconify-icon>
-                </button>
-                <div id="outletDropdown" class="dropdown-content">
-                    <a href="javascript:void(0)" onclick="setFilter('outlet', '', 'Semua Outlet', this)" class="active-dropdown-item">Semua Outlet</a>
-                    <a href="javascript:void(0)" onclick="setFilter('outlet', '-', 'Pusat', this)">Pusat</a>
-                    @foreach($outlets as $out)
-                        <a href="javascript:void(0)" onclick="setFilter('outlet', '{{ $out->nama }}', '{{ $out->nama }}', this)">{{ $out->nama }}</a>
-                    @endforeach
-                </div>
-            </div>
-
+        <div class="right-actions">
             <button class="btn-action" onclick="openModal('addModal')">
                 <iconify-icon icon="solar:user-plus-bold-duotone"></iconify-icon>
                 <span>Tambah User</span>
@@ -203,6 +207,9 @@
             </div>
             @endforelse
         </div>
+
+        {{-- PAGINATION CONTAINER --}}
+        <div id="paginationContainer" class="twins-pagination-container" style="margin-top: 24px;"></div>
     </div>
 </div>
 
@@ -213,7 +220,7 @@
             <h3>Tambah User Baru</h3>
             <button class="close-modal" onclick="closeModal('addModal')">&times;</button>
         </div>
-        <form action="{{ route('users.store') }}" method="POST" id="addForm">
+        <form action="{{ route('users.store') }}" method="POST" id="addForm" onsubmit="showLoadingAlert()">
             @csrf
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
                 <div class="form-group">
@@ -257,20 +264,6 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Hak Akses Fitur <small style="color: #888;">(Pilih fitur yang bisa diakses user ini)</small></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                        @foreach($fiturs as $fitur)
-                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer;">
-                                <input type="checkbox" name="fitur[]" value="{{ $fitur->id }}" style="width: 16px; height: 16px;">
-                                <span style="display: flex; align-items: center; gap: 6px;">
-                                    <iconify-icon icon="{{ $fitur->ikon }}" style="color: var(--primary-blue);"></iconify-icon>
-                                    {{ $fitur->nama }}
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
             </div>
             <div style="padding: 0 20px 20px; display: flex; gap: 10px;">
                 <button type="button" class="btn-action btn-danger" style="flex: 1; justify-content: center;" onclick="closeModal('addModal')">Batal</button>
@@ -287,7 +280,7 @@
             <h3>Edit User</h3>
             <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
         </div>
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" onsubmit="showLoadingAlert()">
             @csrf
             @method('PUT')
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
@@ -336,20 +329,6 @@
                                 <option value="{{ $out->uuid }}">{{ $out->nama }}</option>
                             @endforeach
                         </select>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Hak Akses Fitur <small style="color: #888;">(Pilih fitur yang bisa diakses user ini)</small></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                        @foreach($fiturs as $fitur)
-                            <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer;">
-                                <input type="checkbox" name="fitur[]" id="edit_fitur_{{ $fitur->id }}" value="{{ $fitur->id }}" style="width: 16px; height: 16px;" class="edit-fitur-checkbox">
-                                <span style="display: flex; align-items: center; gap: 6px;">
-                                    <iconify-icon icon="{{ $fitur->ikon }}" style="color: var(--primary-blue);"></iconify-icon>
-                                    {{ $fitur->nama }}
-                                </span>
-                            </label>
-                        @endforeach
                     </div>
                 </div>
             </div>
@@ -487,6 +466,7 @@
                 form.action = `/users/${id}`;
                 form.innerHTML = `@csrf @method('DELETE')`;
                 document.body.appendChild(form);
+                showLoadingAlert();
                 form.submit();
             }
         });
@@ -510,6 +490,7 @@
                 form.action = `/users/${id}/toggle-status`;
                 form.innerHTML = `@csrf`;
                 document.body.appendChild(form);
+                showLoadingAlert();
                 form.submit();
             }
         });
@@ -517,6 +498,8 @@
 
     let currentRoleFilter = "";
     let currentOutletFilter = "";
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
     function toggleFilterDropdown(id, btn) {
         // Close all other dropdowns
@@ -544,6 +527,8 @@
         // Close dropdown
         el.closest('.dropdown-content').classList.remove('show');
 
+        // Reset to page 1 on new filter
+        currentPage = 1;
         // Execute filtering
         filterUsers();
     }
@@ -553,9 +538,13 @@
         const role = currentRoleFilter;
         const outlet = currentOutletFilter;
 
-        const rows = document.querySelectorAll('.user-row');
+        const desktopRows = document.querySelectorAll('.user-table-desktop tbody .user-row');
+        const mobileRows = document.querySelectorAll('.user-card-grid .user-row');
         
-        rows.forEach(row => {
+        let filteredDesktop = [];
+        let filteredMobile = [];
+
+        desktopRows.forEach(row => {
             const name = row.dataset.name;
             const email = row.dataset.email;
             const rowRole = row.dataset.role;
@@ -566,12 +555,115 @@
             const matchesOutlet = outlet === "" || rowOutlet === outlet;
 
             if (matchesSearch && matchesRole && matchesOutlet) {
+                filteredDesktop.push(row);
+                row.style.display = ""; // Temporarily show to calculate, hide later in renderPagination
+            } else {
+                row.style.display = "none";
+            }
+        });
+
+        mobileRows.forEach(row => {
+            const name = row.dataset.name;
+            const email = row.dataset.email;
+            const rowRole = row.dataset.role;
+            const rowOutlet = row.dataset.outlet;
+
+            const matchesSearch = name.includes(search) || email.includes(search);
+            const matchesRole = role === "" || rowRole === role;
+            const matchesOutlet = outlet === "" || rowOutlet === outlet;
+
+            if (matchesSearch && matchesRole && matchesOutlet) {
+                filteredMobile.push(row);
                 row.style.display = "";
             } else {
                 row.style.display = "none";
             }
         });
+
+        renderPagination(filteredDesktop, filteredMobile);
     }
+
+    function renderPagination(filteredDesktop, filteredMobile) {
+        const totalItems = filteredDesktop.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        // First hide all matched rows
+        filteredDesktop.forEach(row => row.style.display = "none");
+        filteredMobile.forEach(row => row.style.display = "none");
+
+        // Calculate start and end indices
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+
+        // Show only the items for the current page
+        for (let i = start; i < end && i < totalItems; i++) {
+            filteredDesktop[i].style.display = "";
+            filteredMobile[i].style.display = "";
+        }
+
+        const paginationContainer = document.getElementById('paginationContainer');
+        if (!paginationContainer) return;
+        
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        let html = '<ul class="twins-pagination">';
+        
+        // Prev Button
+        if (currentPage > 1) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToPage(${currentPage - 1})"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></a></li>`;
+        } else {
+            html += `<li class="twins-page-item disabled"><span class="twins-page-link"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></span></li>`;
+        }
+
+        // Page Numbers
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+        
+        if (startPage > 1) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToPage(1)">1</a></li>`;
+            if (startPage > 2) {
+                html += `<li class="twins-page-item disabled"><span class="twins-page-link">...</span></li>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                html += `<li class="twins-page-item active"><span class="twins-page-link">${i}</span></li>`;
+            } else {
+                html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToPage(${i})">${i}</a></li>`;
+            }
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<li class="twins-page-item disabled"><span class="twins-page-link">...</span></li>`;
+            }
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToPage(${totalPages})">${totalPages}</a></li>`;
+        }
+
+        // Next Button
+        if (currentPage < totalPages) {
+            html += `<li class="twins-page-item"><a class="twins-page-link" href="javascript:void(0)" onclick="goToPage(${currentPage + 1})"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></a></li>`;
+        } else {
+            html += `<li class="twins-page-item disabled"><span class="twins-page-link"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></span></li>`;
+        }
+
+        html += '</ul>';
+        paginationContainer.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        filterUsers();
+    }
+
+    // Initialize pagination on load
+    document.addEventListener('DOMContentLoaded', function() {
+        filterUsers();
+    });
 
     // SweetAlert2 Notifications
 
@@ -606,5 +698,17 @@
             });
         @endif
     });
+
+    function showLoadingAlert() {
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Mohon tunggu sebentar',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
 </script>
 @endsection

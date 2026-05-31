@@ -238,7 +238,7 @@ class KontakController extends Controller
             'contacts.*' => 'required|string'
         ]);
 
-        $token = '5zVfQUgWooaSnJjjcTNk'; // Fonnte Token
+        $token = env('FONNTE_TOKEN');
         $targets = implode(',', $request->contacts);
 
         $curl = curl_init();

@@ -4197,14 +4197,30 @@ textarea.is-invalid:focus,
         max-width: none !important;
     }
 
-    .mobile-action-bar .btn-action,
-    .mobile-action-bar .dropdown {
+    .mobile-action-bar .btn-action {
         width: 100% !important;
         justify-content: center !important;
     }
 
+    .mobile-action-bar .dropdown {
+        width: auto !important;
+    }
+
     .mobile-action-bar .dropdown>button {
-        width: 100% !important;
+        width: 48px !important;
         justify-content: center !important;
+    }
+    
+    .mobile-filter-container {
+        display: flex;
+        flex-direction: row !important;
+        gap: 8px;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .mobile-filter-container .dropdown-content {
+        left: 0;
+        right: auto;
     }
 }
