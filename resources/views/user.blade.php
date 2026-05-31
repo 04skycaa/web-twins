@@ -12,6 +12,7 @@
     <meta name="outlet-lat" content="{{ $outlet->latitude ?? '' }}">
     <meta name="outlet-lng" content="{{ $outlet->longitude ?? '' }}">
     <meta name="max-delivery-distance" content="{{ $outlet->max_delivery_distance ?? 30 }}">
+    <meta name="ongkir-per-km" content="{{ $outlet->ongkir_per_km ?? 500 }}">
     <meta name="store-hours" content="{{ $outlet->jam_buka ?? '' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="outlet-uuid" content="{{ $outlet->uuid }}">
@@ -245,7 +246,7 @@
                         <span class="discountedSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir (sementara)</span>
+                        <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir</span>
                         <span class="shippingFeeDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -578,7 +579,7 @@
                             <span class="discountedSubtotalDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir (sementara)</span>
+                            <span style="font-size: 0.75rem; color: var(--sub-text);">Ongkir</span>
                             <span class="shippingFeeDisplay" style="font-size: 0.8rem; font-weight: 700;">Rp 0</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">

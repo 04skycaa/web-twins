@@ -71,10 +71,11 @@ function escapeHtml(text) {
         .replace(/'/g, '&#39;');
 }
 
-// Sementara: ongkir dihitung dari jarak pengantaran (500 rupiah per km).
 function calculateTemporaryShippingFee(distanceKm) {
     const safeDistanceKm = Number.isFinite(distanceKm) ? Math.max(0, distanceKm) : 0;
-    return Math.ceil(safeDistanceKm * 500);
+    const ongkirPerKmMeta = document.querySelector('meta[name="ongkir-per-km"]');
+    const ongkirPerKm = ongkirPerKmMeta ? (Number(ongkirPerKmMeta.content) || 500) : 500;
+    return Math.ceil(safeDistanceKm * ongkirPerKm);
 }
 
 const products = JSON.parse(document.getElementById('products-data').textContent);

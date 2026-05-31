@@ -366,6 +366,7 @@ class OutletController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'max_delivery_distance' => 'nullable|integer|min:1',
+            'ongkir_per_km' => 'nullable|integer|min:0',
         ]);
 
         $imageUrl = null;
@@ -397,6 +398,7 @@ class OutletController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'max_delivery_distance' => $request->max_delivery_distance ?? 30,
+            'ongkir_per_km' => $request->ongkir_per_km ?? 500,
             'image_url' => $imageUrl,
         ]);
 
@@ -413,6 +415,7 @@ class OutletController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'max_delivery_distance' => 'nullable|integer|min:1',
+            'ongkir_per_km' => 'nullable|integer|min:0',
         ]);
 
         $outlet = Outlet::where('uuid', $uuid)->firstOrFail();
@@ -425,6 +428,7 @@ class OutletController extends Controller
             'latitude' => $request->latitude,
             'longitude' => $request->longitude,
             'max_delivery_distance' => $request->max_delivery_distance ?? 30,
+            'ongkir_per_km' => $request->ongkir_per_km ?? 500,
         ];
 
         if ($request->filled('cropped_image')) {

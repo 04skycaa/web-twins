@@ -1090,6 +1090,10 @@
                     <label>Batas Jarak Pengiriman Maksimal (km)</label>
                     <input type="number" name="max_delivery_distance" class="form-control" placeholder="30" value="30" min="1" required>
                 </div>
+                <div class="form-group">
+                    <label>Harga Ongkir per KM (Rp)</label>
+                    <input type="number" name="ongkir_per_km" class="form-control" placeholder="500" value="500" min="0" required>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Latitude</label>
@@ -1158,6 +1162,10 @@
                 <div class="form-group">
                     <label>Batas Jarak Pengiriman Maksimal (km)</label>
                     <input type="number" name="max_delivery_distance" id="edit_max_delivery_distance" class="form-control" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Harga Ongkir per KM (Rp)</label>
+                    <input type="number" name="ongkir_per_km" id="edit_ongkir_per_km" class="form-control" min="0" required>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                     <div class="form-group" style="margin-bottom: 0;">
@@ -1593,6 +1601,7 @@
         document.getElementById('edit_latitude').value = data.latitude || '';
         document.getElementById('edit_longitude').value = data.longitude || '';
         document.getElementById('edit_max_delivery_distance').value = data.max_delivery_distance ?? 30;
+        document.getElementById('edit_ongkir_per_km').value = data.ongkir_per_km ?? 500;
         
         // Setup image preview
         const previewContainer = document.getElementById('editImagePreviewContainer');
