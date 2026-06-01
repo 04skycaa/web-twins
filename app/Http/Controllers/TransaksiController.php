@@ -22,7 +22,7 @@ class TransaksiController extends Controller
         $request = request();
 
         // Load semua data riwayat tanpa paginasi server agar pencarian JS bisa seketika (instan)
-        $paymentOrders = \App\Models\PaymentOrder::with(['items.product'])
+        $paymentOrders = \App\Models\PaymentOrder::with(['items.product', 'outlet'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -48,6 +48,7 @@ class TransaksiController extends Controller
                 'tanggal_raw' => $trx->created_at->toIso8601String(),
                 'kasir' => 'Online Checkout',
                 'pelanggan' => $trx->recipient_name,
+                'outlet' => $trx->outlet ? $trx->outlet->nama : '-',
                 'phone' => $trx->recipient_phone ?: '-',
                 'address' => $trx->delivery_address ?: '-',
                 'qty' => $trx->items_count,

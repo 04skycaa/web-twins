@@ -72,6 +72,18 @@
                             </div>
                         </div>
                     </div>
+                    <div class="dropdown">
+                        <button type="button" class="btn-filter" onclick="toggleIconDropdown(event)" title="Filter Outlet">
+                            <iconify-icon icon="solar:shop-bold-duotone" style="font-size: 24px;" id="outletFilterIcon"></iconify-icon>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="javascript:void(0)" onclick="setOutletFilter('all', this)" class="active-dropdown-item">Semua Outlet</a>
+                            @foreach($outlets as $outlet)
+                                <a href="javascript:void(0)" onclick="setOutletFilter('{{ $outlet->nama }}', this)">{{ $outlet->nama }}</a>
+                            @endforeach
+                        </div>
+                    </div>
+                    <input type="hidden" id="riwayatOutlet" value="all">
                     <select id="riwayatSort" class="form-control" style="width: 110px; font-size: 12px; padding: 8px 12px;" onchange="filterRiwayat()">
                         <option value="desc">Terbaru</option>
                         <option value="asc">Terlama</option>
@@ -94,6 +106,7 @@
                             <th style="white-space: nowrap;">KODE ORDER</th>
                             <th style="white-space: nowrap;">TANGGAL</th>
                             <th style="white-space: nowrap;">PELANGGAN</th>
+                            <th style="white-space: nowrap;">OUTLET</th>
                             <th style="text-align: center; white-space: nowrap;">ITEMS</th>
                             <th style="text-align: right; white-space: nowrap;">TOTAL</th>
                             <th style="text-align: right; white-space: nowrap;">DISKON</th>
@@ -103,7 +116,7 @@
                     </thead>
                     <tbody>
                         @forelse($data as $trx)
-                        <tr class="riwayat-row" data-date="{{ \Carbon\Carbon::parse($trx['tanggal_raw'])->toIso8601String() }}">
+                        <tr class="riwayat-row" data-date="{{ \Carbon\Carbon::parse($trx['tanggal_raw'])->toIso8601String() }}" data-outlet="{{ $trx['outlet'] }}">
                             <td style="padding-right: 20px; vertical-align: middle;">
                                 @php
                                     $parts = explode('-', $trx['id']);
@@ -128,6 +141,7 @@
                             </td>
                             <td style="font-size: 12px; color: #64748b; white-space: nowrap; padding-right: 20px;">{{ $trx['tanggal'] }}</td>
                             <td style="white-space: nowrap; padding-right: 20px; text-transform: capitalize;"><strong>{{ strtolower($trx['pelanggan']) }}</strong></td>
+                            <td style="white-space: nowrap; padding-right: 20px;">{{ $trx['outlet'] }}</td>
                             <td style="text-align: center; white-space: nowrap; padding-right: 20px;"><span class="category-badge cat-poster" style="background: #f1f5f9; color: #475569; white-space: nowrap; font-size: 11px; padding: 4px 10px;">{{ $trx['qty'] }} items</span></td>
                             <td style="font-weight: 700; color: #1e293b; white-space: nowrap; text-align: right; padding-right: 20px;">{{ $trx['total'] }}</td>
                             <td style="color: #ef4444; font-size: 12px; white-space: nowrap; text-align: right; padding-right: 20px;">{{ $trx['diskon'] }}</td>
@@ -156,7 +170,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="8" style="text-align: center; padding: 50px; color: #94a3b8;">Belum ada data transaksi.</td></tr>
+                        <tr><td colspan="9" style="text-align: center; padding: 50px; color: #94a3b8;">Belum ada data transaksi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -688,6 +702,10 @@
                     <div id="detail_date" style="font-weight: 700; color: #334155; font-size: 13px;">-</div>
                 </div>
                 <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Outlet</div>
+                    <div id="detail_outlet" style="font-weight: 700; color: #334155; font-size: 13px; text-transform: capitalize;">-</div>
+                </div>
+                <div>
                     <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Pelanggan</div>
                     <div id="detail_customer" style="font-weight: 700; color: #334155; font-size: 13px; text-transform: capitalize;">-</div>
                 </div>
@@ -780,6 +798,8 @@
         const trx = JSON.parse(btn.getAttribute('data-trx'));
         
         document.getElementById('detail_order_code').innerText = '#' + trx.id;
+        document.getElementById('detail_date').innerText = trx.tanggal;
+        document.getElementById('detail_outlet').innerText = trx.outlet || '-';
         document.getElementById('detail_date').innerText = trx.tanggal;
         document.getElementById('detail_customer').innerText = trx.pelanggan;
         document.getElementById('detail_phone').innerText = trx.phone || '-';
@@ -1044,16 +1064,51 @@
         renderPagination(view);
     }
 
+    function toggleIconDropdown(event) {
+        const dropdown = event.currentTarget.closest('.dropdown');
+        const content = dropdown.querySelector('.dropdown-content');
+        
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+            if (d !== content) d.classList.remove('show');
+        });
+        
+        content.classList.toggle('show');
+    }
+
+    function setOutletFilter(val, el) {
+        document.getElementById('riwayatOutlet').value = val;
+        
+        const container = el.closest('.dropdown-content');
+        container.querySelectorAll('a').forEach(a => a.classList.remove('active-dropdown-item'));
+        el.classList.add('active-dropdown-item');
+        
+        const icon = container.parentElement.querySelector('iconify-icon');
+        if (val === 'all') {
+            icon.classList.remove('text-primary-blue');
+            icon.style.color = ''; 
+        } else {
+            icon.classList.add('text-primary-blue');
+            icon.style.color = 'var(--primary-blue)'; 
+        }
+        
+        container.classList.remove('show');
+        filterRiwayat();
+    }
+
     function filterRiwayat() {
         const search = document.getElementById('riwayatSearch').value.toLowerCase();
         const startDate = document.getElementById('riwayatDateStart').value;
         const endDate = document.getElementById('riwayatDateEnd').value;
+        const outletFilter = document.getElementById('riwayatOutlet') ? document.getElementById('riwayatOutlet').value.toLowerCase() : 'all';
         const rows = Array.from(document.querySelectorAll('#riwayatTable tbody tr.riwayat-row'));
 
         let matched = [];
 
         rows.forEach(row => {
             const textMatch = row.textContent.toLowerCase().includes(search);
+            const outletText = row.getAttribute('data-outlet') ? row.getAttribute('data-outlet').toLowerCase() : '';
+            const outletMatch = outletFilter === 'all' || outletText === outletFilter;
+            
             let dateMatch = true;
             
             if (startDate || endDate) {
@@ -1072,7 +1127,7 @@
                 }
             }
             
-            if (textMatch && dateMatch) {
+            if (textMatch && dateMatch && outletMatch) {
                 matched.push(row);
             } else {
                 row.style.display = 'none';

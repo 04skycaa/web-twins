@@ -57,4 +57,9 @@ class PaymentOrder extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'uuid');
     }
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_id', 'uuid');
+    }
 }
