@@ -5,9 +5,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class DetailDebt extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'detail_debts';
     protected $primaryKey = 'uuid';

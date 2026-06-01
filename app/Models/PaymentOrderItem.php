@@ -33,6 +33,6 @@ class PaymentOrderItem extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class, 'product_id', 'uuid');
+        return $this->belongsTo(Product::class, 'product_id', 'uuid')->withTrashed();
     }
 }
