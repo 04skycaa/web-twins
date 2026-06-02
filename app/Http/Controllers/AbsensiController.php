@@ -390,7 +390,7 @@ class AbsensiController extends Controller
         $store_id = $request->store_id ?? 'all';
         $filterBulan = $request->filter_bulan;
         $filterKaryawan = $request->filter_karyawan;
-        $format = $request->format ?? 'excel';
+        $format = $request->input('format', 'excel');
 
         $query = Absensi::with(['jadwal.user.operator', 'store', 'jadwal.shift']);
 
