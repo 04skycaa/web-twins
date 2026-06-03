@@ -270,7 +270,7 @@
     <section id="outlet" class="explore-section">
         <h2 id="outletTitle" data-split-text>Pilih Cabang <span>Terdekatmu</span></h2>
 
-        <div class="nft-grid" data-stagger-grid>
+        <div class="nft-grid {{ count($outlets) > 3 ? 'has-scroll' : '' }}" data-stagger-grid>
             @foreach($outlets as $index => $outlet)
             <div class="nft-item float-hover {{ $index === 1 ? 'featured' : '' }}" data-stagger-item>
                 <div class="owner-info">
@@ -313,18 +313,19 @@
                 </div>
 
                 <div class="media-group-right">
-                    <div class="media-item video-item">
-                        <img src="{{ asset('images/toko-luar.png') }}" alt="Video Preview" class="main-media">
-                        <div class="play-btn">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
+                    <a href="https://youtu.be/WteaydQQp9Q?si=mVrdywwGKnNSm_WS" target="_blank" style="text-decoration: none; display: block;">
+                        <div class="media-item video-item" style="background: transparent; border: none; box-shadow: none; padding: 0;">
+                            <img src="{{ asset('images/ak.png') }}" alt="Video Preview" class="main-media" style="object-fit: contain; width: 100%; height: 100%;">
+                            <div class="play-btn">
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="30" height="30">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                     <div class="video-meta">
-                        <p>Suasana Hangat Toko Twins</p>
                         <div class="action-wrap">
-                            <button class="btn-highlights-sm">Lihat Selengkapnya <span>→</span></button>
+                            <button class="btn-highlights-sm" onclick="window.open('https://youtu.be/WteaydQQp9Q?si=mVrdywwGKnNSm_WS', '_blank')">Lihat Selengkapnya <span>→</span></button>
                         </div>
                     </div>
                 </div>
@@ -650,10 +651,10 @@
                 </div>
                 <p class="footer-desc">Solusi terpercaya untuk kebutuhan bahan kue dan sembako berkualitas. Kami hadir di berbagai cabang untuk melayani kebutuhan dapur Anda dengan sepenuh hati.</p>
                 <div class="social-links">
-                    <a href="https://www.instagram.com/sweetbake.official?igsh=MTl3dW5pY3J6aHEyYg==" target="_blank" class="social-icon" title="Instagram">
+                    <a href="https://www.instagram.com/twinsproject04_?igsh=MTF0dTBwbW44djVocg==" target="_blank" class="social-icon" title="Instagram">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                     </a>
-                    <a href="#" target="_blank" class="social-icon" title="Youtube">
+                    <a href="https://youtu.be/WteaydQQp9Q?si=mVrdywwGKnNSm_WS" target="_blank" class="social-icon" title="Youtube">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.11 1 12 1 12s0 3.89.4 5.58a2.78 2.78 0 0 0 1.94 2c1.71.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.89 23 12 23 12s0-3.89-.46-5.58z"></path><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"></polygon></svg>
                     </a>
                     <a href="https://wa.me/6282330755390" target="_blank" class="social-icon" title="WhatsApp">

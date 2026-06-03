@@ -1492,6 +1492,23 @@
             if (zIndex) modal.style.zIndex = zIndex;
         }
         if (id === 'addModal') {
+            // Reset form when opening
+            const form = modal.querySelector('form');
+            if (form) form.reset();
+            
+            // Reset image preview
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const hiddenInput = document.getElementById('croppedImageResult');
+            const fileInput = document.getElementById('imageInputAdd');
+            
+            if (previewContainer) {
+                previewContainer.innerHTML = `<div style="text-align: center; color: #94a3b8;"><iconify-icon icon="solar:camera-add-bold-duotone" style="font-size: 32px;"></iconify-icon><div style="font-size: 11px; margin-top: 4px;">Pilih Foto 1:1</div></div>`;
+                previewContainer.style.border = '2px dashed #cbd5e1';
+                previewContainer.style.background = '#f8fafc';
+            }
+            if (hiddenInput) hiddenInput.value = '';
+            if (fileInput) fileInput.value = '';
+
             initAdminAddMap();
         } else if (id === 'editModal') {
             initAdminEditMap();
@@ -1648,26 +1665,53 @@
         });
     }
 
-    function openDeleteModal(id) {
-        Swal.fire({
-            title: 'Hapus Outlet?',
-            text: "Data outlet dan relasi terkait akan dihapus secara permanen!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = `/outlet/${id}`;
-                form.innerHTML = `@csrf @method('DELETE')`;
-                document.body.appendChild(form);
-                form.submit();
+    async function openDeleteModal(id) {
+        // Cek relasi terlebih dahulu ke backend via API
+        try {
+            Swal.fire({
+                title: 'Mengecek Data...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const response = await fetch(`/outlet/${id}/check-relation`);
+            const data = await response.json();
+
+            if (data.has_relation) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tidak Dapat Menghapus!',
+                    text: 'Outlet ini terhubung dengan beberapa data (transaksi/stok/karyawan). Silahkan non-aktifkan saja.'
+                });
+                return;
             }
-        });
+
+            // Jika aman, tampilkan konfirmasi hapus
+            Swal.fire({
+                title: 'Hapus Outlet?',
+                text: "Data outlet ini masih kosong dan aman untuk dihapus secara permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/outlet/${id}`;
+                    form.innerHTML = `@csrf @method('DELETE')`;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        } catch (error) {
+            Swal.fire('Error', 'Gagal mengecek data outlet', 'error');
+        }
     }
 
     function filterOutlets() {

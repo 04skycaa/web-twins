@@ -363,8 +363,8 @@
         <form id="editAlertForm" method="POST" onsubmit="showLoading('Sedang Memperbarui Stok...')">
             @csrf
             @method('PUT')
-            <div class="modal-body">
-                <div id="editAlertProductInfo" style="margin-bottom: 24px; padding: 16px; background: #f8fbff; border-radius: 16px; border: 1px solid #d0e7ff; display: flex; gap: 16px; align-items: center;">
+            <div class="modal-body" style="padding: 24px;">
+                <div id="editAlertProductInfo" style="margin-bottom: 32px; padding: 16px; background: #f8fbff; border-radius: 16px; border: 1px solid #d0e7ff; display: flex; gap: 16px; align-items: center;">
                     <img id="editAlertImage" src="" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #fff; border: 1px solid #eee;">
                     <div>
                         <div id="editAlertName" style="font-size: 16px; font-weight: 700; color: var(--primary-blue); margin-bottom: 4px;">-</div>
@@ -377,24 +377,24 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                     <div class="form-group">
-                        <label for="alert_stok">Stok Saat Ini (Pcs)</label>
+                        <label for="alert_stok" style="margin-bottom: 8px; display: block;">Stok Saat Ini (Pcs)</label>
                         <input type="number" name="stok" id="alert_stok" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="alert_kadaluarsa">Tanggal Kadaluarsa</label>
+                        <label for="alert_kadaluarsa" style="margin-bottom: 8px; display: block;">Tanggal Kadaluarsa</label>
                         <input type="date" name="kadaluarsa" id="alert_kadaluarsa" class="form-control">
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
                     <div class="form-group">
-                        <label for="alert_stok_minimum">Min. Stok Notifikasi (Pcs)</label>
+                        <label for="alert_stok_minimum" style="margin-bottom: 8px; display: block;">Min. Stok Notifikasi (Pcs)</label>
                         <input type="number" name="stok_minimum" id="alert_stok_minimum" class="form-control" placeholder="Default: 10">
                     </div>
                     <div class="form-group">
-                        <label>Status Aktif di Outlet</label>
+                        <label style="margin-bottom: 8px; display: block;">Status Aktif di Outlet</label>
                         <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
                             <label class="switch">
                                 <input type="checkbox" name="status_aktif" id="alert_status_aktif" value="1">
@@ -505,7 +505,7 @@
                                 <tr style="background: #f8fafc;">
                                     <th style="width: 45%; min-width: 200px;">Nama Produk / Barcode</th>
                                     <th style="width: 15%; min-width: 80px;">Qty</th>
-                                    <th style="width: 25%; min-width: 120px;">Harga Transfer</th>
+                                    <th style="width: 25%; min-width: 120px;">Harga Beli</th>
                                     <th style="width: 15%; min-width: 100px;">Subtotal</th>
                                     <th style="width: 40px;"></th>
                                 </tr>
@@ -3413,7 +3413,7 @@
                 <div class="invalid-feedback">Qty wajib diisi</div>
             </td>
             <td>
-                <input type="number" name="items[${i}][harga]" id="transfer_harga_${i}" class="form-control" placeholder="Harga" min="0" step="0.01" required oninput="calculateTransferTotal()">
+                <input type="number" name="items[${i}][harga]" id="transfer_harga_${i}" class="form-control" placeholder="Harga" min="0" step="0.01" required readonly style="background-color: #f1f5f9; cursor: not-allowed;" oninput="calculateTransferTotal()">
             </td>
             <td id="transfer_subtotal_${i}" style="font-weight: 600; color: #334155; text-align: right;">
                 Rp 0

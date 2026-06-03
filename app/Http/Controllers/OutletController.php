@@ -476,7 +476,30 @@ class OutletController extends Controller
     public function destroy($uuid)
     {
         $outlet = Outlet::where('uuid', $uuid)->firstOrFail();
+
+        // Pengecekan data terkait
+        $hasTransactions = \App\Models\Transaction::where('store_id', $uuid)->exists();
+        $hasOnlineTransactions = \App\Models\PaymentOrder::where('outlet_id', $uuid)->exists();
+        $hasStock = \App\Models\ProductStore::where('store_id', $uuid)->exists();
+        $hasEmployees = \App\Models\User::where('store_id', $uuid)->exists();
+
+        if ($hasTransactions || $hasOnlineTransactions || $hasStock || $hasEmployees) {
+            return redirect()->route('outlet.index')->with('error', 'Outlet ini terhubung dengan beberapa data (transaksi/stok/karyawan). Silahkan non-aktifkan saja.');
+        }
+
         $outlet->delete();
         return redirect()->route('outlet.index')->with('success', 'Outlet berhasil dihapus');
+    }
+
+    public function checkRelation($uuid)
+    {
+        $hasTransactions = \App\Models\Transaction::where('store_id', $uuid)->exists();
+        $hasOnlineTransactions = \App\Models\PaymentOrder::where('outlet_id', $uuid)->exists();
+        $hasStock = \App\Models\ProductStore::where('store_id', $uuid)->exists();
+        $hasEmployees = \App\Models\User::where('store_id', $uuid)->exists();
+
+        return response()->json([
+            'has_relation' => ($hasTransactions || $hasOnlineTransactions || $hasStock || $hasEmployees)
+        ]);
     }
 }

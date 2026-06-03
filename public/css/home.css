@@ -990,6 +990,30 @@ header.scrolled,
     max-width: 400px;
 }
 
+/* Horizontal scroll when more than 3 stores */
+.nft-grid.has-scroll {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    padding-bottom: 20px !important;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-purple) transparent;
+}
+.nft-grid.has-scroll::-webkit-scrollbar {
+    height: 6px;
+    display: block;
+}
+.nft-grid.has-scroll::-webkit-scrollbar-thumb {
+    background: var(--accent-purple);
+    border-radius: 10px;
+}
+.nft-grid.has-scroll > .nft-item {
+    flex: 0 0 300px !important;
+    scroll-snap-align: start;
+}
+
 .nft-item {
     position: relative;
     background: var(--card-bg);

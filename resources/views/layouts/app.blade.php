@@ -62,6 +62,7 @@
                 </a>
             @endif
 
+            {{-- Menu Keuangan Dinonaktifkan Sementara
             @if (Auth::user()->hasFeature(4))
                 <a href="{{ route('keuangan.index') }}"
                     class="menu-item {{ request()->is('keuangan*') ? 'active' : '' }}">
@@ -70,6 +71,7 @@
                     <span>Keuangan</span>
                 </a>
             @endif
+            --}}
 
             @if (Auth::user()->hasFeature(5))
                 <a href="{{ url('/users') }}" class="menu-item {{ request()->is('users*') ? 'active' : '' }}">

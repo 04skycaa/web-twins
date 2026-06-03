@@ -23,9 +23,10 @@
                     </button>
                     <div id="roleDropdown" class="dropdown-content">
                         <a href="javascript:void(0)" onclick="setFilter('role', '', 'Semua Role', this)" class="active-dropdown-item">Semua Role</a>
-                        @foreach($operators as $op)
-                            <a href="javascript:void(0)" onclick="setFilter('role', '{{ $op->nama }}', '{{ $op->nama }}', this)">{{ $op->nama }}</a>
-                        @endforeach
+                        <a href="javascript:void(0)" onclick="setFilter('role', 'Owner', 'Owner', this)">Owner</a>
+                        <a href="javascript:void(0)" onclick="setFilter('role', 'Kepala Toko', 'Kepala Toko', this)">Kepala Toko</a>
+                        <a href="javascript:void(0)" onclick="setFilter('role', 'Karyawan', 'Karyawan', this)">Karyawan</a>
+                        <a href="javascript:void(0)" onclick="setFilter('role', 'User', 'User', this)">User</a>
                     </div>
                 </div>
 
@@ -74,13 +75,13 @@
                     <tr class="user-row" 
                         data-name="{{ strtolower($user->username) }}" 
                         data-email="{{ strtolower($user->email) }}"
-                        data-role="{{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}"
+                        data-role="{{ $user->operator ? $user->operator->nama : 'Owner' }}"
                         data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}">
                         <td style="font-weight: 600;">{{ $user->username }}</td>
                         <td>{{ $user->email }}</td>
                         <td>
                             <span class="status-badge" style="background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB;">
-                                {{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}
+                                {{ $user->operator ? $user->operator->nama : 'Owner' }}
                             </span>
                         </td>
                         <td>{{ $user->outlet ? $user->outlet->nama : '-' }}</td>
@@ -126,7 +127,7 @@
             <div class="user-card user-row"
                 data-name="{{ strtolower($user->username) }}"
                 data-email="{{ strtolower($user->email) }}"
-                data-role="{{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}"
+                data-role="{{ $user->operator ? $user->operator->nama : 'Owner' }}"
                 data-outlet="{{ $user->outlet ? $user->outlet->nama : '-' }}">
 
                 <div class="user-card-header">
@@ -153,7 +154,7 @@
                             Role
                         </div>
                         <span class="status-badge" style="background: #E3F2FD; color: #1976D2; border: 1px solid #BBDEFB; font-size: 10px; padding: 2px 8px;">
-                            {{ $user->operator ? $user->operator->nama : 'Tidak Ada Role' }}
+                            {{ $user->operator ? $user->operator->nama : 'Owner' }}
                         </span>
                     </div>
                     <div class="user-card-row">
@@ -404,7 +405,7 @@
         document.getElementById('view_name').innerText = data.username;
         document.getElementById('view_email').innerText = data.email;
         document.getElementById('view_no_hp').innerText = data.no_hp || '-';
-        document.getElementById('view_role').innerText = data.operator ? data.operator.nama : 'Tidak Ada Role';
+        document.getElementById('view_role').innerText = data.operator ? data.operator.nama : 'Owner';
         document.getElementById('view_outlet').innerText = outletName;
         openModal('viewModal');
     }
@@ -551,7 +552,7 @@
             const rowOutlet = row.dataset.outlet;
 
             const matchesSearch = name.includes(search) || email.includes(search);
-            const matchesRole = role === "" || rowRole === role;
+            const matchesRole = role === "" || rowRole === role || (role === "Karyawan" && (rowRole.toLowerCase().includes("shif 1") || rowRole.toLowerCase().includes("shif 2") || rowRole.toLowerCase().includes("shift 1") || rowRole.toLowerCase().includes("shift 2")));
             const matchesOutlet = outlet === "" || rowOutlet === outlet;
 
             if (matchesSearch && matchesRole && matchesOutlet) {
@@ -569,7 +570,7 @@
             const rowOutlet = row.dataset.outlet;
 
             const matchesSearch = name.includes(search) || email.includes(search);
-            const matchesRole = role === "" || rowRole === role;
+            const matchesRole = role === "" || rowRole === role || (role === "Karyawan" && (rowRole.toLowerCase().includes("shif 1") || rowRole.toLowerCase().includes("shif 2") || rowRole.toLowerCase().includes("shift 1") || rowRole.toLowerCase().includes("shift 2")));
             const matchesOutlet = outlet === "" || rowOutlet === outlet;
 
             if (matchesSearch && matchesRole && matchesOutlet) {
