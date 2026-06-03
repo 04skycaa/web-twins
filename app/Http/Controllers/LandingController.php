@@ -169,6 +169,29 @@ class LandingController extends Controller
         $storedDeliveryAddress = session('delivery_address.' . $outlet->uuid);
         $deliveryPreference = null;
 
+        if (empty($storedDeliveryAddress) && Auth::check()) {
+            $lastOrder = PaymentOrder::where('user_id', Auth::id())
+                ->where('outlet_id', $outlet->uuid)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastOrder && $lastOrder->delivery_address) {
+                $storedDeliveryAddress = [
+                    'address' => $lastOrder->delivery_address,
+                    'recipient_name' => $lastOrder->recipient_name,
+                    'recipient_phone' => $lastOrder->recipient_phone,
+                    'coordinates' => null,
+                ];
+
+                if ($lastOrder->delivery_lat && $lastOrder->delivery_lng) {
+                    $storedDeliveryAddress['coordinates'] = [
+                        'lat' => $lastOrder->delivery_lat,
+                        'lng' => $lastOrder->delivery_lng,
+                    ];
+                }
+            }
+        }
+
         if (is_array($storedDeliveryAddress) && !empty($storedDeliveryAddress['address'])) {
             $coords = $storedDeliveryAddress['coordinates'] ?? null;
             $validCoordinates = is_array($coords)

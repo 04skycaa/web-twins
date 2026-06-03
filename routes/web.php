@@ -243,13 +243,13 @@ Route::get('/outlet/{id}/history', [LandingController::class, 'getUserHistory'])
     ->middleware(['auth'])
     ->name('user.history.api');
 Route::post('/outlet/{id}/review', [LandingController::class, 'storeReview'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth'])
     ->name('store.review.store');
 Route::post('/outlet/{id}/sync-payment', [LandingController::class, 'syncPaymentStatus'])
     ->middleware(['auth'])
     ->name('user.payment.sync');
 Route::post('/submit-general-review', [LandingController::class, 'generalReview'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth'])
     ->name('landing.review.store');
 
 Route::get('/apply-indexes', function () {

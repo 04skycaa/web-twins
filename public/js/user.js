@@ -357,8 +357,7 @@ const outletLngMeta = document.querySelector('meta[name="outlet-lng"]')?.content
 const maxDeliveryDistance = parseFloat(document.querySelector('meta[name="max-delivery-distance"]')?.content) || 30;
 
 let deliveryAddress = (persistedDeliveryPreference && typeof persistedDeliveryPreference.address === 'string' &&
-    persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() :
-    document.querySelector('meta[name="outlet-address"]').content;
+    persistedDeliveryPreference.address.trim()) ? persistedDeliveryPreference.address.trim() : "";
 let deliveryCoordinates = (persistedDeliveryPreference && persistedDeliveryPreference.coordinates && Number
     .isFinite(persistedDeliveryPreference.coordinates.lat) && Number.isFinite(persistedDeliveryPreference
         .coordinates.lng)) ? {
