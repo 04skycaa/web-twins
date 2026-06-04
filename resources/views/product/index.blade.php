@@ -423,7 +423,7 @@
             <h3>Buat Transfer Stok Baru</h3>
             <button class="close-modal" onclick="closeModal('transferModal')">&times;</button>
         </div>
-        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm" onsubmit="return validateProductForm('transferForm')" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <form action="{{ route('products.transfer.store') }}" method="POST" id="transferForm" data-custom-validate="true" novalidate style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             @csrf
             <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px;">
@@ -3592,6 +3592,7 @@
                     // Tidak menampilkan popup gagal sesuai permintaan, feedback sudah ada di box merah
                 })
                 .finally(() => {
+                    transferForm.dataset.isSubmitting = 'false';
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalContent;
                 });
@@ -3775,6 +3776,12 @@
 
     function validateProductForm(formId) {
         const form = document.getElementById(formId);
+        
+        // Mencegah double click / double submission
+        if (form.dataset.isSubmitting === 'true') {
+            return false;
+        }
+        
         const requiredInputs = form.querySelectorAll('[required]');
         let isValid = true;
 
@@ -3857,6 +3864,19 @@
                 }
             }
             showLoading(msg);
+            
+            // Tandai form sedang submit untuk mencegah klik berulang
+            form.dataset.isSubmitting = 'true';
+            
+            // Jika form native, matikan tombol agar tidak bisa diklik lagi
+            if (formId !== 'transferForm') {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.style.pointerEvents = 'none';
+                    btn.style.opacity = '0.7';
+                }
+            }
+            
             return true;
         } else {
 

@@ -638,7 +638,7 @@ class ProductController extends Controller
                 if (!$sourceStock || $sourceStock->stok < $item['qty']) {
                     throw new \Exception("Stok produk " . $product->nama_produk . " tidak mencukupi di toko asal.");
                 }
-                $sourceStock->decrement('stok', $item['qty']);
+                // $sourceStock->decrement('stok', $item['qty']); // Dihapus karena trigger postgres handle_transaction_detail_stock otomatis mengurangi stok
 
                 StockCard::create([
                     'uuid' => (string) Str::uuid(),
@@ -664,34 +664,7 @@ class ProductController extends Controller
                 ]);
             }
 
-            // Keuangan: CashFlow
-            if ($request->payment_type == 'Tunai' || $dp_paid > 0) {
-                // Toko Asal Menerima Uang (Pemasukan)
-                CashFlow::create([
-                    'uuid' => (string) Str::uuid(),
-                    'store_id' => $sourceStoreId,
-                    'user_id' => $user->uuid,
-                    'jenis' => 'pemasukan',
-                    'nominal' => $dp_paid,
-                    'metode_pembayaran' => $request->metode_pembayaran,
-                    'keterangan' => "Pemasukan Transfer dari " . ($tujuanStore->nama ?? 'Toko Tujuan') . " (Trx: {$transaction->uuid})",
-                    'tanggal' => now(),
-                ]);
-                
-                // Toko Tujuan Mengeluarkan Uang (Pengeluaran)
-                CashFlow::create([
-                    'uuid' => (string) Str::uuid(),
-                    'store_id' => $request->tujuan_store_id,
-                    'user_id' => $user->uuid,
-                    'jenis' => 'pengeluaran',
-                    'nominal' => $dp_paid,
-                    'metode_pembayaran' => $request->metode_pembayaran,
-                    'keterangan' => "Pembayaran Transfer ke " . ($sourceStore->nama ?? 'Toko Asal') . " (Trx: {$transaction->uuid})",
-                    'tanggal' => now(),
-                ]);
-            }
-
-            // Keuangan: Hutang / Piutang
+            // 6. Keuangan: Hutang / Piutang
             if ($request->payment_type == 'Kredit') {
                 $debt_amount = $total - $dp_paid;
                 if ($debt_amount > 0) {
@@ -991,12 +964,13 @@ class ProductController extends Controller
                     'harga_jual' => $item['harga_jual_baru'] ?? 0,
                 ]);
 
-                // 3. Update Stok di Toko
+                // 3. Pastikan Product Store ada (Stok akan otomatis ditambah oleh Trigger PostgreSQL di transaction_detail)
                 $productStore = ProductStore::firstOrCreate(
                     ['product_id' => $item['product_id'], 'store_id' => $store_id],
                     ['stok' => 0, 'status_aktif' => true]
                 );
-                $productStore->increment('stok', $item['qty']);
+                // $productStore->increment('stok', $item['qty']); // Dihapus karena trigger postgres otomatis menambah stok
+
                 if ($item['kadaluarsa']) {
                     $productStore->update(['kadaluarsa' => $item['kadaluarsa']]);
                 }
@@ -1018,19 +992,7 @@ class ProductController extends Controller
                 ]);
             }
 
-            // 6. Keuangan
-            if ($request->payment_type == 'Tunai' || $dp_paid > 0) {
-                CashFlow::create([
-                    'store_id' => $store_id,
-                    'user_id' => $user->uuid,
-                    'jenis' => 'pengeluaran',
-                    'nominal' => $dp_paid,
-                    'metode_pembayaran' => $request->metode_pembayaran,
-                    'keterangan' => $request->payment_type == 'Tunai' ? "Pembelian stok / Restok (Trx: {$transaction->uuid})" : "DP Pembelian stok / Restok (Trx: {$transaction->uuid})",
-                    'tanggal' => now(),
-                ]);
-            }
-
+            // 6. Keuangan (Hutang)
             if ($request->payment_type == 'Kredit') {
                 $debt_amount = $total - $dp_paid;
                 if ($debt_amount > 0) {
@@ -2154,16 +2116,6 @@ class ProductController extends Controller
             // 3. Update Transaction (increment total bayar)
             $transaction->increment('bayar', $bayar);
 
-            // 4. Create CashFlow (pengeluaran)
-            CashFlow::create([
-                'store_id' => $transaction->store_id,
-                'user_id' => Auth::id(),
-                'jenis' => 'pengeluaran',
-                'nominal' => $bayar,
-                'keterangan' => "Cicilan pelunasan hutang restok (Trx: {$transaction->uuid})",
-                'tanggal' => now(),
-            ]);
-
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Pembayaran berhasil dicatat!']);
         } catch (\Exception $e) {
@@ -2197,9 +2149,7 @@ class ProductController extends Controller
                 ]);
             }
 
-            // 3. Hapus catatan Keuangan (CashFlow)
-            // Mencari cashflow yang mencantumkan UUID transaksi di keterangannya
-            CashFlow::where('keterangan', 'like', "%{$uuid}%")->delete();
+            // 3. (Dihapus - Cashflow manual tidak otomatis terhapus saat purchase dihapus)
 
             // 4. Hapus catatan Hutang (Debt) dan Detail Pembayarannya jika ada (using robust multi-strategy lookup)
             $debt = Debt::where('transaction_id', $uuid)->first();

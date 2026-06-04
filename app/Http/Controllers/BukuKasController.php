@@ -83,8 +83,8 @@ class BukuKasController extends Controller
             if (!$end_date) $end_date = date('Y-m-d');
         }
 
-        $pengeluaranQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pengeluaran')->where('keterangan', 'NOT LIKE', '%(Trx:%');
-        $pemasukanQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pemasukan')->where('keterangan', 'NOT LIKE', '%(Trx:%');
+        $pengeluaranQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pengeluaran');
+        $pemasukanQuery = CashFlow::with(['outlet', 'user', 'paymentMethod'])->where('jenis', 'pemasukan');
         $status = $request->input('status');
         $hutangQuery = Debt::with(['contact', 'detailDebts.paymentMethod', 'paymentOrder.items'])->whereRaw('LOWER(tipe) IN (?, ?)', ['hutang', 'utang']);
         $piutangQuery = Debt::with(['contact', 'detailDebts.paymentMethod', 'transaction.details.product'])->whereRaw('LOWER(tipe) = ?', ['piutang']);

@@ -17,6 +17,14 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
 
+Route::get('/dev-triggers2', function() {
+    return \Illuminate\Support\Facades\DB::select("
+        SELECT routine_definition 
+        FROM information_schema.routines 
+        WHERE routine_name = 'handle_transaction_detail_stock'
+    ");
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'role:owner,kepala_toko'])
     ->name('dashboard');
